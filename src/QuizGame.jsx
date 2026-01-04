@@ -10,37 +10,35 @@ export default function QuizGame({ categoryId, onDone }) {
 
     useEffect(() => {
         const loadGame = async () => {
-            try {
-                const data = await sql`SELECT * FROM questions WHERE category_id = ${categoryId}`;
-                setQuestions(data);
-                if (data.length > 0) generateOptions(data[0], data);
-            } catch (err) {
-                console.error("Error loading quiz:", err);
-            }
+            const data = await sql`SELECT * FROM questions WHERE category_id = ${categoryId}`;
+            setQuestions(data);
+            if (data.length > 0) generateOptions(data[0], data);
         };
         loadGame();
     }, [categoryId]);
 
     const generateOptions = (currentQ, allQs) => {
-        const correct = currentQ.correct_answer;
+        // We create an object for each option to know if it's an image or text
+        const correct = { 
+            text: currentQ.correct_answer, 
+            img: currentQ.answer_image_url 
+        };
         
-        // Get other answers from this specific category for multiple choice
-        const otherAnswers = allQs
-            .map(q => q.correct_answer)
-            .filter(ans => ans !== correct); 
+        const others = allQs
+            .filter(q => q.id !== currentQ.id)
+            .map(q => ({ text: q.correct_answer, img: q.answer_image_url }));
 
-        // Randomly pick 3 wrong answers
-        const randomWrongs = otherAnswers
-            .sort(() => 0.5 - Math.random())
-            .slice(0, 3);
-        
-        // Combine and shuffle the buttons
+        const randomWrongs = others.sort(() => 0.5 - Math.random()).slice(0, 3);
         const combined = [correct, ...randomWrongs].sort(() => 0.5 - Math.random());
         setOptions(combined);
     };
 
     const handleAnswer = (choice) => {
-        if (choice === questions[currentIndex].correct_answer) setScore(score + 1);
+        const currentQ = questions[currentIndex];
+        // Check if the chosen text or image matches the correct one
+        if (choice.text === currentQ.correct_answer || (choice.img && choice.img === currentQ.answer_image_url)) {
+            setScore(score + 1);
+        }
 
         const next = currentIndex + 1;
         if (next < questions.length) {
@@ -51,16 +49,13 @@ export default function QuizGame({ categoryId, onDone }) {
         }
     };
 
-    if (questions.length === 0) return <div style={{color: 'white', textAlign: 'center'}}>Loading Quiz...</div>;
+    if (questions.length === 0) return <div style={{color: 'white', textAlign: 'center'}}>Loading...</div>;
 
     if (showResult) {
         return (
             <div style={{ textAlign: 'center', color: 'white' }}>
-                <h2>Quiz Complete!</h2>
-                <p style={{ fontSize: '2em' }}>Score: {score} / {questions.length}</p>
-                <button onClick={onDone} style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-                    Return to Lobby
-                </button>
+                <h2>Score: {score} / {questions.length}</h2>
+                <button onClick={onDone} style={{ padding: '10px 20px' }}>Back</button>
             </div>
         );
     }
@@ -69,29 +64,21 @@ export default function QuizGame({ categoryId, onDone }) {
 
     return (
         <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center', color: 'white' }}>
-            <p style={{ color: '#aaa' }}>Question {currentIndex + 1} of {questions.length}</p>
-            
-            {/* Conditional Image Display */}
-            {currentQ.image_url && (
-                <div style={{ marginBottom: '20px' }}>
-                    <img 
-                        src={currentQ.image_url} 
-                        alt="Quiz Visual" 
-                        style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '10px', border: '1px solid #444' }} 
-                    />
-                </div>
+            {/* Display Question Image or Text */}
+            {currentQ.image_url ? (
+                <img src={currentQ.image_url} alt="Question" style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '10px' }} />
+            ) : (
+                <h2 style={{ fontSize: '1.8em' }}>{currentQ.question_text}</h2>
             )}
-            
-            <h2 style={{ fontSize: '1.8em', marginBottom: '30px' }}>{currentQ.question_text}</h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '30px' }}>
                 {options.map((opt, i) => (
-                    <button
-                        key={i}
-                        onClick={() => handleAnswer(opt)}
-                        style={{ padding: '20px', fontSize: '1.1em', backgroundColor: '#444', color: 'white', border: '1px solid #555', borderRadius: '8px', cursor: 'pointer' }}
-                    >
-                        {opt}
+                    <button key={i} onClick={() => handleAnswer(opt)} style={{ padding: '15px', backgroundColor: '#444', color: 'white', borderRadius: '8px', cursor: 'pointer', minHeight: '80px' }}>
+                        {opt.img ? (
+                            <img src={opt.img} alt="Answer" style={{ width: '100%', maxHeight: '60px', objectFit: 'contain' }} />
+                        ) : (
+                            opt.text
+                        )}
                     </button>
                 ))}
             </div>

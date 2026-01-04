@@ -5,7 +5,7 @@ import QuizGame from './QuizGame.jsx';
 import QuizCreator from './QuizCreator.jsx'; 
 import QuestionManager from './QuestionManager.jsx'; 
 import Login from './Login.jsx';
-import Register from './register.jsx';
+import Register from './Register.jsx';
 
 function App() {
     // Possible views: 'LOGIN', 'REGISTER', 'MAIN', 'QUIZ', 'CREATE_QUESTION', 'MANAGE_QUESTIONS'
@@ -61,7 +61,7 @@ function App() {
     } else if (view === 'MAIN') {
         currentViewContent = (
             <Lobby 
-                user={user} // Passing user to filter categories
+                user={user} // Filter categories by user ID
                 onLogout={handleLogout}
                 onStartQuiz={handleStartQuiz}
                 onCreateQuestion={() => setView('CREATE_QUESTION')}
@@ -78,14 +78,14 @@ function App() {
     } else if (view === 'CREATE_QUESTION') {
         currentViewContent = (
             <QuizCreator 
-                user={user} // Passing user so new categories get a user_id
+                user={user} // Assign user_id to new categories/questions
                 onDone={goBackToLobby} 
             />
         );
     } else if (view === 'MANAGE_QUESTIONS' && selectedCategoryId) {
         currentViewContent = (
             <QuestionManager 
-                user={user} // Passing user for security
+                user={user} // Secure editing: only owner can edit
                 categoryId={selectedCategoryId} 
                 onDone={goBackToLobby} 
             />
@@ -94,12 +94,12 @@ function App() {
 
     return (
         <div className="App" style={{ minHeight: '100vh', backgroundColor: '#1a1a1a', color: 'white' }}>
-            <header style={{ padding: '20px', textAlign: 'center', borderBottom: '1px solid #333' }}>
+            <header style={{ padding: '20px', textAlign: 'center', borderBottom: '1px solid #333', backgroundColor: '#111' }}>
                 <h1 style={{ margin: 0, color: '#28a745' }}>Flashcard Quiz Master</h1>
                 {user && (
-                    <div style={{ marginTop: '10px' }}>
-                        <span style={{ color: '#aaa' }}>Logged in as: </span>
-                        <strong style={{ color: '#fff' }}>{user.username}</strong>
+                    <div style={{ marginTop: '10px', fontSize: '0.9em' }}>
+                        <span style={{ color: '#aaa' }}>User: </span>
+                        <strong style={{ color: '#28a745' }}>{user.username}</strong>
                     </div>
                 )}
             </header>

@@ -5,9 +5,15 @@ export default function QuizCreator({ user, onDone }) {
     const [categories, setCategories] = useState([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState('');
     const [newCategoryName, setNewCategoryName] = useState('');
+    
+    // Question State
     const [questionText, setQuestionText] = useState('');
+    const [isQuestionImage, setIsQuestionImage] = useState(false);
+    
+    // Answer State
     const [correctAnswer, setCorrectAnswer] = useState('');
-    const [imageUrl, setImageUrl] = useState(''); 
+    const [isAnswerImage, setIsAnswerImage] = useState(false);
+    
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -34,13 +40,11 @@ export default function QuizCreator({ user, onDone }) {
         try {
             let categoryId = selectedCategoryId;
 
-            // Handle duplicate category name logic
             if (!categoryId && newCategoryName) {
                 const existing = await sql`
                     SELECT id FROM categories 
                     WHERE name = ${newCategoryName} AND user_id = ${user.id}
                 `;
-
                 if (existing.length > 0) {
                     categoryId = existing[0].id;
                 } else {
@@ -53,23 +57,29 @@ export default function QuizCreator({ user, onDone }) {
                 }
             }
 
-            if (!categoryId) {
-                alert("Please select or create a category.");
-                setLoading(false);
-                return;
-            }
-
-            // Save question with optional image_url
+            // Save logic: If it's an image, we put it in the image column
             await sql`
-                INSERT INTO questions (category_id, question_text, correct_answer, image_url)
-                VALUES (${categoryId}, ${questionText}, ${correctAnswer}, ${imageUrl || null})
+                INSERT INTO questions (
+                    category_id, 
+                    question_text, 
+                    image_url, 
+                    correct_answer, 
+                    answer_image_url
+                )
+                VALUES (
+                    ${categoryId}, 
+                    ${isQuestionImage ? 'Visual Question' : questionText}, 
+                    ${isQuestionImage ? questionText : null}, 
+                    ${isAnswerImage ? 'Visual Answer' : correctAnswer}, 
+                    ${isAnswerImage ? correctAnswer : null}
+                )
             `;
 
-            alert("Question saved successfully!");
+            alert("Question saved!");
             onDone(); 
         } catch (error) {
-            console.error("Error creating question:", error);
-            alert("Failed to save. Check your connection.");
+            console.error(error);
+            alert("Failed to save.");
         } finally {
             setLoading(false);
         }
@@ -79,66 +89,53 @@ export default function QuizCreator({ user, onDone }) {
         <div style={{ maxWidth: '500px', margin: '0 auto', color: 'white', padding: '20px', backgroundColor: '#333', borderRadius: '10px' }}>
             <h2>Create Question</h2>
             <form onSubmit={handleCreateQuestion}>
+                {/* Category Selection */}
                 <div style={{ marginBottom: '15px' }}>
                     <label>Category:</label>
-                    <select 
-                        value={selectedCategoryId} 
-                        onChange={(e) => setSelectedCategoryId(e.target.value)}
-                        style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
-                    >
+                    <select value={selectedCategoryId} onChange={(e) => setSelectedCategoryId(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}>
                         <option value="">-- New Category --</option>
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
+                        {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                     </select>
-
                     {!selectedCategoryId && (
-                        <input 
-                            type="text" 
-                            placeholder="Category Name" 
-                            value={newCategoryName} 
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            style={{ width: '100%', padding: '10px', marginTop: '10px', color: 'black' }}
-                        />
+                        <input type="text" placeholder="Category Name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '10px', color: 'black' }} />
                     )}
                 </div>
 
-                <div style={{ marginBottom: '15px' }}>
-                    <label>Question Text:</label>
+                {/* Question Section */}
+                <div style={{ marginBottom: '15px', border: '1px solid #555', padding: '10px', borderRadius: '5px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <label>Question:</label>
+                        <label style={{ fontSize: '0.8em' }}>
+                            <input type="checkbox" checked={isQuestionImage} onChange={() => {setIsQuestionImage(!isQuestionImage); setQuestionText('');}} /> Is this an image?
+                        </label>
+                    </div>
                     <textarea 
                         value={questionText} 
                         onChange={(e) => setQuestionText(e.target.value)}
                         required
+                        placeholder={isQuestionImage ? "Paste Image URL here..." : "Type your question here..."}
                         style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
                     />
+                    {isQuestionImage && questionText && <img src={questionText} alt="Preview" style={{ width: '100%', marginTop: '10px', maxHeight: '100px', objectFit: 'contain' }} />}
                 </div>
 
-                <div style={{ marginBottom: '15px' }}>
-                    <label>Image URL (Optional):</label>
-                    <input 
-                        type="text" 
-                        placeholder="Paste image link here" 
-                        value={imageUrl} 
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
-                    />
-                    {imageUrl && (
-                        <div style={{ marginTop: '10px' }}>
-                            <p style={{ fontSize: '0.8em', color: '#aaa' }}>Preview:</p>
-                            <img src={imageUrl} alt="preview" style={{ width: '100%', maxHeight: '150px', objectFit: 'contain', borderRadius: '5px' }} />
-                        </div>
-                    )}
-                </div>
-
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ color: '#28a745' }}>Correct Answer:</label>
+                {/* Answer Section */}
+                <div style={{ marginBottom: '15px', border: '1px solid #555', padding: '10px', borderRadius: '5px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <label style={{ color: '#28a745' }}>Correct Answer:</label>
+                        <label style={{ fontSize: '0.8em' }}>
+                            <input type="checkbox" checked={isAnswerImage} onChange={() => {setIsAnswerImage(!isAnswerImage); setCorrectAnswer('');}} /> Is this an image?
+                        </label>
+                    </div>
                     <input 
                         type="text" 
                         value={correctAnswer} 
                         onChange={(e) => setCorrectAnswer(e.target.value)}
                         required
+                        placeholder={isAnswerImage ? "Paste Image URL here..." : "Type the answer here..."}
                         style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
                     />
+                    {isAnswerImage && correctAnswer && <img src={correctAnswer} alt="Preview" style={{ width: '100%', marginTop: '10px', maxHeight: '100px', objectFit: 'contain' }} />}
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
