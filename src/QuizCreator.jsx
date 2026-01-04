@@ -96,6 +96,7 @@ export default function QuizCreator({ user, onDone }) {
 
     return (
         <div style={{ maxWidth: '500px', margin: '0 auto', color: 'white', padding: '20px', backgroundColor: '#333', borderRadius: '10px' }}>
+            <button onClick={onDone} style={{ width: '100px', marginTop: '20px', padding: '10px' }}>Back</button>
             <h2 style={{ textAlign: 'center', color: '#28a745' }}>New Question</h2>
             <form onSubmit={handleSave}>
                 
