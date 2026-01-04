@@ -7,6 +7,7 @@ export default function QuizCreator({ user, onDone }) {
     const [newCategoryName, setNewCategoryName] = useState('');
     const [questionText, setQuestionText] = useState('');
     const [correctAnswer, setCorrectAnswer] = useState('');
+    const [imageUrl, setImageUrl] = useState(''); 
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -33,7 +34,7 @@ export default function QuizCreator({ user, onDone }) {
         try {
             let categoryId = selectedCategoryId;
 
-            // FIX: Check if the category name exists for THIS user before inserting
+            // Handle duplicate category name logic
             if (!categoryId && newCategoryName) {
                 const existing = await sql`
                     SELECT id FROM categories 
@@ -58,17 +59,17 @@ export default function QuizCreator({ user, onDone }) {
                 return;
             }
 
+            // Save question with optional image_url
             await sql`
-                INSERT INTO questions (category_id, question_text, correct_answer)
-                VALUES (${categoryId}, ${questionText}, ${correctAnswer})
+                INSERT INTO questions (category_id, question_text, correct_answer, image_url)
+                VALUES (${categoryId}, ${questionText}, ${correctAnswer}, ${imageUrl || null})
             `;
 
-            alert("Question saved!");
+            alert("Question saved successfully!");
             onDone(); 
         } catch (error) {
             console.error("Error creating question:", error);
-            // This alert was appearing because of the 'duplicate key' error
-            alert("Failed to save. This category name might be taken or database is busy.");
+            alert("Failed to save. Check your connection.");
         } finally {
             setLoading(false);
         }
@@ -76,16 +77,16 @@ export default function QuizCreator({ user, onDone }) {
 
     return (
         <div style={{ maxWidth: '500px', margin: '0 auto', color: 'white', padding: '20px', backgroundColor: '#333', borderRadius: '10px' }}>
-            <h2>Add New Question</h2>
+            <h2>Create Question</h2>
             <form onSubmit={handleCreateQuestion}>
-                <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: '15px' }}>
                     <label>Category:</label>
                     <select 
                         value={selectedCategoryId} 
                         onChange={(e) => setSelectedCategoryId(e.target.value)}
-                        style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                        style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
                     >
-                        <option value="">-- Create New Category --</option>
+                        <option value="">-- New Category --</option>
                         {categories.map(cat => (
                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
@@ -94,7 +95,7 @@ export default function QuizCreator({ user, onDone }) {
                     {!selectedCategoryId && (
                         <input 
                             type="text" 
-                            placeholder="New Category Name" 
+                            placeholder="Category Name" 
                             value={newCategoryName} 
                             onChange={(e) => setNewCategoryName(e.target.value)}
                             style={{ width: '100%', padding: '10px', marginTop: '10px', color: 'black' }}
@@ -102,17 +103,34 @@ export default function QuizCreator({ user, onDone }) {
                     )}
                 </div>
 
-                <div style={{ marginTop: '20px' }}>
-                    <label>Question:</label>
+                <div style={{ marginBottom: '15px' }}>
+                    <label>Question Text:</label>
                     <textarea 
                         value={questionText} 
                         onChange={(e) => setQuestionText(e.target.value)}
                         required
-                        style={{ width: '100%', padding: '10px', marginTop: '5px', height: '80px', color: 'black' }}
+                        style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
                     />
                 </div>
 
-                <div style={{ marginTop: '10px' }}>
+                <div style={{ marginBottom: '15px' }}>
+                    <label>Image URL (Optional):</label>
+                    <input 
+                        type="text" 
+                        placeholder="Paste image link here" 
+                        value={imageUrl} 
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
+                    />
+                    {imageUrl && (
+                        <div style={{ marginTop: '10px' }}>
+                            <p style={{ fontSize: '0.8em', color: '#aaa' }}>Preview:</p>
+                            <img src={imageUrl} alt="preview" style={{ width: '100%', maxHeight: '150px', objectFit: 'contain', borderRadius: '5px' }} />
+                        </div>
+                    )}
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
                     <label style={{ color: '#28a745' }}>Correct Answer:</label>
                     <input 
                         type="text" 
@@ -123,19 +141,11 @@ export default function QuizCreator({ user, onDone }) {
                     />
                 </div>
 
-                <div style={{ marginTop: '30px', display: 'flex', gap: '10px' }}>
-                    <button 
-                        type="submit" 
-                        disabled={loading}
-                        style={{ flex: 1, padding: '15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-                    >
-                        {loading ? 'Saving...' : 'Save Question'}
+                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                    <button type="submit" disabled={loading} style={{ flex: 1, padding: '12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+                        {loading ? 'Saving...' : 'Save'}
                     </button>
-                    <button 
-                        type="button" 
-                        onClick={onDone}
-                        style={{ flex: 1, padding: '15px', backgroundColor: '#666', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-                    >
+                    <button type="button" onClick={onDone} style={{ flex: 1, padding: '12px', backgroundColor: '#666', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
                         Cancel
                     </button>
                 </div>
