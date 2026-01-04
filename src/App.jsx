@@ -61,7 +61,7 @@ function App() {
     } else if (view === 'MAIN') {
         currentViewContent = (
             <Lobby 
-                user={user}
+                user={user} // Passing user to filter categories
                 onLogout={handleLogout}
                 onStartQuiz={handleStartQuiz}
                 onCreateQuestion={() => setView('CREATE_QUESTION')}
@@ -78,12 +78,14 @@ function App() {
     } else if (view === 'CREATE_QUESTION') {
         currentViewContent = (
             <QuizCreator 
+                user={user} // Passing user so new categories get a user_id
                 onDone={goBackToLobby} 
             />
         );
     } else if (view === 'MANAGE_QUESTIONS' && selectedCategoryId) {
         currentViewContent = (
             <QuestionManager 
+                user={user} // Passing user for security
                 categoryId={selectedCategoryId} 
                 onDone={goBackToLobby} 
             />
@@ -95,9 +97,10 @@ function App() {
             <header style={{ padding: '20px', textAlign: 'center', borderBottom: '1px solid #333' }}>
                 <h1 style={{ margin: 0, color: '#28a745' }}>Flashcard Quiz Master</h1>
                 {user && (
-                    <p style={{ color: '#aaa', marginTop: '10px' }}>
-                        Welcome, <strong>{user.username}</strong>!
-                    </p>
+                    <div style={{ marginTop: '10px' }}>
+                        <span style={{ color: '#aaa' }}>Logged in as: </span>
+                        <strong style={{ color: '#fff' }}>{user.username}</strong>
+                    </div>
                 )}
             </header>
 

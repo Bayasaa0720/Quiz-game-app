@@ -1,139 +1,155 @@
-import { useState, useEffect } from "react";
-import sql from "./db.jsx";
+import { useState, useEffect } from 'react';
+import sql from './db.jsx'; 
 
-export default function QuizCreator({ onDone }) {
+export default function QuizCreator({ user, onDone }) {
     const [categories, setCategories] = useState([]);
-    const [formData, setFormData] = useState({
-        categoryId: "",
-        question: "",
-        answer: "",
-    });
-    
-    const [qIsImage, setQIsImage] = useState(false);
-    const [aIsImage, setAIsImage] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [selectedCategoryId, setSelectedCategoryId] = useState('');
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [questionText, setQuestionText] = useState('');
+    const [correctAnswer, setCorrectAnswer] = useState('');
+    const [wrongAnswers, setWrongAnswers] = useState(['', '', '']);
+    const [loading, setLoading] = useState(false);
 
+    // Fetch ONLY this user's categories for the dropdown
     useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const data = await sql`SELECT id, name FROM categories ORDER BY name ASC`;
-                setCategories(data);
-            } catch (err) {
-                console.error("Failed to load categories:", err);
-            } finally {
-                setLoading(false);
-            }
+        const fetchMyCategories = async () => {
+            if (!user) return;
+            const data = await sql`
+                SELECT id, name FROM categories 
+                WHERE user_id = ${user.id} 
+                ORDER BY name ASC
+            `;
+            setCategories(data);
         };
-        fetchCategories();
-    }, []);
+        fetchMyCategories();
+    }, [user]);
 
-    const handleSubmit = async (e) => {
+    const handleCreateQuestion = async (e) => {
         e.preventDefault();
-
-        if (!formData.categoryId) {
-            alert("Please select a category first!");
-            return;
-        }
-
-        if (!formData.question || !formData.answer) {
-            alert("Please fill in both the question and the answer.");
-            return;
-        }
+        setLoading(true);
 
         try {
+            let categoryId = selectedCategoryId;
+
+            // 1. If user typed a new category name, create it linked to their ID
+            if (!categoryId && newCategoryName) {
+                const [newCat] = await sql`
+                    INSERT INTO categories (name, user_id) 
+                    VALUES (${newCategoryName}, ${user.id}) 
+                    RETURNING id
+                `;
+                categoryId = newCat.id;
+            }
+
+            if (!categoryId) {
+                alert("Please select or create a category.");
+                setLoading(false);
+                return;
+            }
+
+            // 2. Insert the question linked to that category
             await sql`
-                INSERT INTO quiz_items (category_id, quiz_question, correct_answer)
-                VALUES (${parseInt(formData.categoryId)}, ${formData.question}, ${formData.answer})
+                INSERT INTO questions (category_id, question_text, correct_answer, wrong_answers)
+                VALUES (${categoryId}, ${questionText}, ${correctAnswer}, ${wrongAnswers})
             `;
-            alert("Saved successfully to Neon!");
-            onDone();
-        } catch (err) {
-            console.error("Database Error:", err);
-            alert("Error saving to Neon: " + err.message);
+
+            alert("Question created successfully!");
+            onDone(); // Go back to lobby
+        } catch (error) {
+            console.error("Error creating question:", error);
+            alert("Failed to save. Make sure all fields are filled.");
+        } finally {
+            setLoading(false);
         }
     };
 
-    if (loading) return <p style={{ color: "white", textAlign: "center" }}>Loading categories...</p>;
+    const handleWrongAnswerChange = (index, value) => {
+        const newWrong = [...wrongAnswers];
+        newWrong[index] = value;
+        setWrongAnswers(newWrong);
+    };
 
     return (
-        <div style={{ 
-            padding: "20px", 
-            backgroundColor: "#333", 
-            color: "white", 
-            borderRadius: "12px", 
-            maxWidth: "550px", 
-            margin: "0 auto",
-            boxShadow: "0 4px 15px rgba(0,0,0,0.3)"
-        }}>
-            <h2 style={{ textAlign: "center", marginBottom: "10px" }}>Create New Question</h2>
-            
-            {/* 💡 THE REMINDER BOX */}
-            <div style={{ 
-                backgroundColor: "#2c3e50", 
-                padding: "10px", 
-                borderRadius: "8px", 
-                marginBottom: "20px", 
-                fontSize: "0.85rem", 
-                borderLeft: "4px solid #3498db" 
-            }}>
-                <strong>💡 Pro Tip for Images:</strong> Right-click an image on the web and select 
-                <em> "Copy Image Address."</em> The URL should end in <strong>.png, .jpg, or .svg</strong>.
-            </div>
-
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto', color: 'white', padding: '20px', backgroundColor: '#333', borderRadius: '10px' }}>
+            <h2>Create New Quiz Content</h2>
+            <form onSubmit={handleCreateQuestion}>
                 
                 {/* Category Selection */}
-                <div>
-                    <label style={{ display: "block", marginBottom: "5px", fontSize: "0.9rem", color: "#ccc" }}>Select Category:</label>
+                <div style={{ marginBottom: '20px' }}>
+                    <label>Choose Existing Category:</label>
                     <select 
-                        required
-                        value={formData.categoryId} 
-                        onChange={(e) => setFormData({...formData, categoryId: e.target.value})}
-                        style={{ width: "100%", padding: "10px", borderRadius: "4px", backgroundColor: "#fff", color: "#000", border: "none" }}
+                        value={selectedCategoryId} 
+                        onChange={(e) => setSelectedCategoryId(e.target.value)}
+                        style={{ width: '100%', padding: '10px', marginTop: '5px' }}
                     >
-                        <option value="">-- Choose a Category --</option>
+                        <option value="">-- Or Create New Below --</option>
                         {categories.map(cat => (
                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
                     </select>
-                </div>
 
-                {/* Question Input */}
-                <div style={{ border: "1px solid #555", padding: "12px", borderRadius: "8px", backgroundColor: "#444" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px", cursor: "pointer" }}>
-                        <input type="checkbox" checked={qIsImage} onChange={() => setQIsImage(!qIsImage)} />
-                        <span style={{ fontSize: "0.9rem", fontWeight: "bold" }}>Question is an Image URL</span>
-                    </label>
-                    <input 
-                        required
-                        placeholder={qIsImage ? "Paste Direct Image URL here..." : "Type Question Text"}
-                        value={formData.question}
-                        onChange={(e) => setFormData({...formData, question: e.target.value})}
-                        style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid #666", boxSizing: "border-box" }}
-                    />
-                    {qIsImage && <p style={{ fontSize: "0.75rem", color: "#aaa", marginTop: "5px" }}>Must end in .png, .jpg, or .svg</p>}
-                </div>
+                    <p style={{ margin: '10px 0' }}>- OR -</p>
 
-                {/* Answer Input */}
-                <div style={{ border: "1px solid #555", padding: "12px", borderRadius: "8px", backgroundColor: "#444" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px", cursor: "pointer" }}>
-                        <input type="checkbox" checked={aIsImage} onChange={() => setAIsImage(!aIsImage)} />
-                        <span style={{ fontSize: "0.9rem", fontWeight: "bold" }}>Answer is an Image URL</span>
-                    </label>
+                    <label>New Category Name:</label>
                     <input 
-                        required
-                        placeholder={aIsImage ? "Paste Answer Image URL here..." : "Type Answer Text"}
-                        value={formData.answer}
-                        onChange={(e) => setFormData({...formData, answer: e.target.value})}
-                        style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid #666", boxSizing: "border-box" }}
+                        type="text" 
+                        value={newCategoryName} 
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="e.g., Science, History"
+                        style={{ width: '100%', padding: '10px', marginTop: '5px' }}
                     />
                 </div>
 
-                <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-                    <button type="submit" style={{ flex: 2, padding: "12px", backgroundColor: "#28a745", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
-                        Add to Database
+                <hr />
+
+                {/* Question Details */}
+                <div style={{ marginTop: '20px' }}>
+                    <label>Question:</label>
+                    <textarea 
+                        value={questionText} 
+                        onChange={(e) => setQuestionText(e.target.value)}
+                        required
+                        style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                    />
+                </div>
+
+                <div style={{ marginTop: '10px' }}>
+                    <label style={{ color: '#28a745' }}>Correct Answer:</label>
+                    <input 
+                        type="text" 
+                        value={correctAnswer} 
+                        onChange={(e) => setCorrectAnswer(e.target.value)}
+                        required
+                        style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                    />
+                </div>
+
+                {wrongAnswers.map((ans, i) => (
+                    <div key={i} style={{ marginTop: '10px' }}>
+                        <label style={{ color: '#dc3545' }}>Wrong Answer {i + 1}:</label>
+                        <input 
+                            type="text" 
+                            value={ans} 
+                            onChange={(e) => handleWrongAnswerChange(i, e.target.value)}
+                            required
+                            style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                        />
+                    </div>
+                ))}
+
+                <div style={{ marginTop: '30px', display: 'flex', gap: '10px' }}>
+                    <button 
+                        type="submit" 
+                        disabled={loading}
+                        style={{ flex: 1, padding: '15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    >
+                        {loading ? 'Saving...' : 'Save Question'}
                     </button>
-                    <button type="button" onClick={onDone} style={{ flex: 1, padding: "12px", backgroundColor: "#666", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}>
+                    <button 
+                        type="button" 
+                        onClick={onDone}
+                        style={{ flex: 1, padding: '15px', backgroundColor: '#666', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    >
                         Cancel
                     </button>
                 </div>
