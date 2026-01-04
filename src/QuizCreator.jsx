@@ -7,19 +7,22 @@ export default function QuizCreator({ user, onDone }) {
     const [newCategoryName, setNewCategoryName] = useState('');
     const [questionText, setQuestionText] = useState('');
     const [correctAnswer, setCorrectAnswer] = useState('');
-    const [wrongAnswers, setWrongAnswers] = useState(['', '', '']);
     const [loading, setLoading] = useState(false);
 
-    // Fetch ONLY this user's categories for the dropdown
+    // Fetch ONLY this user's categories
     useEffect(() => {
         const fetchMyCategories = async () => {
             if (!user) return;
-            const data = await sql`
-                SELECT id, name FROM categories 
-                WHERE user_id = ${user.id} 
-                ORDER BY name ASC
-            `;
-            setCategories(data);
+            try {
+                const data = await sql`
+                    SELECT id, name FROM categories 
+                    WHERE user_id = ${user.id} 
+                    ORDER BY name ASC
+                `;
+                setCategories(data);
+            } catch (err) {
+                console.error("Error fetching categories:", err);
+            }
         };
         fetchMyCategories();
     }, [user]);
@@ -31,7 +34,7 @@ export default function QuizCreator({ user, onDone }) {
         try {
             let categoryId = selectedCategoryId;
 
-            // 1. If user typed a new category name, create it linked to their ID
+            // Create new category if needed
             if (!categoryId && newCategoryName) {
                 const [newCat] = await sql`
                     INSERT INTO categories (name, user_id) 
@@ -47,69 +50,58 @@ export default function QuizCreator({ user, onDone }) {
                 return;
             }
 
-            // 2. Insert the question linked to that category
+            // Save the question (No wrong answers stored!)
             await sql`
-                INSERT INTO questions (category_id, question_text, correct_answer, wrong_answers)
-                VALUES (${categoryId}, ${questionText}, ${correctAnswer}, ${wrongAnswers})
+                INSERT INTO questions (category_id, question_text, correct_answer)
+                VALUES (${categoryId}, ${questionText}, ${correctAnswer})
             `;
 
-            alert("Question created successfully!");
-            onDone(); // Go back to lobby
+            alert("Question saved! The game will use other answers as distractors.");
+            onDone(); 
         } catch (error) {
             console.error("Error creating question:", error);
-            alert("Failed to save. Make sure all fields are filled.");
+            alert("Failed to save.");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleWrongAnswerChange = (index, value) => {
-        const newWrong = [...wrongAnswers];
-        newWrong[index] = value;
-        setWrongAnswers(newWrong);
-    };
-
     return (
-        <div style={{ maxWidth: '600px', margin: '0 auto', color: 'white', padding: '20px', backgroundColor: '#333', borderRadius: '10px' }}>
-            <h2>Create New Quiz Content</h2>
+        <div style={{ maxWidth: '500px', margin: '0 auto', color: 'white', padding: '20px', backgroundColor: '#333', borderRadius: '10px' }}>
+            <h2>Add New Question</h2>
             <form onSubmit={handleCreateQuestion}>
                 
-                {/* Category Selection */}
                 <div style={{ marginBottom: '20px' }}>
-                    <label>Choose Existing Category:</label>
+                    <label>Category:</label>
                     <select 
                         value={selectedCategoryId} 
                         onChange={(e) => setSelectedCategoryId(e.target.value)}
                         style={{ width: '100%', padding: '10px', marginTop: '5px' }}
                     >
-                        <option value="">-- Or Create New Below --</option>
+                        <option value="">-- Create New Category --</option>
                         {categories.map(cat => (
                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
                     </select>
 
-                    <p style={{ margin: '10px 0' }}>- OR -</p>
-
-                    <label>New Category Name:</label>
-                    <input 
-                        type="text" 
-                        value={newCategoryName} 
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="e.g., Science, History"
-                        style={{ width: '100%', padding: '10px', marginTop: '5px' }}
-                    />
+                    {!selectedCategoryId && (
+                        <input 
+                            type="text" 
+                            placeholder="New Category Name" 
+                            value={newCategoryName} 
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            style={{ width: '100%', padding: '10px', marginTop: '10px' }}
+                        />
+                    )}
                 </div>
 
-                <hr />
-
-                {/* Question Details */}
                 <div style={{ marginTop: '20px' }}>
                     <label>Question:</label>
                     <textarea 
                         value={questionText} 
                         onChange={(e) => setQuestionText(e.target.value)}
                         required
-                        style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                        style={{ width: '100%', padding: '10px', marginTop: '5px', height: '80px' }}
                     />
                 </div>
 
@@ -123,19 +115,6 @@ export default function QuizCreator({ user, onDone }) {
                         style={{ width: '100%', padding: '10px', marginTop: '5px' }}
                     />
                 </div>
-
-                {wrongAnswers.map((ans, i) => (
-                    <div key={i} style={{ marginTop: '10px' }}>
-                        <label style={{ color: '#dc3545' }}>Wrong Answer {i + 1}:</label>
-                        <input 
-                            type="text" 
-                            value={ans} 
-                            onChange={(e) => handleWrongAnswerChange(i, e.target.value)}
-                            required
-                            style={{ width: '100%', padding: '10px', marginTop: '5px' }}
-                        />
-                    </div>
-                ))}
 
                 <div style={{ marginTop: '30px', display: 'flex', gap: '10px' }}>
                     <button 
