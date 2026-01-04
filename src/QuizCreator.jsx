@@ -9,7 +9,6 @@ export default function QuizCreator({ user, onDone }) {
     const [correctAnswer, setCorrectAnswer] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Fetch ONLY this user's categories
     useEffect(() => {
         const fetchMyCategories = async () => {
             if (!user) return;
@@ -34,14 +33,23 @@ export default function QuizCreator({ user, onDone }) {
         try {
             let categoryId = selectedCategoryId;
 
-            // Create new category if needed
+            // FIX: Check if the category name exists for THIS user before inserting
             if (!categoryId && newCategoryName) {
-                const [newCat] = await sql`
-                    INSERT INTO categories (name, user_id) 
-                    VALUES (${newCategoryName}, ${user.id}) 
-                    RETURNING id
+                const existing = await sql`
+                    SELECT id FROM categories 
+                    WHERE name = ${newCategoryName} AND user_id = ${user.id}
                 `;
-                categoryId = newCat.id;
+
+                if (existing.length > 0) {
+                    categoryId = existing[0].id;
+                } else {
+                    const [newCat] = await sql`
+                        INSERT INTO categories (name, user_id) 
+                        VALUES (${newCategoryName}, ${user.id}) 
+                        RETURNING id
+                    `;
+                    categoryId = newCat.id;
+                }
             }
 
             if (!categoryId) {
@@ -50,17 +58,17 @@ export default function QuizCreator({ user, onDone }) {
                 return;
             }
 
-            // Save the question (No wrong answers stored!)
             await sql`
                 INSERT INTO questions (category_id, question_text, correct_answer)
                 VALUES (${categoryId}, ${questionText}, ${correctAnswer})
             `;
 
-            alert("Question saved! The game will use other answers as distractors.");
+            alert("Question saved!");
             onDone(); 
         } catch (error) {
             console.error("Error creating question:", error);
-            alert("Failed to save.");
+            // This alert was appearing because of the 'duplicate key' error
+            alert("Failed to save. This category name might be taken or database is busy.");
         } finally {
             setLoading(false);
         }
@@ -70,7 +78,6 @@ export default function QuizCreator({ user, onDone }) {
         <div style={{ maxWidth: '500px', margin: '0 auto', color: 'white', padding: '20px', backgroundColor: '#333', borderRadius: '10px' }}>
             <h2>Add New Question</h2>
             <form onSubmit={handleCreateQuestion}>
-                
                 <div style={{ marginBottom: '20px' }}>
                     <label>Category:</label>
                     <select 
@@ -90,7 +97,7 @@ export default function QuizCreator({ user, onDone }) {
                             placeholder="New Category Name" 
                             value={newCategoryName} 
                             onChange={(e) => setNewCategoryName(e.target.value)}
-                            style={{ width: '100%', padding: '10px', marginTop: '10px' }}
+                            style={{ width: '100%', padding: '10px', marginTop: '10px', color: 'black' }}
                         />
                     )}
                 </div>
@@ -101,7 +108,7 @@ export default function QuizCreator({ user, onDone }) {
                         value={questionText} 
                         onChange={(e) => setQuestionText(e.target.value)}
                         required
-                        style={{ width: '100%', padding: '10px', marginTop: '5px', height: '80px' }}
+                        style={{ width: '100%', padding: '10px', marginTop: '5px', height: '80px', color: 'black' }}
                     />
                 </div>
 
@@ -112,7 +119,7 @@ export default function QuizCreator({ user, onDone }) {
                         value={correctAnswer} 
                         onChange={(e) => setCorrectAnswer(e.target.value)}
                         required
-                        style={{ width: '100%', padding: '10px', marginTop: '5px' }}
+                        style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
                     />
                 </div>
 
