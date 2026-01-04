@@ -8,14 +8,15 @@ export default function QuizCreator({ user, onDone }) {
     
     // Question State
     const [questionText, setQuestionText] = useState('');
-    const [isQuestionImage, setIsQuestionImage] = useState(false);
+    const [isQueImg, setIsQueImg] = useState(false);
     
     // Answer State
     const [correctAnswer, setCorrectAnswer] = useState('');
-    const [isAnswerImage, setIsAnswerImage] = useState(false);
+    const [isAnsImg, setIsAnsImg] = useState(false);
     
     const [loading, setLoading] = useState(false);
 
+    // Load only the categories owned by the logged-in user
     useEffect(() => {
         const fetchMyCategories = async () => {
             if (!user) return;
@@ -33,31 +34,42 @@ export default function QuizCreator({ user, onDone }) {
         fetchMyCategories();
     }, [user]);
 
-    const handleCreateQuestion = async (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            let categoryId = selectedCategoryId;
+            let catId = selectedCategoryId;
 
-            if (!categoryId && newCategoryName) {
+            // 1. Logic for New Category
+            if (!catId && newCategoryName.trim()) {
+                // Check if user already owns a category with this name to avoid duplicates
                 const existing = await sql`
                     SELECT id FROM categories 
-                    WHERE name = ${newCategoryName} AND user_id = ${user.id}
+                    WHERE name = ${newCategoryName.trim()} AND user_id = ${user.id}
                 `;
+
                 if (existing.length > 0) {
-                    categoryId = existing[0].id;
+                    catId = existing[0].id;
                 } else {
                     const [newCat] = await sql`
                         INSERT INTO categories (name, user_id) 
-                        VALUES (${newCategoryName}, ${user.id}) 
+                        VALUES (${newCategoryName.trim()}, ${user.id}) 
                         RETURNING id
                     `;
-                    categoryId = newCat.id;
+                    catId = newCat.id;
                 }
             }
 
-            // Save logic: If it's an image, we put it in the image column
+            if (!catId) {
+                alert("Please select a category or type a new name.");
+                setLoading(false);
+                return;
+            }
+
+            // 2. Save the Question
+            // We store the input in 'image_url' if the checkbox is checked, 
+            // otherwise we store it in 'question_text'.
             await sql`
                 INSERT INTO questions (
                     category_id, 
@@ -67,64 +79,82 @@ export default function QuizCreator({ user, onDone }) {
                     answer_image_url
                 )
                 VALUES (
-                    ${categoryId}, 
-                    ${isQuestionImage ? 'Visual Question' : questionText}, 
-                    ${isQuestionImage ? questionText : null}, 
-                    ${isAnswerImage ? 'Visual Answer' : correctAnswer}, 
-                    ${isAnswerImage ? correctAnswer : null}
+                    ${catId}, 
+                    ${isQueImg ? 'Visual Question' : questionText}, 
+                    ${isQueImg ? questionText : null}, 
+                    ${isAnsImg ? 'Visual Answer' : correctAnswer}, 
+                    ${isAnsImg ? correctAnswer : null}
                 )
             `;
 
-            alert("Question saved!");
-            onDone(); 
+            alert("Question saved successfully!");
+            onDone(); // Return to Lobby
         } catch (error) {
-            console.error(error);
-            alert("Failed to save.");
+            console.error("Critical Save Error:", error);
+            alert("Error: Could not save. Make sure your database has 'image_url' and 'answer_image_url' columns.");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ maxWidth: '500px', margin: '0 auto', color: 'white', padding: '20px', backgroundColor: '#333', borderRadius: '10px' }}>
-            <h2>Create Question</h2>
-            <form onSubmit={handleCreateQuestion}>
-                {/* Category Selection */}
-                <div style={{ marginBottom: '15px' }}>
-                    <label>Category:</label>
-                    <select value={selectedCategoryId} onChange={(e) => setSelectedCategoryId(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}>
-                        <option value="">-- New Category --</option>
-                        {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+        <div style={{ maxWidth: '500px', margin: '0 auto', color: 'white', padding: '20px', backgroundColor: '#333', borderRadius: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}>
+            <h2 style={{ textAlign: 'center', color: '#28a745' }}>Add New Question</h2>
+            <form onSubmit={handleSave}>
+                
+                {/* Category Group */}
+                <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>Target Category:</label>
+                    <select 
+                        value={selectedCategoryId} 
+                        onChange={(e) => setSelectedCategoryId(e.target.value)}
+                        style={{ width: '100%', padding: '10px', borderRadius: '5px', border: 'none', color: 'black' }}
+                    >
+                        <option value="">-- Create New Category --</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
                     </select>
+
                     {!selectedCategoryId && (
-                        <input type="text" placeholder="Category Name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '10px', color: 'black' }} />
+                        <input 
+                            type="text" 
+                            placeholder="Type new category name..." 
+                            value={newCategoryName} 
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            style={{ width: '100%', padding: '10px', marginTop: '10px', borderRadius: '5px', border: 'none', color: 'black' }}
+                        />
                     )}
                 </div>
 
-                {/* Question Section */}
-                <div style={{ marginBottom: '15px', border: '1px solid #555', padding: '10px', borderRadius: '5px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <hr style={{ border: '0.5px solid #555', margin: '20px 0' }} />
+
+                {/* Question Group */}
+                <div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#444', borderRadius: '5px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <label>Question:</label>
-                        <label style={{ fontSize: '0.8em' }}>
-                            <input type="checkbox" checked={isQuestionImage} onChange={() => {setIsQuestionImage(!isQuestionImage); setQuestionText('');}} /> Is this an image?
+                        <label style={{ fontSize: '0.85em', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={isQueImg} onChange={() => { setIsQueImg(!isQueImg); setQuestionText(''); }} /> Is this an Image?
                         </label>
                     </div>
                     <textarea 
                         value={questionText} 
                         onChange={(e) => setQuestionText(e.target.value)}
                         required
-                        placeholder={isQuestionImage ? "Paste Image URL here..." : "Type your question here..."}
-                        style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
+                        placeholder={isQueImg ? "Paste Image URL here..." : "Type question text..."}
+                        style={{ width: '100%', padding: '10px', marginTop: '10px', borderRadius: '5px', height: '80px', color: 'black' }}
                     />
-                    {isQuestionImage && questionText && <img src={questionText} alt="Preview" style={{ width: '100%', marginTop: '10px', maxHeight: '100px', objectFit: 'contain' }} />}
+                    {isQueImg && questionText && (
+                        <img src={questionText} alt="Preview" style={{ width: '100%', marginTop: '10px', borderRadius: '5px', maxHeight: '150px', objectFit: 'contain' }} />
+                    )}
                 </div>
 
-                {/* Answer Section */}
-                <div style={{ marginBottom: '15px', border: '1px solid #555', padding: '10px', borderRadius: '5px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                {/* Answer Group */}
+                <div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#444', borderRadius: '5px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <label style={{ color: '#28a745' }}>Correct Answer:</label>
-                        <label style={{ fontSize: '0.8em' }}>
-                            <input type="checkbox" checked={isAnswerImage} onChange={() => {setIsAnswerImage(!isAnswerImage); setCorrectAnswer('');}} /> Is this an image?
+                        <label style={{ fontSize: '0.85em', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={isAnsImg} onChange={() => { setIsAnsImg(!isAnsImg); setCorrectAnswer(''); }} /> Is this an Image?
                         </label>
                     </div>
                     <input 
@@ -132,17 +162,28 @@ export default function QuizCreator({ user, onDone }) {
                         value={correctAnswer} 
                         onChange={(e) => setCorrectAnswer(e.target.value)}
                         required
-                        placeholder={isAnswerImage ? "Paste Image URL here..." : "Type the answer here..."}
-                        style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
+                        placeholder={isAnsImg ? "Paste Image URL here..." : "Type the answer..."}
+                        style={{ width: '100%', padding: '10px', marginTop: '10px', borderRadius: '5px', border: 'none', color: 'black' }}
                     />
-                    {isAnswerImage && correctAnswer && <img src={correctAnswer} alt="Preview" style={{ width: '100%', marginTop: '10px', maxHeight: '100px', objectFit: 'contain' }} />}
+                    {isAnsImg && correctAnswer && (
+                        <img src={correctAnswer} alt="Preview" style={{ width: '100%', marginTop: '10px', borderRadius: '5px', maxHeight: '150px', objectFit: 'contain' }} />
+                    )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                    <button type="submit" disabled={loading} style={{ flex: 1, padding: '12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-                        {loading ? 'Saving...' : 'Save'}
+                {/* Buttons */}
+                <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
+                    <button 
+                        type="submit" 
+                        disabled={loading}
+                        style={{ flex: 1, padding: '15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                        {loading ? 'Saving...' : 'Save Question'}
                     </button>
-                    <button type="button" onClick={onDone} style={{ flex: 1, padding: '12px', backgroundColor: '#666', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+                    <button 
+                        type="button" 
+                        onClick={onDone}
+                        style={{ flex: 1, padding: '15px', backgroundColor: '#666', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    >
                         Cancel
                     </button>
                 </div>

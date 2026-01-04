@@ -4,14 +4,16 @@ import sql from './db.jsx';
 export default function QuestionManager({ user, categoryId, onDone }) {
     const [questions, setQuestions] = useState([]);
     const [categoryName, setCategoryName] = useState('');
-    const [editingQuestion, setEditingQuestion] = useState(null);
+    const [editingQuestionId, setEditingQuestionId] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Edit Form State
-    const [editText, setEditText] = useState('');
-    const [isQueImg, setIsQueImg] = useState(false);
-    const [editAns, setEditAns] = useState('');
-    const [isAnsImg, setIsAnsImg] = useState(false);
+    // Form State for the question being edited
+    const [editForm, setEditForm] = useState({
+        text: '',
+        isQueImg: false,
+        ans: '',
+        isAnsImg: false
+    });
 
     useEffect(() => {
         fetchData();
@@ -40,62 +42,48 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                 await sql`UPDATE categories SET name = ${newName} WHERE id = ${categoryId} AND user_id = ${user.id}`;
                 setCategoryName(newName);
             } catch (err) {
-                alert("Name already exists.");
+                alert("This name is already taken.");
             }
         }
     };
 
-    // --- NEW DELETE CATEGORY LOGIC ---
     const handleDeleteCategory = async () => {
-        const confirmDelete = window.confirm(
-            `WARNING: This will delete the category "${categoryName}" and ALL questions inside it. This cannot be undone. Proceed?`
-        );
-
-        if (confirmDelete) {
+        if (window.confirm(`Delete "${categoryName}" and all its questions?`)) {
             try {
-                // 1. Delete questions first (Database requirement)
                 await sql`DELETE FROM questions WHERE category_id = ${categoryId}`;
-                // 2. Delete the category
                 await sql`DELETE FROM categories WHERE id = ${categoryId} AND user_id = ${user.id}`;
-                
-                alert("Category deleted successfully.");
-                onDone(); // Redirect back to Lobby
+                onDone();
             } catch (err) {
-                console.error("Delete error:", err);
-                alert("Failed to delete category.");
+                alert("Delete failed.");
             }
         }
     };
 
+    // When clicking "Edit", we populate the form state
     const startEdit = (q) => {
-        setEditingQuestion(q.id);
-        setIsQueImg(!!q.image_url);
-        setEditText(q.image_url || q.question_text);
-        setIsAnsImg(!!q.answer_image_url);
-        setEditAns(q.answer_image_url || q.correct_answer);
+        setEditingQuestionId(q.id);
+        setEditForm({
+            text: q.image_url || q.question_text,
+            isQueImg: !!q.image_url,
+            ans: q.answer_image_url || q.correct_answer,
+            isAnsImg: !!q.answer_image_url
+        });
     };
 
     const saveEdit = async (id) => {
         try {
             await sql`
                 UPDATE questions SET 
-                    question_text = ${isQueImg ? 'Visual Question' : editText},
-                    image_url = ${isQueImg ? editText : null},
-                    correct_answer = ${isAnsImg ? 'Visual Answer' : editAns},
-                    answer_image_url = ${isAnsImg ? editAns : null}
+                    question_text = ${editForm.isQueImg ? 'Visual Question' : editForm.text},
+                    image_url = ${editForm.isQueImg ? editForm.text : null},
+                    correct_answer = ${editForm.isAnsImg ? 'Visual Answer' : editForm.ans},
+                    answer_image_url = ${editForm.isAnsImg ? editForm.ans : null}
                 WHERE id = ${id}
             `;
-            setEditingQuestion(null);
+            setEditingQuestionId(null);
             fetchData();
         } catch (err) {
             alert("Save failed.");
-        }
-    };
-
-    const deleteQuestion = async (id) => {
-        if (window.confirm("Delete this question?")) {
-            await sql`DELETE FROM questions WHERE id = ${id}`;
-            fetchData();
         }
     };
 
@@ -103,59 +91,52 @@ export default function QuestionManager({ user, categoryId, onDone }) {
 
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto', color: 'white', backgroundColor: '#222', padding: '20px', borderRadius: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #444', paddingBottom: '15px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #444', paddingBottom: '15px' }}>
+                <h2>{categoryName}</h2>
                 <div>
-                    <h2 style={{ margin: 0 }}>Category: {categoryName}</h2>
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={handleRenameCategory} style={{ backgroundColor: '#007bff', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer' }}>
-                        Rename
-                    </button>
-                    <button onClick={handleDeleteCategory} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer' }}>
-                        Delete Category
-                    </button>
+                    <button onClick={handleRenameCategory} style={{ marginRight: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer' }}>Rename</button>
+                    <button onClick={handleDeleteCategory} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer' }}>Delete Category</button>
                 </div>
             </div>
 
             <div style={{ marginTop: '20px' }}>
-                {questions.length === 0 ? (
-                    <p style={{ textAlign: 'center', color: '#888' }}>No questions in this category yet.</p>
-                ) : (
-                    questions.map(q => (
-                        <div key={q.id} style={{ backgroundColor: '#333', padding: '15px', marginBottom: '10px', borderRadius: '5px', borderLeft: '5px solid #28a745' }}>
-                            {editingQuestion === q.id ? (
+                {questions.map(q => (
+                    <div key={q.id} style={{ backgroundColor: '#333', padding: '15px', marginBottom: '10px', borderRadius: '5px' }}>
+                        {editingQuestionId === q.id ? (
+                            <div>
+                                <label><input type="checkbox" checked={editForm.isQueImg} onChange={(e) => setEditForm({...editForm, isQueImg: e.target.checked})} /> Question is Image URL</label>
+                                <textarea 
+                                    value={editForm.text} 
+                                    onChange={(e) => setEditForm({...editForm, text: e.target.value})} 
+                                    style={{ width: '100%', margin: '10px 0', padding: '8px', color: 'black' }} 
+                                />
+                                
+                                <label><input type="checkbox" checked={editForm.isAnsImg} onChange={(e) => setEditForm({...editForm, isAnsImg: e.target.checked})} /> Answer is Image URL</label>
+                                <input 
+                                    value={editForm.ans} 
+                                    onChange={(e) => setEditForm({...editForm, ans: e.target.value})} 
+                                    style={{ width: '100%', margin: '10px 0', padding: '8px', color: 'black' }} 
+                                />
+                                
+                                <button onClick={() => saveEdit(q.id)} style={{ backgroundColor: '#28a745', color: 'white', border: 'none', padding: '8px 20px', marginRight: '10px', cursor: 'pointer' }}>Save</button>
+                                <button onClick={() => setEditingQuestionId(null)} style={{ backgroundColor: '#666', color: 'white', border: 'none', padding: '8px 20px', cursor: 'pointer' }}>Cancel</button>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <div>
-                                    <label><input type="checkbox" checked={isQueImg} onChange={() => setIsQueImg(!isQueImg)} /> Question is Image</label>
-                                    <textarea value={editText} onChange={(e) => setEditText(e.target.value)} style={{ width: '100%', margin: '10px 0', padding: '8px' }} />
-                                    
-                                    <label><input type="checkbox" checked={isAnsImg} onChange={() => setIsAnsImg(!isAnsImg)} /> Answer is Image</label>
-                                    <input value={editAns} onChange={(e) => setEditAns(e.target.value)} style={{ width: '100%', margin: '10px 0', padding: '8px' }} />
-                                    
-                                    <div style={{ marginTop: '10px' }}>
-                                        <button onClick={() => saveEdit(q.id)} style={{ backgroundColor: '#28a745', color: 'white', border: 'none', padding: '8px 20px', marginRight: '10px', borderRadius: '4px', cursor: 'pointer' }}>Save Changes</button>
-                                        <button onClick={() => setEditingQuestion(null)} style={{ backgroundColor: '#666', color: 'white', border: 'none', padding: '8px 20px', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
-                                    </div>
+                                    <p><strong>Q:</strong> {q.image_url ? "[Image Question]" : q.question_text}</p>
+                                    <p><strong>A:</strong> {q.answer_image_url ? "[Image Answer]" : q.correct_answer}</p>
                                 </div>
-                            ) : (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div>
-                                        <p style={{ margin: '5px 0' }}><strong>Q:</strong> {q.image_url ? <span style={{color: '#17a2b8'}}>[Image]</span> : q.question_text}</p>
-                                        <p style={{ margin: '5px 0' }}><strong>A:</strong> {q.answer_image_url ? <span style={{color: '#17a2b8'}}>[Image]</span> : q.correct_answer}</p>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        <button onClick={() => startEdit(q)} style={{ background: 'none', border: '1px solid #ffc107', color: '#ffc107', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
-                                        <button onClick={() => deleteQuestion(q.id)} style={{ background: 'none', border: '1px solid #dc3545', color: '#dc3545', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Delete</button>
-                                    </div>
+                                <div>
+                                    <button onClick={() => startEdit(q)} style={{ border: '1px solid #ffc107', color: '#ffc107', background: 'none', padding: '5px 10px', marginRight: '5px', cursor: 'pointer' }}>Edit</button>
+                                    <button onClick={async () => { if(window.confirm("Delete?")) { await sql`DELETE FROM questions WHERE id = ${q.id}`; fetchData(); }}} style={{ border: '1px solid #dc3545', color: '#dc3545', background: 'none', padding: '5px 10px', cursor: 'pointer' }}>Delete</button>
                                 </div>
-                            )}
-                        </div>
-                    ))
-                )}
+                            </div>
+                        )}
+                    </div>
+                ))}
             </div>
-
-            <button onClick={onDone} style={{ marginTop: '30px', width: '100%', padding: '12px', backgroundColor: '#444', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
-                Back to Lobby
-            </button>
+            <button onClick={onDone} style={{ width: '100%', marginTop: '20px', padding: '10px' }}>Back to Lobby</button>
         </div>
     );
 }
