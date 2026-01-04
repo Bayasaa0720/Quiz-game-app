@@ -5,7 +5,7 @@ import QuizGame from './QuizGame.jsx';
 import QuizCreator from './QuizCreator.jsx'; 
 import QuestionManager from './QuestionManager.jsx'; 
 import Login from './Login.jsx';
-import Register from './Register.jsx';
+import Register from './register.jsx';
 
 function App() {
     // Possible views: 'LOGIN', 'REGISTER', 'MAIN', 'QUIZ', 'CREATE_QUESTION', 'MANAGE_QUESTIONS'
