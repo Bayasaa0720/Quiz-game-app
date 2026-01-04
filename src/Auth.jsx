@@ -1,94 +1,58 @@
-import { useState } from 'react'
-import { supabase } from './supabaseClient.jsx'
+import { useState } from 'react';
+import sql from './db.jsx'; // Your Neon connection
 
-export default function Auth() {
-  const [loading, setLoading] = useState(false)
-  const [username, setUsername] = useState('') // Changed from email to username
-  const [password, setPassword] = useState('')
+export default function Auth({ onLoginSuccess }) {
+    const [isRegistering, setIsRegistering] = useState(false); // Toggle state
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
 
-  // Helper function to make a fake email from the username
-  const getEmail = (user) => {
-    return `${user}@quizgame.com`
-  }
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (isRegistering) {
+                // REGISTER logic
+                await sql`INSERT INTO users (username, password) VALUES (${username}, ${password})`;
+                alert("Account created! You can now log in.");
+                setIsRegistering(false); // Switch back to login
+            } else {
+                // LOGIN logic
+                const user = await sql`SELECT * FROM users WHERE username = ${username} AND password = ${password}`;
+                if (user.length > 0) {
+                    onLoginSuccess(user[0]); // Send user data to App.jsx
+                } else {
+                    alert("Invalid username or password");
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            alert("An error occurred. Username might already exist.");
+        }
+    };
 
-  const handleLogin = async (event) => {
-    event.preventDefault()
-    setLoading(true)
-    
-    // We add the fake domain behind the scenes
-    const { error } = await supabase.auth.signInWithPassword({ 
-        email: getEmail(username), 
-        password 
-    })
-
-    if (error) {
-      alert(error.message)
-    } else {
-       // No alert needed, we will handle the "Success" state in the next step
-       console.log("Logged in!")
-    }
-    setLoading(false)
-  }
-
-  const handleSignUp = async (event) => {
-    event.preventDefault()
-    setLoading(true)
-
-    const { error } = await supabase.auth.signUp({ 
-        email: getEmail(username), 
-        password 
-    })
-
-    if (error) {
-      alert(error.message)
-    } else {
-      alert('Account created! You are now logged in.')
-    }
-    setLoading(false)
-  }
-
-  return (
-    <div style={{ maxWidth: '400px', margin: '0 auto', textAlign: 'center' }}>
-      <h2>Quiz Game Login</h2>
-      <p>Enter a username and password to play</p>
-      
-      <form>
-        <div style={{ marginBottom: '10px' }}>
-          <input
-            type="text" // Changed to text
-            placeholder="Choose a Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            style={{ padding: '10px', width: '100%' }}
-          />
+    return (
+        <div style={{ maxWidth: '400px', margin: '50px auto', textAlign: 'center' }}>
+            <h2>{isRegistering ? 'Create Account' : 'Login'}</h2>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <input 
+                    placeholder="Username" 
+                    value={username} 
+                    onChange={(e) => setUsername(e.target.value)} 
+                    required 
+                />
+                <input 
+                    type="password" 
+                    placeholder="Password" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    required 
+                />
+                <button type="submit" style={{ backgroundColor: '#007bff', color: 'white', padding: '10px' }}>
+                    {isRegistering ? 'Sign Up' : 'Log In'}
+                </button>
+            </form>
+            <p onClick={() => setIsRegistering(!isRegistering)} style={{ cursor: 'pointer', color: 'blue', marginTop: '15px' }}>
+                {isRegistering ? 'Already have an account? Log in' : 'New user? Create an account'}
+            </p>
         </div>
-        
-        <div style={{ marginBottom: '20px' }}>
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ padding: '10px', width: '100%' }}
-          />
-        </div>
-
-        <button 
-            onClick={handleLogin} 
-            disabled={loading}
-            style={{ marginRight: '10px', padding: '10px 20px' }}
-        >
-          {loading ? 'Loading...' : 'Log In'}
-        </button>
-
-        <button 
-            onClick={handleSignUp} 
-            disabled={loading}
-            style={{ padding: '10px 20px' }}
-        >
-          Sign Up
-        </button>
-      </form>
-    </div>
-  )
+    );
 }
