@@ -96,7 +96,7 @@ export default function QuizCreator({ user, onDone }) {
 
     return (
         <div style={{ maxWidth: '500px', margin: '0 auto', color: 'white', padding: '20px', backgroundColor: '#333', borderRadius: '10px' }}>
-            <button onClick={onDone} style={{ width: '100px', marginTop: '20px', padding: '10px' }}>Back</button>
+            <button onClick={onDone} style={{ width: '200px', padding: '10px'}}>Return to lobby</button>
             <h2 style={{ textAlign: 'center', color: '#28a745' }}>New Question</h2>
             <form onSubmit={handleSave}>
                 
@@ -119,7 +119,7 @@ export default function QuizCreator({ user, onDone }) {
                             placeholder="New Category Name" 
                             value={newCategoryName} 
                             onChange={(e) => setNewCategoryName(e.target.value)}
-                            style={{ width: '100%', padding: '10px', marginTop: '10px', borderRadius: '5px', color: 'black' }}
+                            style={{ width: '95%', padding: '10px', marginTop: '10px', borderRadius: '5px', color: 'black' }}
                         />
                     )}
                 </div>
@@ -136,7 +136,7 @@ export default function QuizCreator({ user, onDone }) {
                         onChange={(e) => setQuestionContent(e.target.value)}
                         required
                         placeholder={isQueImg ? "Paste Image Link..." : "Type Question..."}
-                        style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
+                        style={{ width: '95%', padding: '10px', marginTop: '5px', color: 'black' }}
                     />
                 </div>
 
@@ -153,7 +153,7 @@ export default function QuizCreator({ user, onDone }) {
                         onChange={(e) => setAnswerContent(e.target.value)}
                         required
                         placeholder={isAnsImg ? "Paste Image Link..." : "Type Answer..."}
-                        style={{ width: '100%', padding: '10px', marginTop: '5px', color: 'black' }}
+                        style={{ width: '95%', padding: '10px', marginTop: '5px', color: 'black' }}
                     />
                 </div>
 
