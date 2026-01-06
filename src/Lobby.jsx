@@ -78,7 +78,7 @@ export default function Lobby({
             <select 
                 onChange={handleCategorySelect} 
                 value={selectedCategory || ''}
-                style={{ padding: '10px', fontSize: '1em', marginBottom: '20px', border: '1px solid #ccc', borderRadius: '5px' }}
+                style={{ padding: '10px', fontSize: '1em', marginBottom: '20px', border: '1px solid #ccc', borderRadius: '5px', width: '280px', textAlign: 'center' }}
             >
                 <option value="">-- Select a Category --</option>
                 {categories.map(cat => (
@@ -89,15 +89,15 @@ export default function Lobby({
             </select>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-                <button onClick={handleStartQuiz} style={{ ...buttonStyle, backgroundColor: '#007bff' }}>
+                <button onClick={handleStartQuiz} style={{ ...buttonStyle, backgroundColor: '#007bff', width: '280px'}}>
                     Start Quiz
                 </button>
 
-                <button onClick={onCreateQuestion} style={{ ...buttonStyle, backgroundColor: '#28a745' }}>
+                <button onClick={onCreateQuestion} style={{ ...buttonStyle, backgroundColor: '#28a745', width: '280px' }}>
                     Create New Question
                 </button>
                 
-                <button onClick={handleManageQuestions} style={{ ...buttonStyle, backgroundColor: '#FFC107' }}>
+                <button onClick={handleManageQuestions} style={{ ...buttonStyle, backgroundColor: '#FFC107', width: '280px' }}>
                     Manage Questions (Edit/Delete)
                 </button>
 
