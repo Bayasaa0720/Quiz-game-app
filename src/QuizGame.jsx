@@ -103,7 +103,7 @@ export default function QuizGame({ categoryId, onDone }) {
                                 borderRadius: '8px', 
                                 cursor: isAnswered ? 'default' : 'pointer',
                                 border: 'none',
-                                transition: '0.3s'
+                                transition: 'background-color 0.3s ease-in'
                             }}
                         >
                             {opt.img ? (
