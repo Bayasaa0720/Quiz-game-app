@@ -193,7 +193,7 @@ function App() {
     const showSidebars = VIEWS_WITH_SIDEBARS.has(view);
     const inBattle = view === 'BATTLE';
     const characterSize = inBattle && viewportWidth <= 860
-        ? (viewportWidth <= 420 ? 34 : 44)
+        ? (viewportWidth <= 420 ? 50 : 62)
         : undefined;
 
     return (
