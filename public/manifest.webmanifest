@@ -1,0 +1,15 @@
+{
+  "name": "Tower Climb — Flashcard Quiz Master",
+  "short_name": "Tower Climb",
+  "description": "Асуулт хариултаар цамхаг өгсдөг RPG сургалтын тоглоом",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#10161d",
+  "theme_color": "#10161d",
+  "icons": [
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
