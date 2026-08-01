@@ -14,6 +14,7 @@ export default function TowerSelect({
     onCreateQuestion,
     onManageQuestions,
     onOpenAdminDashboard,
+    onOpenLeaderboard,
 }) {
     const [categories, setCategories] = useState([]);
     const [floorCounts, setFloorCounts] = useState({});
@@ -142,6 +143,10 @@ export default function TowerSelect({
                     <Button variant="ghost" onClick={handleManage}>Асуулт удирдах (Засах/Устгах)</Button>
                 </div>
             </Card>
+
+            <Button variant="ghost" onClick={onOpenLeaderboard} className="leaderboard-link">
+                🏆 Тэргүүлэгчид
+            </Button>
 
             {isAdmin && (
                 <Button variant="ghost" onClick={onOpenAdminDashboard} className="admin-dashboard-link">

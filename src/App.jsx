@@ -5,6 +5,7 @@ import Battle from './Battle.jsx';
 import QuizCreator from './QuizCreator.jsx';
 import QuestionManager from './QuestionManager.jsx';
 import AdminDashboard from './AdminDashboard.jsx';
+import Leaderboard from './Leaderboard.jsx';
 import Login from './Login.jsx';
 import Register from './register.jsx';
 import { supabase } from './supabaseClient.jsx';
@@ -148,10 +149,13 @@ function App() {
                 onCreateQuestion={() => setView('CREATE_QUESTION')}
                 onManageQuestions={handleManageQuestions}
                 onOpenAdminDashboard={() => setView('ADMIN_DASHBOARD')}
+                onOpenLeaderboard={() => setView('LEADERBOARD')}
             />
         );
     } else if (view === 'ADMIN_DASHBOARD') {
         currentViewContent = <AdminDashboard onBack={goToTowerSelect} />;
+    } else if (view === 'LEADERBOARD') {
+        currentViewContent = <Leaderboard user={user} onBack={goToTowerSelect} />;
     } else if (view === 'TOWER_VIEW' && selectedCategory) {
         currentViewContent = (
             <TowerView
