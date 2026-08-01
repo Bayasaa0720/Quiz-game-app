@@ -1,0 +1,29 @@
+.sprite-viewport {
+    width: var(--size);
+    height: var(--size);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sprite-character {
+    flex: none;
+    width: var(--frame-size);
+    height: var(--frame-size);
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    background-size: calc(var(--frames) * var(--frame-size)) var(--frame-size);
+    image-rendering: pixelated;
+    animation: sprite-play var(--duration) steps(var(--steps)) var(--iteration);
+    animation-fill-mode: forwards;
+}
+
+.sprite-flip {
+    transform: scaleX(-1);
+}
+
+@keyframes sprite-play {
+    from { background-position-x: 0; }
+    to { background-position-x: var(--end-offset); }
+}

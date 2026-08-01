@@ -1,113 +1,243 @@
-import { useState } from 'react';
-import './App.css';
-import Lobby from './Lobby'; 
-import QuizGame from './QuizGame.jsx'; 
-import QuizCreator from './QuizCreator.jsx'; 
-import QuestionManager from './QuestionManager.jsx'; 
+import { useState, useEffect } from 'react';
+import TowerSelect from './TowerSelect.jsx';
+import TowerView from './TowerView.jsx';
+import Battle from './Battle.jsx';
+import QuizCreator from './QuizCreator.jsx';
+import QuestionManager from './QuestionManager.jsx';
+import AdminDashboard from './AdminDashboard.jsx';
 import Login from './Login.jsx';
 import Register from './register.jsx';
+import { supabase } from './supabaseClient.jsx';
+import { ModalProvider } from './components/ModalProvider.jsx';
+import { PlayerSidebar, EnemySidebar } from './components/Sidebar.jsx';
+import { isMuted, toggleMuted } from './sound.js';
+
+// Possible views: 'LOGIN', 'REGISTER', 'TOWER_SELECT', 'TOWER_VIEW', 'BATTLE', 'CREATE_QUESTION', 'MANAGE_QUESTIONS'
+const VIEWS_WITH_SIDEBARS = new Set(['TOWER_SELECT', 'TOWER_VIEW', 'BATTLE']);
+const IDLE_BATTLE_STATE = {
+    playerHP: 100,
+    playerMaxHP: 100,
+    enemyHP: 100,
+    enemyMaxHP: 100,
+    playerAnim: 'idle',
+    enemyAnim: 'idle',
+    playerTick: 0,
+    enemyTick: 0,
+    enemyVariant: 'orc',
+};
 
 function App() {
-    // Possible views: 'LOGIN', 'REGISTER', 'MAIN', 'QUIZ', 'CREATE_QUESTION', 'MANAGE_QUESTIONS'
-    const [view, setView] = useState('LOGIN'); 
+    const [view, setView] = useState('LOGIN');
     const [user, setUser] = useState(null);
-    const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState(null); // { id, name }
+    const [selectedFloor, setSelectedFloor] = useState(null);
+    const [battleState, setBattleState] = useState(IDLE_BATTLE_STATE);
+    const [checkingSession, setCheckingSession] = useState(true);
+    const [sfxMuted, setSfxMuted] = useState(isMuted());
+
+    const handleToggleMute = () => {
+        setSfxMuted(toggleMuted());
+    };
+
+    // Restore session on refresh, and stay in sync with auth state (e.g. token refresh, sign-out elsewhere)
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+                setUser(session.user);
+                setView('TOWER_SELECT');
+            }
+            setCheckingSession(false);
+        });
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session?.user) {
+                setUser(session.user);
+            } else {
+                setUser(null);
+                setView('LOGIN');
+                setSelectedCategory(null);
+                setSelectedFloor(null);
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     // --- Auth Handlers ---
     const handleLoginSuccess = (userData) => {
         setUser(userData);
-        setView('MAIN');
+        setView('TOWER_SELECT');
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
         setUser(null);
         setView('LOGIN');
-        setSelectedCategoryId(null);
+        setSelectedCategory(null);
+        setSelectedFloor(null);
     };
 
     // --- Navigation Handlers ---
-    const handleStartQuiz = (categoryId) => {
-        setSelectedCategoryId(categoryId);
-        setView('QUIZ');
+    const goToTowerSelect = () => {
+        setView('TOWER_SELECT');
+        setSelectedCategory(null);
+        setSelectedFloor(null);
+        setBattleState(IDLE_BATTLE_STATE);
+    };
+
+    const handleSelectTower = (categoryId, categoryName) => {
+        setSelectedCategory({ id: categoryId, name: categoryName });
+        setView('TOWER_VIEW');
+    };
+
+    const handleSelectFloor = (floor) => {
+        setSelectedFloor(floor);
+        setView('BATTLE');
+    };
+
+    const handleFloorCleared = () => {
+        setSelectedFloor(null);
+        setBattleState(IDLE_BATTLE_STATE);
+        setView('TOWER_VIEW');
+    };
+
+    const handleDefeated = () => {
+        goToTowerSelect();
     };
 
     const handleManageQuestions = (categoryId) => {
-        setSelectedCategoryId(categoryId);
+        setSelectedCategory({ id: categoryId, name: '' });
         setView('MANAGE_QUESTIONS');
     };
 
-    const goBackToLobby = () => {
-        setView('MAIN');
-        setSelectedCategoryId(null);
-    };
+    if (checkingSession) {
+        return (
+            <div className="app-shell">
+                <div className="app-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+                    <p>Ачааллаж байна...</p>
+                </div>
+            </div>
+        );
+    }
 
     // --- View Controller ---
     let currentViewContent;
 
     if (view === 'LOGIN') {
         currentViewContent = (
-            <Login 
-                onLoginSuccess={handleLoginSuccess} 
-                onSwitchToRegister={() => setView('REGISTER')} 
+            <Login
+                onLoginSuccess={handleLoginSuccess}
+                onSwitchToRegister={() => setView('REGISTER')}
             />
         );
     } else if (view === 'REGISTER') {
         currentViewContent = (
-            <Register 
-                onRegistrationSuccess={() => setView('LOGIN')} 
-                onSwitchToLogin={() => setView('LOGIN')} 
+            <Register
+                onRegistrationSuccess={(loggedInUser) => loggedInUser ? handleLoginSuccess(loggedInUser) : setView('LOGIN')}
+                onSwitchToLogin={() => setView('LOGIN')}
             />
         );
-    } else if (view === 'MAIN') {
+    } else if (view === 'TOWER_SELECT') {
         currentViewContent = (
-            <Lobby 
-                user={user} // Filter categories by user ID
+            <TowerSelect
+                user={user}
                 onLogout={handleLogout}
-                onStartQuiz={handleStartQuiz}
+                onSelectTower={handleSelectTower}
                 onCreateQuestion={() => setView('CREATE_QUESTION')}
                 onManageQuestions={handleManageQuestions}
+                onOpenAdminDashboard={() => setView('ADMIN_DASHBOARD')}
             />
         );
-    } else if (view === 'QUIZ' && selectedCategoryId) {
+    } else if (view === 'ADMIN_DASHBOARD') {
+        currentViewContent = <AdminDashboard onBack={goToTowerSelect} />;
+    } else if (view === 'TOWER_VIEW' && selectedCategory) {
         currentViewContent = (
-            <QuizGame 
-                categoryId={selectedCategoryId} 
-                onDone={goBackToLobby} 
+            <TowerView
+                user={user}
+                categoryId={selectedCategory.id}
+                categoryName={selectedCategory.name}
+                onSelectFloor={handleSelectFloor}
+                onBack={goToTowerSelect}
+            />
+        );
+    } else if (view === 'BATTLE' && selectedCategory && selectedFloor) {
+        currentViewContent = (
+            <Battle
+                user={user}
+                categoryId={selectedCategory.id}
+                floor={selectedFloor}
+                onFloorCleared={handleFloorCleared}
+                onDefeated={handleDefeated}
+                onHpChange={setBattleState}
             />
         );
     } else if (view === 'CREATE_QUESTION') {
         currentViewContent = (
-            <QuizCreator 
+            <QuizCreator
                 user={user} // Assign user_id to new categories/questions
-                onDone={goBackToLobby} 
+                onDone={goToTowerSelect}
             />
         );
-    } else if (view === 'MANAGE_QUESTIONS' && selectedCategoryId) {
+    } else if (view === 'MANAGE_QUESTIONS' && selectedCategory) {
         currentViewContent = (
-            <QuestionManager 
+            <QuestionManager
                 user={user} // Secure editing: only owner can edit
-                categoryId={selectedCategoryId} 
-                onDone={goBackToLobby} 
+                categoryId={selectedCategory.id}
+                onDone={goToTowerSelect}
             />
         );
     }
 
-    return (
-        <div className="App" style={{ minHeight: '100vh', backgroundColor: '#1a1a1a', color: 'white' }}>
-            <header style={{ padding: '20px', textAlign: 'center', borderBottom: '1px solid #333', backgroundColor: '#111' }}>
-                <h1 style={{ margin: 0, color: '#28a745' }}>Flashcard Quiz Master</h1>
-                {user && (
-                    <div style={{ marginTop: '10px', fontSize: '0.9em' }}>
-                        <span style={{ color: '#aaa' }}>User: </span>
-                        <strong style={{ color: '#28a745' }}>{user.username}</strong>
-                    </div>
-                )}
-            </header>
+    const showSidebars = VIEWS_WITH_SIDEBARS.has(view);
+    const inBattle = view === 'BATTLE';
 
-            <main style={{ padding: '20px' }}>
-                {currentViewContent}
-            </main>
-        </div>
+    return (
+        <ModalProvider>
+            <div className="app-shell">
+                <header className="app-header">
+                    <h1>Flashcard Quiz Master</h1>
+                    <div className="app-header-right">
+                        {user && (
+                            <p className="app-user">Хэрэглэгч: <strong>{user.email}</strong></p>
+                        )}
+                        <button
+                            type="button"
+                            className="mute-toggle"
+                            onClick={handleToggleMute}
+                            aria-label={sfxMuted ? 'Дуу асаах' : 'Дуу хаах'}
+                            title={sfxMuted ? 'Дуу асаах' : 'Дуу хаах'}
+                        >
+                            {sfxMuted ? '🔇' : '🔊'}
+                        </button>
+                    </div>
+                </header>
+
+                <div className={`app-body${showSidebars ? ' with-sidebars' : ''}`}>
+                    {showSidebars && (
+                        <PlayerSidebar
+                            hp={inBattle ? battleState.playerHP : undefined}
+                            maxHp={inBattle ? battleState.playerMaxHP : undefined}
+                            note={inBattle ? undefined : 'Тулаан эхлээгүй байна'}
+                            anim={inBattle ? battleState.playerAnim : 'idle'}
+                            tick={inBattle ? battleState.playerTick : 0}
+                        />
+                    )}
+                    <main className="app-main">
+                        {currentViewContent}
+                    </main>
+                    {showSidebars && (
+                        <EnemySidebar
+                            hp={inBattle ? battleState.enemyHP : undefined}
+                            maxHp={inBattle ? battleState.enemyMaxHP : undefined}
+                            note={inBattle ? undefined : 'Тулаан эхлээгүй байна'}
+                            anim={inBattle ? battleState.enemyAnim : 'idle'}
+                            tick={inBattle ? battleState.enemyTick : 0}
+                            variant={inBattle ? battleState.enemyVariant : 'orc'}
+                        />
+                    )}
+                </div>
+            </div>
+        </ModalProvider>
     );
 }
 

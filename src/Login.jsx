@@ -1,39 +1,44 @@
 import { useState } from 'react';
-import sql from './db.jsx'; //
+import { supabase } from './supabaseClient.jsx';
+import Card from './components/Card.jsx';
+import Button from './components/Button.jsx';
+import { useModal } from './components/modalContext.js';
+import './AuthForm.css';
 
 export default function Login({ onLoginSuccess, onSwitchToRegister }) {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const modal = useModal();
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setLoading(true);
         try {
-            const user = await sql`
-                SELECT * FROM users 
-                WHERE username = ${username} AND password = ${password}
-            `;
-            if (user.length > 0) {
-                onLoginSuccess(user[0]);
-            } else {
-                alert("Invalid username or password");
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) {
+                await modal.alert(error.message, { title: 'Нэвтрэх амжилтгүй' });
+                return;
             }
-        } catch (err) {
-            console.error(err);
-            alert("Login failed. Check your database connection.");
+            onLoginSuccess(data.user);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div style={{ maxWidth: '300px', margin: '50px auto', textAlign: 'center' }}>
-            <h2>Login</h2>
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
-                <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
-                <button type="submit" style={{ backgroundColor: '#007bff', color: 'white', padding: '10px', border: 'none', borderRadius: '5px' }}>Log In</button>
+        <Card className="auth-page">
+            <h2>Нэвтрэх</h2>
+            <form onSubmit={handleLogin} className="auth-form">
+                <input type="email" placeholder="Имэйл" value={email} onChange={e => setEmail(e.target.value)} required />
+                <input type="password" placeholder="Нууц үг" value={password} onChange={e => setPassword(e.target.value)} required />
+                <Button type="submit" disabled={loading} fullWidth>
+                    {loading ? 'Нэвтэрч байна...' : 'Нэвтрэх'}
+                </Button>
             </form>
-            <p style={{ marginTop: '15px' }}>
-                Need an account? <span onClick={onSwitchToRegister} style={{ color: 'blue', cursor: 'pointer' }}>Register here</span>
+            <p className="auth-switch">
+                Акаунт байхгүй юу? <span onClick={onSwitchToRegister}>Энд бүртгүүлнэ үү</span>
             </p>
-        </div>
+        </Card>
     );
 }

@@ -1,36 +1,50 @@
 import { useState } from 'react';
-import sql from './db.jsx'; //
+import { supabase } from './supabaseClient.jsx';
+import Card from './components/Card.jsx';
+import Button from './components/Button.jsx';
+import { useModal } from './components/modalContext.js';
+import './AuthForm.css';
 
 export default function Register({ onRegistrationSuccess, onSwitchToLogin }) {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const modal = useModal();
 
     const handleRegister = async (e) => {
         e.preventDefault();
+        setLoading(true);
         try {
-            await sql`
-                INSERT INTO users (username, password) 
-                VALUES (${username}, ${password})
-            `;
-            alert("Account created successfully!");
-            onRegistrationSuccess();
-        } catch (err) {
-            console.error(err);
-            alert("Username already exists or database error.");
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            if (error) {
+                await modal.alert(error.message, { title: 'Бүртгэл амжилтгүй' });
+                return;
+            }
+            if (!data.session) {
+                await modal.alert('Акаунт үүслээ! Нэвтрэхээсээ өмнө имэйлээ шалгаж баталгаажуулна уу.', { title: 'Амжилттай' });
+                onRegistrationSuccess(null);
+            } else {
+                await modal.alert('Акаунт амжилттай үүслээ!', { title: 'Амжилттай' });
+                onRegistrationSuccess(data.user);
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div style={{ maxWidth: '300px', margin: '50px auto', textAlign: 'center' }}>
-            <h2>Create Account</h2>
-            <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
-                <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
-                <button type="submit" style={{ backgroundColor: '#28a745', color: 'white', padding: '10px', border: 'none', borderRadius: '5px' }}>Sign Up</button>
+        <Card className="auth-page">
+            <h2>Акаунт үүсгэх</h2>
+            <form onSubmit={handleRegister} className="auth-form">
+                <input type="email" placeholder="Имэйл" value={email} onChange={e => setEmail(e.target.value)} required />
+                <input type="password" placeholder="Нууц үг" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+                <Button variant="success" type="submit" disabled={loading} fullWidth>
+                    {loading ? 'Үүсгэж байна...' : 'Бүртгүүлэх'}
+                </Button>
             </form>
-            <p style={{ marginTop: '15px' }}>
-                Already have an account? <span onClick={onSwitchToLogin} style={{ color: 'blue', cursor: 'pointer' }}>Login here</span>
+            <p className="auth-switch">
+                Акаунт байгаа юу? <span onClick={onSwitchToLogin}>Энд нэвтэрнэ үү</span>
             </p>
-        </div>
+        </Card>
     );
 }

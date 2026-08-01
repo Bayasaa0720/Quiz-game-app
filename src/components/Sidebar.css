@@ -1,0 +1,38 @@
+.sidebar-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+}
+
+.sidebar-character-frame {
+    width: 96px;
+    height: 96px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-panel);
+    border: 2px solid var(--border-strong);
+}
+
+.sidebar-name {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.92rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-panel .progress-bar {
+    width: 100%;
+}
+
+.sidebar-note {
+    margin: 4px 0 0;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}

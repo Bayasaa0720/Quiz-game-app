@@ -1,0 +1,18 @@
+.error-boundary {
+    max-width: 480px;
+    margin: 15vh auto 0;
+    text-align: center;
+    padding: 32px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.error-boundary h2 {
+    margin-bottom: 12px;
+}
+
+.error-boundary p {
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}

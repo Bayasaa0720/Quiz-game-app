@@ -1,0 +1,97 @@
+.tower-view {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.tower-view-back {
+    margin-bottom: 10px;
+}
+
+.tower-view h2 {
+    text-align: center;
+    color: var(--accent);
+    margin-bottom: 8px;
+}
+
+.tower-view-walker {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.tower-view-admin-action {
+    display: block;
+    margin: 0 auto 18px;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.tower-empty {
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.floor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.floor-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.floor-index {
+    font-weight: 700;
+    min-width: 90px;
+}
+
+.floor-state {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.floor-current {
+    cursor: pointer;
+    border-color: var(--accent);
+    transition: transform 0.15s ease;
+}
+
+.floor-current:hover {
+    transform: translateY(-2px);
+}
+
+.floor-cleared {
+    opacity: 0.75;
+}
+
+.floor-locked {
+    opacity: 0.5;
+}
+
+.difficulty-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.difficulty-badge.difficulty-easy {
+    background: color-mix(in srgb, var(--success) 25%, transparent);
+    color: var(--success);
+}
+
+.difficulty-badge.difficulty-normal {
+    background: color-mix(in srgb, var(--accent) 25%, transparent);
+    color: var(--accent);
+}
+
+.difficulty-badge.difficulty-hard {
+    background: color-mix(in srgb, var(--danger) 25%, transparent);
+    color: var(--danger);
+}

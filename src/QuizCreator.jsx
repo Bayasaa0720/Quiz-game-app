@@ -1,30 +1,38 @@
 import { useState, useEffect } from 'react';
-import sql from './db.jsx'; 
+import { supabase } from './supabaseClient.jsx';
+import Card from './components/Card.jsx';
+import Button from './components/Button.jsx';
+import { useModal } from './components/modalContext.js';
+import './QuizCreator.css';
 
 export default function QuizCreator({ user, onDone }) {
     const [categories, setCategories] = useState([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState('');
     const [newCategoryName, setNewCategoryName] = useState('');
-    
+
     // Question State
     const [questionContent, setQuestionContent] = useState('');
     const [isQueImg, setIsQueImg] = useState(false);
-    
+
     // Answer State
     const [answerContent, setAnswerContent] = useState('');
     const [isAnsImg, setIsAnsImg] = useState(false);
-    
+
+    const [difficulty, setDifficulty] = useState('normal');
+
     const [loading, setLoading] = useState(false);
+    const modal = useModal();
 
     useEffect(() => {
         const fetchCats = async () => {
             if (!user) return;
             try {
-                const data = await sql`
-                    SELECT id, name FROM categories 
-                    WHERE user_id = ${user.id} 
-                    ORDER BY name ASC
-                `;
+                const { data, error } = await supabase
+                    .from('categories')
+                    .select('id, name')
+                    .eq('user_id', user.id)
+                    .order('name', { ascending: true });
+                if (error) throw error;
                 setCategories(data);
             } catch (err) {
                 console.error("Error fetching categories:", err);
@@ -42,129 +50,126 @@ export default function QuizCreator({ user, onDone }) {
 
             // 1. Handle Category Creation
             if (!catId && newCategoryName.trim()) {
-                const existing = await sql`
-                    SELECT id FROM categories 
-                    WHERE name = ${newCategoryName.trim()} AND user_id = ${user.id}
-                `;
+                const { data: existing, error: findErr } = await supabase
+                    .from('categories')
+                    .select('id')
+                    .eq('name', newCategoryName.trim())
+                    .eq('user_id', user.id);
+                if (findErr) throw findErr;
 
                 if (existing.length > 0) {
                     catId = existing[0].id;
                 } else {
-                    const [newCat] = await sql`
-                        INSERT INTO categories (name, user_id) 
-                        VALUES (${newCategoryName.trim()}, ${user.id}) 
-                        RETURNING id
-                    `;
+                    const { data: newCat, error: insertCatErr } = await supabase
+                        .from('categories')
+                        .insert({ name: newCategoryName.trim(), user_id: user.id })
+                        .select('id')
+                        .single();
+                    if (insertCatErr) throw insertCatErr;
                     catId = newCat.id;
                 }
             }
 
             if (!catId) {
-                alert("Please select or create a category.");
+                await modal.alert('Ангилал сонгох эсвэл шинээр үүсгэнэ үү.');
                 setLoading(false);
                 return;
             }
 
-            // 2. Insert into the NEW table structure
-            // Matching: question_text, image_url, correct_answer, answer_image_url
-            await sql`
-                INSERT INTO questions (
-                    category_id, 
-                    question_text, 
-                    image_url, 
-                    correct_answer, 
-                    answer_image_url
-                )
-                VALUES (
-                    ${catId}, 
-                    ${isQueImg ? 'Visual Question' : questionContent}, 
-                    ${isQueImg ? questionContent : null}, 
-                    ${isAnsImg ? 'Visual Answer' : answerContent}, 
-                    ${isAnsImg ? answerContent : null}
-                )
-            `;
+            // 2. Insert the question, matching the quiz_items table columns
+            const { error: insertQErr } = await supabase.from('quiz_items').insert({
+                category_id: catId,
+                user_id: user.id,
+                quiz_question: isQueImg ? 'Visual Question' : questionContent,
+                question_image_url: isQueImg ? questionContent : null,
+                correct_answer: isAnsImg ? 'Visual Answer' : answerContent,
+                answer_image_url: isAnsImg ? answerContent : null,
+                difficulty,
+            });
+            if (insertQErr) throw insertQErr;
 
-            alert("Saved successfully!");
-            onDone(); 
+            await modal.alert('Амжилттай хадгалагдлаа!');
+            onDone();
         } catch (error) {
             console.error("Database Error:", error);
-            alert("Save failed. Please ensure you ran the 'DROP TABLE' and 'CREATE TABLE' commands in Neon.");
+            await modal.alert('Хадгалахад алдаа гарлаа: ' + error.message);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ maxWidth: '500px', margin: '0 auto', color: 'white', padding: '20px', backgroundColor: '#333', borderRadius: '10px' }}>
-            <button onClick={onDone} style={{ width: '200px', padding: '10px'}}>Return to lobby</button>
-            <h2 style={{ textAlign: 'center', color: '#28a745' }}>New Question</h2>
+        <Card className="creator-page">
+            <Button variant="ghost" onClick={onDone} className="creator-back">← Lobby руу буцах</Button>
+            <h2>Шинэ асуулт</h2>
             <form onSubmit={handleSave}>
-                
-                <div style={{ marginBottom: '20px' }}>
-                    <label>Category:</label>
-                    <select 
-                        value={selectedCategoryId} 
+
+                <div className="form-field">
+                    <label>Ангилал:</label>
+                    <select
+                        value={selectedCategoryId}
                         onChange={(e) => setSelectedCategoryId(e.target.value)}
-                        style={{ width: '100%', padding: '10px', borderRadius: '5px', color: 'black', marginTop: '5px' }}
                     >
-                        <option value="">-- Create New --</option>
+                        <option value="">-- Шинээр үүсгэх --</option>
                         {categories.map(cat => (
                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
                     </select>
 
                     {!selectedCategoryId && (
-                        <input 
-                            type="text" 
-                            placeholder="New Category Name" 
-                            value={newCategoryName} 
+                        <input
+                            type="text"
+                            className="new-category-input"
+                            placeholder="Шинэ ангиллын нэр"
+                            value={newCategoryName}
                             onChange={(e) => setNewCategoryName(e.target.value)}
-                            style={{ width: '95%', padding: '10px', marginTop: '10px', borderRadius: '5px', color: 'black' }}
                         />
                     )}
                 </div>
 
-                <div style={{ marginBottom: '20px', padding: '10px', border: '1px solid #555' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <label>Question:</label>
-                        <label style={{ fontSize: '0.8em' }}>
-                            <input type="checkbox" checked={isQueImg} onChange={() => {setIsQueImg(!isQueImg); setQuestionContent('');}} /> Use Image URL
-                        </label>
+                <div className="form-field-box">
+                    <div className="field-row">
+                        <label>Асуулт:</label>
+                        <label><input type="checkbox" checked={isQueImg} onChange={() => { setIsQueImg(!isQueImg); setQuestionContent(''); }} /> <span>Зурган URL ашиглах</span></label>
                     </div>
-                    <textarea 
-                        value={questionContent} 
+                    <textarea
+                        value={questionContent}
                         onChange={(e) => setQuestionContent(e.target.value)}
                         required
-                        placeholder={isQueImg ? "Paste Image Link..." : "Type Question..."}
-                        style={{ width: '95%', padding: '10px', marginTop: '5px', color: 'black' }}
+                        placeholder={isQueImg ? "Зургийн линк оруулна уу..." : "Асуултаа бичнэ үү..."}
                     />
                 </div>
 
-                <div style={{ marginBottom: '20px', padding: '10px', border: '1px solid #555' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <label>Correct Answer:</label>
-                        <label style={{ fontSize: '0.8em' }}>
-                            <input type="checkbox" checked={isAnsImg} onChange={() => {setIsAnsImg(!isAnsImg); setAnswerContent('');}} /> Use Image URL
-                        </label>
+                <div className="form-field-box">
+                    <div className="field-row">
+                        <label>Зөв хариулт:</label>
+                        <label><input type="checkbox" checked={isAnsImg} onChange={() => { setIsAnsImg(!isAnsImg); setAnswerContent(''); }} /> <span>Зурган URL ашиглах</span></label>
                     </div>
-                    <input 
-                        type="text" 
-                        value={answerContent} 
+                    <input
+                        type="text"
+                        value={answerContent}
                         onChange={(e) => setAnswerContent(e.target.value)}
                         required
-                        placeholder={isAnsImg ? "Paste Image Link..." : "Type Answer..."}
-                        style={{ width: '95%', padding: '10px', marginTop: '5px', color: 'black' }}
+                        placeholder={isAnsImg ? "Зургийн линк оруулна уу..." : "Хариултаа бичнэ үү..."}
                     />
                 </div>
 
-                <button 
-                    type="submit" 
-                    disabled={loading}
-                    style={{ width: '100%', padding: '15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-                >
-                    {loading ? 'Saving...' : 'Save Question'}
-                </button>
+                <div className="form-field">
+                    <label>Хэцүү зэрэг:</label>
+                    <select
+                        value={difficulty}
+                        onChange={(e) => setDifficulty(e.target.value)}
+                    >
+                        <option value="easy">Хялбар</option>
+                        <option value="normal">Дунд</option>
+                        <option value="hard">Хэцүү</option>
+                    </select>
+                </div>
+
+                <Button type="submit" variant="success" disabled={loading} fullWidth>
+                    {loading ? 'Хадгалж байна...' : 'Асуулт хадгалах'}
+                </Button>
             </form>
-        </div>
+        </Card>
     );
 }

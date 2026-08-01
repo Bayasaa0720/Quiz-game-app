@@ -1,18 +1,28 @@
 import { useState, useEffect } from 'react';
-import sql from './db.jsx';
+import { supabase } from './supabaseClient.jsx';
+import Card from './components/Card.jsx';
+import Button from './components/Button.jsx';
+import { useModal } from './components/modalContext.js';
+import './QuestionManager.css';
+
+const DIFFICULTY_LABELS = { easy: 'Хялбар', normal: 'Дунд', hard: 'Хэцүү' };
 
 export default function QuestionManager({ user, categoryId, onDone }) {
     const [questions, setQuestions] = useState([]);
     const [categoryName, setCategoryName] = useState('');
     const [editingQuestionId, setEditingQuestionId] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [searchText, setSearchText] = useState('');
+    const [difficultyFilter, setDifficultyFilter] = useState('all');
+    const modal = useModal();
 
     // Form State for the question being edited
     const [editForm, setEditForm] = useState({
         text: '',
         isQueImg: false,
         ans: '',
-        isAnsImg: false
+        isAnsImg: false,
+        difficulty: 'normal',
     });
 
     useEffect(() => {
@@ -23,10 +33,19 @@ export default function QuestionManager({ user, categoryId, onDone }) {
         if (!user || !categoryId) return;
         setLoading(true);
         try {
-            const [cat] = await sql`SELECT name FROM categories WHERE id = ${categoryId} AND user_id = ${user.id}`;
+            const { data: cat } = await supabase
+                .from('categories')
+                .select('name')
+                .eq('id', categoryId)
+                .eq('user_id', user.id)
+                .maybeSingle();
             if (cat) setCategoryName(cat.name);
 
-            const data = await sql`SELECT * FROM questions WHERE category_id = ${categoryId}`;
+            const { data, error } = await supabase
+                .from('quiz_items')
+                .select('*')
+                .eq('category_id', categoryId);
+            if (error) throw error;
             setQuestions(data);
         } catch (err) {
             console.error("Fetch error:", err);
@@ -36,25 +55,33 @@ export default function QuestionManager({ user, categoryId, onDone }) {
     };
 
     const handleRenameCategory = async () => {
-        const newName = prompt("Enter new category name:", categoryName);
+        const newName = await modal.prompt('Шинэ ангиллын нэрийг оруулна уу:', categoryName, { title: 'Ангилал нэрлэх' });
         if (newName && newName !== categoryName) {
-            try {
-                await sql`UPDATE categories SET name = ${newName} WHERE id = ${categoryId} AND user_id = ${user.id}`;
+            const { error } = await supabase
+                .from('categories')
+                .update({ name: newName })
+                .eq('id', categoryId)
+                .eq('user_id', user.id);
+            if (error) {
+                await modal.alert('Энэ нэр аль хэдийн ашиглагдсан байна.');
+            } else {
                 setCategoryName(newName);
-            } catch (err) {
-                alert("This name is already taken.");
             }
         }
     };
 
     const handleDeleteCategory = async () => {
-        if (window.confirm(`Delete "${categoryName}" and all its questions?`)) {
+        const confirmed = await modal.confirm(`«${categoryName}» ангилал болон түүний бүх асуултыг устгах уу?`, { title: 'Ангилал устгах' });
+        if (confirmed) {
             try {
-                await sql`DELETE FROM questions WHERE category_id = ${categoryId}`;
-                await sql`DELETE FROM categories WHERE id = ${categoryId} AND user_id = ${user.id}`;
+                const { error: delQErr } = await supabase.from('quiz_items').delete().eq('category_id', categoryId);
+                if (delQErr) throw delQErr;
+                const { error: delCErr } = await supabase.from('categories').delete().eq('id', categoryId).eq('user_id', user.id);
+                if (delCErr) throw delCErr;
                 onDone();
             } catch (err) {
-                alert("Delete failed.");
+                console.error("Delete failed:", err);
+                await modal.alert('Устгахад алдаа гарлаа.');
             }
         }
     };
@@ -63,80 +90,135 @@ export default function QuestionManager({ user, categoryId, onDone }) {
     const startEdit = (q) => {
         setEditingQuestionId(q.id);
         setEditForm({
-            text: q.image_url || q.question_text,
-            isQueImg: !!q.image_url,
+            text: q.question_image_url || q.quiz_question,
+            isQueImg: !!q.question_image_url,
             ans: q.answer_image_url || q.correct_answer,
-            isAnsImg: !!q.answer_image_url
+            isAnsImg: !!q.answer_image_url,
+            difficulty: q.difficulty || 'normal',
         });
     };
 
     const saveEdit = async (id) => {
-        try {
-            await sql`
-                UPDATE questions SET 
-                    question_text = ${editForm.isQueImg ? 'Visual Question' : editForm.text},
-                    image_url = ${editForm.isQueImg ? editForm.text : null},
-                    correct_answer = ${editForm.isAnsImg ? 'Visual Answer' : editForm.ans},
-                    answer_image_url = ${editForm.isAnsImg ? editForm.ans : null}
-                WHERE id = ${id}
-            `;
+        const { error } = await supabase
+            .from('quiz_items')
+            .update({
+                quiz_question: editForm.isQueImg ? 'Visual Question' : editForm.text,
+                question_image_url: editForm.isQueImg ? editForm.text : null,
+                correct_answer: editForm.isAnsImg ? 'Visual Answer' : editForm.ans,
+                answer_image_url: editForm.isAnsImg ? editForm.ans : null,
+                difficulty: editForm.difficulty,
+            })
+            .eq('id', id)
+            .eq('user_id', user.id);
+        if (error) {
+            await modal.alert('Хадгалахад алдаа гарлаа.');
+        } else {
             setEditingQuestionId(null);
             fetchData();
-        } catch (err) {
-            alert("Save failed.");
         }
     };
 
-    if (loading) return <div style={{color:'white', textAlign:'center'}}>Loading...</div>;
+    const handleDeleteQuestion = async (id) => {
+        const confirmed = await modal.confirm('Энэ асуултыг устгах уу?', { title: 'Асуулт устгах' });
+        if (confirmed) {
+            await supabase.from('quiz_items').delete().eq('id', id).eq('user_id', user.id);
+            fetchData();
+        }
+    };
+
+    if (loading) return <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>;
+
+    const filteredQuestions = questions.filter(q => {
+        const matchesDifficulty = difficultyFilter === 'all' || (q.difficulty || 'normal') === difficultyFilter;
+        const haystack = `${q.quiz_question || ''} ${q.correct_answer || ''}`.toLowerCase();
+        const matchesSearch = haystack.includes(searchText.trim().toLowerCase());
+        return matchesDifficulty && matchesSearch;
+    });
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', color: 'white', backgroundColor: '#222', padding: '20px', borderRadius: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #444', paddingBottom: '15px' }}>
+        <Card className="manager-page">
+            <div className="manager-header">
                 <h2>{categoryName}</h2>
-                <div>
-                    <button onClick={handleRenameCategory} style={{ marginRight: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer' }}>Rename</button>
-                    <button onClick={handleDeleteCategory} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer' }}>Delete Category</button>
+                <div className="manager-header-actions">
+                    <Button onClick={handleRenameCategory}>Нэр солих</Button>
+                    <Button variant="danger" onClick={handleDeleteCategory}>Ангилал устгах</Button>
                 </div>
             </div>
 
-            <div style={{ marginTop: '20px' }}>
-                {questions.map(q => (
-                    <div key={q.id} style={{ backgroundColor: '#333', padding: '15px', marginBottom: '10px', borderRadius: '5px' }}>
+            <div className="manager-filters">
+                <input
+                    className="manager-search"
+                    type="text"
+                    placeholder="Асуулт/хариултаар хайх..."
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                />
+                <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)}>
+                    <option value="all">Бүх түвшин</option>
+                    <option value="easy">Хялбар</option>
+                    <option value="normal">Дунд</option>
+                    <option value="hard">Хэцүү</option>
+                </select>
+            </div>
+
+            {filteredQuestions.length === 0 && (
+                <p className="manager-empty">Тохирох асуулт олдсонгүй.</p>
+            )}
+
+            <div>
+                {filteredQuestions.map(q => (
+                    <div key={q.id} className="question-item">
                         {editingQuestionId === q.id ? (
                             <div>
-                                <label><input type="checkbox" checked={editForm.isQueImg} onChange={(e) => setEditForm({...editForm, isQueImg: e.target.checked})} /> Question is Image URL</label>
-                                <textarea 
-                                    value={editForm.text} 
-                                    onChange={(e) => setEditForm({...editForm, text: e.target.value})} 
-                                    style={{ width: '100%', margin: '10px 0', padding: '8px', color: 'black' }} 
+                                <label><input type="checkbox" checked={editForm.isQueImg} onChange={(e) => setEditForm({ ...editForm, isQueImg: e.target.checked })} /> Асуулт зурган URL</label>
+                                <textarea
+                                    className="question-edit-field"
+                                    value={editForm.text}
+                                    onChange={(e) => setEditForm({ ...editForm, text: e.target.value })}
                                 />
-                                
-                                <label><input type="checkbox" checked={editForm.isAnsImg} onChange={(e) => setEditForm({...editForm, isAnsImg: e.target.checked})} /> Answer is Image URL</label>
-                                <input 
-                                    value={editForm.ans} 
-                                    onChange={(e) => setEditForm({...editForm, ans: e.target.value})} 
-                                    style={{ width: '100%', margin: '10px 0', padding: '8px', color: 'black' }} 
+
+                                <label><input type="checkbox" checked={editForm.isAnsImg} onChange={(e) => setEditForm({ ...editForm, isAnsImg: e.target.checked })} /> Хариулт зурган URL</label>
+                                <input
+                                    className="question-edit-field"
+                                    value={editForm.ans}
+                                    onChange={(e) => setEditForm({ ...editForm, ans: e.target.value })}
                                 />
-                                
-                                <button onClick={() => saveEdit(q.id)} style={{ backgroundColor: '#28a745', color: 'white', border: 'none', padding: '8px 20px', marginRight: '10px', cursor: 'pointer' }}>Save</button>
-                                <button onClick={() => setEditingQuestionId(null)} style={{ backgroundColor: '#666', color: 'white', border: 'none', padding: '8px 20px', cursor: 'pointer' }}>Cancel</button>
+
+                                <label>Хэцүү зэрэг:</label>
+                                <select
+                                    className="question-edit-field"
+                                    value={editForm.difficulty}
+                                    onChange={(e) => setEditForm({ ...editForm, difficulty: e.target.value })}
+                                >
+                                    <option value="easy">Хялбар</option>
+                                    <option value="normal">Дунд</option>
+                                    <option value="hard">Хэцүү</option>
+                                </select>
+
+                                <div className="question-edit-actions">
+                                    <Button variant="success" onClick={() => saveEdit(q.id)}>Хадгалах</Button>
+                                    <Button variant="ghost" onClick={() => setEditingQuestionId(null)}>Цуцлах</Button>
+                                </div>
                             </div>
                         ) : (
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <div className="question-item-view">
                                 <div>
-                                    <p><strong>Q:</strong> {q.image_url ? "[Image Question]" : q.question_text}</p>
-                                    <p><strong>A:</strong> {q.answer_image_url ? "[Image Answer]" : q.correct_answer}</p>
+                                    <p><strong>А:</strong> {q.question_image_url ? "[Зурган асуулт]" : q.quiz_question}</p>
+                                    <p><strong>Х:</strong> {q.answer_image_url ? "[Зурган хариулт]" : q.correct_answer}</p>
+                                    <span className={`difficulty-badge difficulty-${q.difficulty || 'normal'}`}>
+                                        {DIFFICULTY_LABELS[q.difficulty] || 'Дунд'}
+                                    </span>
                                 </div>
-                                <div>
-                                    <button onClick={() => startEdit(q)} style={{ border: '1px solid #ffc107', color: '#ffc107', background: 'none', padding: '5px 10px', marginRight: '5px', cursor: 'pointer' }}>Edit</button>
-                                    <button onClick={async () => { if(window.confirm("Delete?")) { await sql`DELETE FROM questions WHERE id = ${q.id}`; fetchData(); }}} style={{ border: '1px solid #dc3545', color: '#dc3545', background: 'none', padding: '5px 10px', cursor: 'pointer' }}>Delete</button>
+                                <div className="question-item-actions">
+                                    <Button variant="ghost" onClick={() => startEdit(q)}>Засах</Button>
+                                    <Button variant="danger" onClick={() => handleDeleteQuestion(q.id)}>Устгах</Button>
                                 </div>
                             </div>
                         )}
                     </div>
                 ))}
             </div>
-            <button onClick={onDone} style={{ width: '100%', marginTop: '20px', padding: '10px' }}>Back to Lobby</button>
-        </div>
+            <Button variant="ghost" onClick={onDone} className="manager-footer">← Lobby руу буцах</Button>
+        </Card>
     );
 }

@@ -1,0 +1,33 @@
+.progress-bar-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.progress-bar-track {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.progress-bar-accent {
+    background: var(--accent);
+}
+
+.progress-bar-success {
+    background: var(--success);
+}
+
+.progress-bar-danger {
+    background: var(--danger);
+}

@@ -1,0 +1,65 @@
+.creator-page {
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.creator-page h2 {
+    text-align: center;
+    color: var(--accent);
+    margin: 16px 0;
+}
+
+.creator-back {
+    margin-bottom: 4px;
+}
+
+.form-field {
+    margin-bottom: 18px;
+}
+
+.form-field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.form-field select,
+.form-field input[type="text"],
+.form-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-panel);
+    color: var(--text);
+    font-size: 0.95rem;
+}
+
+.form-field textarea {
+    resize: vertical;
+    min-height: 70px;
+}
+
+.form-field-box {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 18px;
+}
+
+.form-field-box .field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.field-row label span {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.new-category-input {
+    margin-top: 10px;
+}
