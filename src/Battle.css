@@ -82,3 +82,41 @@
         grid-template-columns: 1fr;
     }
 }
+
+@media (max-width: 420px) {
+    .battle-page {
+        padding: 0 2px;
+    }
+
+    .battle-progress {
+        font-size: 0.78rem;
+        margin-bottom: 4px;
+    }
+
+    .battle-question img {
+        max-height: 130px;
+    }
+
+    .battle-question h2 {
+        font-size: 1.15rem;
+        margin: 6px 0;
+    }
+
+    .battle-options {
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .battle-option {
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+
+    .battle-option img {
+        max-height: 44px;
+    }
+
+    .battle-next {
+        margin-top: 14px;
+    }
+}

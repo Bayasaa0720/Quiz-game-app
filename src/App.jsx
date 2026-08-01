@@ -11,6 +11,7 @@ import { supabase } from './supabaseClient.jsx';
 import { ModalProvider } from './components/ModalProvider.jsx';
 import { PlayerSidebar, EnemySidebar } from './components/Sidebar.jsx';
 import { isMuted, toggleMuted } from './sound.js';
+import { useViewportWidth } from './lib/useViewportWidth.js';
 
 // Possible views: 'LOGIN', 'REGISTER', 'TOWER_SELECT', 'TOWER_VIEW', 'BATTLE', 'CREATE_QUESTION', 'MANAGE_QUESTIONS'
 const VIEWS_WITH_SIDEBARS = new Set(['TOWER_SELECT', 'TOWER_VIEW', 'BATTLE']);
@@ -34,6 +35,7 @@ function App() {
     const [battleState, setBattleState] = useState(IDLE_BATTLE_STATE);
     const [checkingSession, setCheckingSession] = useState(true);
     const [sfxMuted, setSfxMuted] = useState(isMuted());
+    const viewportWidth = useViewportWidth();
 
     const handleToggleMute = () => {
         setSfxMuted(toggleMuted());
@@ -190,6 +192,9 @@ function App() {
 
     const showSidebars = VIEWS_WITH_SIDEBARS.has(view);
     const inBattle = view === 'BATTLE';
+    const characterSize = inBattle && viewportWidth <= 860
+        ? (viewportWidth <= 420 ? 34 : 44)
+        : undefined;
 
     return (
         <ModalProvider>
@@ -212,7 +217,7 @@ function App() {
                     </div>
                 </header>
 
-                <div className={`app-body${showSidebars ? ' with-sidebars' : ''}`}>
+                <div className={`app-body${showSidebars ? ' with-sidebars' : ''}${inBattle ? ' in-battle' : ''}`}>
                     {showSidebars && (
                         <PlayerSidebar
                             hp={inBattle ? battleState.playerHP : undefined}
@@ -220,6 +225,7 @@ function App() {
                             note={inBattle ? undefined : 'Тулаан эхлээгүй байна'}
                             anim={inBattle ? battleState.playerAnim : 'idle'}
                             tick={inBattle ? battleState.playerTick : 0}
+                            size={characterSize}
                         />
                     )}
                     <main className="app-main">
@@ -233,6 +239,7 @@ function App() {
                             anim={inBattle ? battleState.enemyAnim : 'idle'}
                             tick={inBattle ? battleState.enemyTick : 0}
                             variant={inBattle ? battleState.enemyVariant : 'orc'}
+                            size={characterSize}
                         />
                     )}
                 </div>

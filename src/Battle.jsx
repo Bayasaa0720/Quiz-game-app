@@ -12,6 +12,8 @@ import './Battle.css';
 const PLAYER_START_HP = 3;
 const DAMAGE_TO_ENEMY = 10;
 const DAMAGE_TO_PLAYER = 1;
+// Matches (frames / fps) of the attack/hurt sheets in PlayerCharacter/EnemyCharacter, plus a small buffer.
+const ANIM_RETURN_TO_IDLE_MS = { attack: 450, hurt: 360 };
 
 export default function Battle({ user, categoryId, floor, onFloorCleared, onDefeated, onHpChange }) {
     const [questions, setQuestions] = useState([]);
@@ -29,7 +31,16 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
     const [playerTick, setPlayerTick] = useState(0);
     const [enemyTick, setEnemyTick] = useState(0);
     const resultSoundPlayed = useRef(false);
+    const playerAnimTimeout = useRef(null);
+    const enemyAnimTimeout = useRef(null);
     const variant = enemyVariant(floor.floor_index);
+
+    useEffect(() => {
+        return () => {
+            clearTimeout(playerAnimTimeout.current);
+            clearTimeout(enemyAnimTimeout.current);
+        };
+    }, []);
 
     const generateOptions = useCallback((currentQ, pool) => {
         const correct = { text: currentQ.correct_answer, img: currentQ.answer_image_url, isCorrect: true };
@@ -109,6 +120,10 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
             setEnemyAnim('hurt');
             setEnemyTick(t => t + 1);
             setEnemyHP(hp => clampDamage(hp, DAMAGE_TO_ENEMY));
+            clearTimeout(playerAnimTimeout.current);
+            playerAnimTimeout.current = setTimeout(() => setPlayerAnim('idle'), ANIM_RETURN_TO_IDLE_MS.attack);
+            clearTimeout(enemyAnimTimeout.current);
+            enemyAnimTimeout.current = setTimeout(() => setEnemyAnim('idle'), ANIM_RETURN_TO_IDLE_MS.hurt);
         } else {
             playWrongHit();
             setEnemyAnim('attack');
@@ -116,6 +131,10 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
             setPlayerAnim('hurt');
             setPlayerTick(t => t + 1);
             setPlayerHP(hp => clampDamage(hp, DAMAGE_TO_PLAYER));
+            clearTimeout(enemyAnimTimeout.current);
+            enemyAnimTimeout.current = setTimeout(() => setEnemyAnim('idle'), ANIM_RETURN_TO_IDLE_MS.attack);
+            clearTimeout(playerAnimTimeout.current);
+            playerAnimTimeout.current = setTimeout(() => setPlayerAnim('idle'), ANIM_RETURN_TO_IDLE_MS.hurt);
         }
     };
 

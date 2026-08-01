@@ -40,8 +40,13 @@ body,
   height: 100%;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
   font-family: "Segoe UI", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
@@ -68,7 +73,7 @@ button {
 }
 
 .app-header {
-  height: var(--header-height);
+  min-height: var(--header-height);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -88,6 +93,9 @@ button {
 .app-header .app-user {
   font-size: 0.85rem;
   color: var(--text-muted);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .app-header .app-user strong {
@@ -163,5 +171,75 @@ button {
   .app-sidebar.right {
     border-bottom: none;
     border-top: 1px solid var(--border);
+  }
+
+  /* Battle screen: keep player/enemy stacked top & bottom like other screens,
+     but compress each into a slim horizontal strip (icon + name + HP bar in
+     one row) instead of a tall vertical block, so the fight fits on one
+     screen without scrolling. */
+  .app-body.in-battle .app-sidebar {
+    padding: 6px 12px;
+    border: none;
+  }
+
+  .app-body.in-battle .sidebar-panel {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+  }
+
+  .app-body.in-battle .sidebar-character-frame {
+    width: 48px;
+    height: 48px;
+    flex: none;
+  }
+
+  .app-body.in-battle .sidebar-name {
+    font-size: 0.72rem;
+    flex: 0 0 auto;
+    max-width: 30%;
+  }
+
+  .app-body.in-battle .sidebar-panel .progress-bar {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .app-body.in-battle .progress-bar-label {
+    font-size: 0.62rem;
+    margin-bottom: 2px;
+  }
+
+  .app-body.in-battle .progress-bar-track {
+    height: 7px;
+  }
+
+  .app-body.in-battle .app-main {
+    padding: 10px 14px 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-body.in-battle .sidebar-character-frame {
+    width: 40px;
+    height: 40px;
+  }
+
+  .app-body.in-battle .sidebar-name {
+    display: none;
+  }
+
+  .app-header {
+    padding: 6px 12px;
+    min-height: auto;
+  }
+
+  .app-header h1 {
+    font-size: 1.15rem;
+  }
+
+  .app-header .app-user {
+    font-size: 0.72rem;
   }
 }
