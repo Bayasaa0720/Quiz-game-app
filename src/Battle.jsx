@@ -44,6 +44,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
 
     const generateOptions = useCallback((currentQ, pool) => {
         const correct = { text: currentQ.correct_answer, img: currentQ.answer_image_url, isCorrect: true };
+        const displayValue = (q) => q.answer_image_url || q.correct_answer;
         const others = pool.filter(q => q.id !== currentQ.id);
         // Ижил төрлийн (жишээ нь 'flag') зурган хариулттай асуултуудыг эхэлж декой болгон сонгоно,
         // дутвал (тухайн ангилалд ижил төрөл цөөн үед) бусад асуултуудаас нөхнө.
@@ -51,8 +52,17 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
             ? others.filter(q => q.answer_type === currentQ.answer_type)
             : [];
         const rest = others.filter(q => !sameType.includes(q));
-        const picked = [...shuffle(sameType), ...shuffle(rest)].slice(0, 3);
-        const wrongs = picked.map(q => ({ text: q.correct_answer, img: q.answer_image_url, isCorrect: false }));
+        const candidates = [...shuffle(sameType), ...shuffle(rest)];
+
+        const seenValues = new Set([displayValue(currentQ)]);
+        const wrongs = [];
+        for (const q of candidates) {
+            if (wrongs.length >= 3) break;
+            const value = displayValue(q);
+            if (seenValues.has(value)) continue;
+            seenValues.add(value);
+            wrongs.push({ text: q.correct_answer, img: q.answer_image_url, isCorrect: false });
+        }
         setOptions(shuffle([correct, ...wrongs]));
     }, []);
 
