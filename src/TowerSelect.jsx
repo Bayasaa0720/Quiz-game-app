@@ -38,8 +38,8 @@ export default function TowerSelect({
         try {
             const { data: cats, error: catErr } = await supabase
                 .from('categories')
-                .select('id, name')
-                .eq('user_id', user.id)
+                .select('id, name, user_id, is_global')
+                .or(`user_id.eq.${user.id},is_global.eq.true`)
                 .order('name', { ascending: true });
             if (catErr) throw catErr;
             setCategories(cats || []);
@@ -113,7 +113,7 @@ export default function TowerSelect({
                             onClick={() => ready && onSelectTower(cat.id, cat.name)}
                         >
                             <div className="tower-card-icon" aria-hidden="true">🗼</div>
-                            <h3>{cat.name}</h3>
+                            <h3>{cat.name}{cat.is_global && <span className="tower-global-badge" title="Үндсэн цамхаг"> 🌐</span>}</h3>
                             {ready ? (
                                 <ProgressBar
                                     value={cleared}
@@ -133,7 +133,7 @@ export default function TowerSelect({
                 <h3>Агуулга удирдах</h3>
                 <select value={manageCategoryId} onChange={(e) => setManageCategoryId(e.target.value)}>
                     <option value="">-- Ангилал сонгох --</option>
-                    {categories.map(cat => (
+                    {categories.filter(cat => cat.user_id === user.id).map(cat => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                 </select>

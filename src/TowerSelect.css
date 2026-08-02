@@ -60,6 +60,10 @@
     margin: 0;
 }
 
+.tower-global-badge {
+    font-size: 0.8rem;
+}
+
 .tower-card .progress-bar {
     width: 100%;
 }
