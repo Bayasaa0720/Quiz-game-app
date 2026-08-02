@@ -17,6 +17,7 @@ const ANIM_RETURN_TO_IDLE_MS = { attack: 450, hurt: 360 };
 
 export default function Battle({ user, categoryId, floor, onFloorCleared, onDefeated, onHpChange }) {
     const [questions, setQuestions] = useState([]);
+    const [answerPool, setAnswerPool] = useState([]);
     const [order, setOrder] = useState([]);
     const [currentPos, setCurrentPos] = useState(0);
     const [options, setOptions] = useState([]);
@@ -45,13 +46,15 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
     const generateOptions = useCallback((currentQ, pool) => {
         const correct = { text: currentQ.correct_answer, img: currentQ.answer_image_url, isCorrect: true };
         const displayValue = (q) => q.answer_image_url || q.correct_answer;
+        const isImage = (q) => !!q.answer_image_url;
         const others = pool.filter(q => q.id !== currentQ.id);
-        // Ижил төрлийн (жишээ нь 'flag') зурган хариулттай асуултуудыг эхэлж декой болгон сонгоно,
-        // дутвал (тухайн ангилалд ижил төрөл цөөн үед) бусад асуултуудаас нөхнө.
+        // Хариултын "төрөл" (зурган/текст) хэзээ ч холилдохгүй байх ёстой тул зөвхөн ижил
+        // төрлийн (зурган бол ижил answer_type, эсвэл текст) асуултуудаас л декой сонгоно.
+        const kindPool = others.filter(q => isImage(q) === isImage(currentQ));
         const sameType = currentQ.answer_type
-            ? others.filter(q => q.answer_type === currentQ.answer_type)
+            ? kindPool.filter(q => q.answer_type === currentQ.answer_type)
             : [];
-        const rest = others.filter(q => !sameType.includes(q));
+        const rest = kindPool.filter(q => !sameType.includes(q));
         const candidates = [...shuffle(sameType), ...shuffle(rest)];
 
         const seenValues = new Set([displayValue(currentQ)]);
@@ -68,23 +71,27 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
 
     const loadFloor = useCallback(async () => {
         setStatus('loading');
-        const { data, error } = await supabase
-            .from('quiz_items')
-            .select('*')
-            .in('id', floor.question_ids);
-        if (error) {
-            console.error('Error loading battle questions:', error);
+        const [{ data, error }, { data: poolData, error: poolError }] = await Promise.all([
+            supabase.from('quiz_items').select('*').in('id', floor.question_ids),
+            // Декой сонголтыг зөвхөн энэ давхрын 5 асуултаас биш, тухайн ангиллын БҮХ
+            // асуултаас авахын тулд тусад нь татна — ингэснээр ижил төрлийн (зурган/текст)
+            // хариулт олдох магадлал өснө.
+            supabase.from('quiz_items').select('*').eq('category_id', categoryId),
+        ]);
+        if (error || poolError) {
+            console.error('Error loading battle questions:', error || poolError);
             setStatus('error');
             return;
         }
         setQuestions(data || []);
+        setAnswerPool(poolData || []);
         setOrder(shuffle((data || []).map(q => q.id)));
         setCurrentPos(0);
         setPlayerHP(PLAYER_START_HP);
         setEnemyHP(floor.enemy_hp);
         resultSoundPlayed.current = false;
         setStatus('fighting');
-    }, [floor]);
+    }, [floor, categoryId]);
 
     useEffect(() => {
         loadFloor();
@@ -94,11 +101,11 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
         if (status !== 'fighting' || questions.length === 0 || order.length === 0) return;
         const currentQ = questions.find(q => q.id === order[currentPos]);
         if (currentQ) {
-            generateOptions(currentQ, questions);
+            generateOptions(currentQ, answerPool);
             setSelectedChoice(null);
             setIsAnswered(false);
         }
-    }, [status, questions, order, currentPos, generateOptions]);
+    }, [status, questions, order, currentPos, answerPool, generateOptions]);
 
     useEffect(() => {
         onHpChange?.({
