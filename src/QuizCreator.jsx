@@ -17,6 +17,7 @@ export default function QuizCreator({ user, onDone }) {
     // Answer State
     const [answerContent, setAnswerContent] = useState('');
     const [isAnsImg, setIsAnsImg] = useState(false);
+    const [answerType, setAnswerType] = useState('');
 
     const [difficulty, setDifficulty] = useState('normal');
 
@@ -84,6 +85,7 @@ export default function QuizCreator({ user, onDone }) {
                 question_image_url: isQueImg ? questionContent : null,
                 correct_answer: isAnsImg ? 'Visual Answer' : answerContent,
                 answer_image_url: isAnsImg ? answerContent : null,
+                answer_type: isAnsImg && answerType ? answerType : null,
                 difficulty,
             });
             if (insertQErr) throw insertQErr;
@@ -143,7 +145,7 @@ export default function QuizCreator({ user, onDone }) {
                 <div className="form-field-box">
                     <div className="field-row">
                         <label>Зөв хариулт:</label>
-                        <label><input type="checkbox" checked={isAnsImg} onChange={() => { setIsAnsImg(!isAnsImg); setAnswerContent(''); }} /> <span>Зурган URL ашиглах</span></label>
+                        <label><input type="checkbox" checked={isAnsImg} onChange={() => { setIsAnsImg(!isAnsImg); setAnswerContent(''); setAnswerType(''); }} /> <span>Зурган URL ашиглах</span></label>
                     </div>
                     <input
                         type="text"
@@ -152,6 +154,17 @@ export default function QuizCreator({ user, onDone }) {
                         required
                         placeholder={isAnsImg ? "Зургийн линк оруулна уу..." : "Хариултаа бичнэ үү..."}
                     />
+                    {isAnsImg && (
+                        <select
+                            className="new-category-input"
+                            value={answerType}
+                            onChange={(e) => setAnswerType(e.target.value)}
+                        >
+                            <option value="">Зургийн төрөл (сонголтоор)</option>
+                            <option value="flag">Улсын туг</option>
+                            <option value="map">Map зураг</option>
+                        </select>
+                    )}
                 </div>
 
                 <div className="form-field">

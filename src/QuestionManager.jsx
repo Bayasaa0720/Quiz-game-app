@@ -22,6 +22,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
         isQueImg: false,
         ans: '',
         isAnsImg: false,
+        answerType: '',
         difficulty: 'normal',
     });
 
@@ -94,6 +95,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
             isQueImg: !!q.question_image_url,
             ans: q.answer_image_url || q.correct_answer,
             isAnsImg: !!q.answer_image_url,
+            answerType: q.answer_type || '',
             difficulty: q.difficulty || 'normal',
         });
     };
@@ -106,6 +108,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                 question_image_url: editForm.isQueImg ? editForm.text : null,
                 correct_answer: editForm.isAnsImg ? 'Visual Answer' : editForm.ans,
                 answer_image_url: editForm.isAnsImg ? editForm.ans : null,
+                answer_type: editForm.isAnsImg && editForm.answerType ? editForm.answerType : null,
                 difficulty: editForm.difficulty,
             })
             .eq('id', id)
@@ -183,6 +186,17 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                                     value={editForm.ans}
                                     onChange={(e) => setEditForm({ ...editForm, ans: e.target.value })}
                                 />
+                                {editForm.isAnsImg && (
+                                    <select
+                                        className="question-edit-field"
+                                        value={editForm.answerType}
+                                        onChange={(e) => setEditForm({ ...editForm, answerType: e.target.value })}
+                                    >
+                                        <option value="">Зургийн төрөл (сонголтоор)</option>
+                                        <option value="flag">Улсын туг</option>
+                                        <option value="map">Map зураг</option>
+                                    </select>
+                                )}
 
                                 <label>Хэцүү зэрэг:</label>
                                 <select

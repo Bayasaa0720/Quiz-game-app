@@ -44,9 +44,15 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
 
     const generateOptions = useCallback((currentQ, pool) => {
         const correct = { text: currentQ.correct_answer, img: currentQ.answer_image_url, isCorrect: true };
-        const wrongs = shuffle(pool.filter(q => q.id !== currentQ.id))
-            .slice(0, 3)
-            .map(q => ({ text: q.correct_answer, img: q.answer_image_url, isCorrect: false }));
+        const others = pool.filter(q => q.id !== currentQ.id);
+        // Ижил төрлийн (жишээ нь 'flag') зурган хариулттай асуултуудыг эхэлж декой болгон сонгоно,
+        // дутвал (тухайн ангилалд ижил төрөл цөөн үед) бусад асуултуудаас нөхнө.
+        const sameType = currentQ.answer_type
+            ? others.filter(q => q.answer_type === currentQ.answer_type)
+            : [];
+        const rest = others.filter(q => !sameType.includes(q));
+        const picked = [...shuffle(sameType), ...shuffle(rest)].slice(0, 3);
+        const wrongs = picked.map(q => ({ text: q.correct_answer, img: q.answer_image_url, isCorrect: false }));
         setOptions(shuffle([correct, ...wrongs]));
     }, []);
 
