@@ -51,9 +51,9 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
         // Хариултын "төрөл" (зурган/текст) хэзээ ч холилдохгүй байх ёстой тул зөвхөн ижил
         // төрлийн (зурган бол ижил answer_type, эсвэл текст) асуултуудаас л декой сонгоно.
         const kindPool = others.filter(q => isImage(q) === isImage(currentQ));
-        const sameType = currentQ.answer_type
-            ? kindPool.filter(q => q.answer_type === currentQ.answer_type)
-            : [];
+        // answer_type байхгүй (null) асуултуудыг ч гэсэн тусдаа "төрөл" гэж үзнэ —
+        // ингэснээр жишээ нь он (жил) хариулттай асуулт нэрийн хариулттай асуулттай холилдохгүй.
+        const sameType = kindPool.filter(q => (q.answer_type || null) === (currentQ.answer_type || null));
         const rest = kindPool.filter(q => !sameType.includes(q));
         const candidates = [...shuffle(sameType), ...shuffle(rest)];
 
