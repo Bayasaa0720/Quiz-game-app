@@ -60,6 +60,28 @@
     color: var(--text-muted);
 }
 
+.form-field-box input[type="text"],
+.form-field-box textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-panel);
+    color: var(--text);
+    font-size: 0.95rem;
+}
+
 .new-category-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
     margin-top: 10px;
+}
+
+.field-hint {
+    margin: 6px 0 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
 }

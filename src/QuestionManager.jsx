@@ -108,7 +108,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                 question_image_url: editForm.isQueImg ? editForm.text : null,
                 correct_answer: editForm.isAnsImg ? 'Visual Answer' : editForm.ans,
                 answer_image_url: editForm.isAnsImg ? editForm.ans : null,
-                answer_type: editForm.isAnsImg && editForm.answerType ? editForm.answerType : null,
+                answer_type: editForm.answerType.trim() || null,
                 difficulty: editForm.difficulty,
             })
             .eq('id', id)
@@ -186,17 +186,26 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                                     value={editForm.ans}
                                     onChange={(e) => setEditForm({ ...editForm, ans: e.target.value })}
                                 />
-                                {editForm.isAnsImg && (
-                                    <select
-                                        className="question-edit-field"
-                                        value={editForm.answerType}
-                                        onChange={(e) => setEditForm({ ...editForm, answerType: e.target.value })}
-                                    >
-                                        <option value="">Зургийн төрөл (сонголтоор)</option>
-                                        <option value="flag">Улсын туг</option>
-                                        <option value="map">Map зураг</option>
-                                    </select>
-                                )}
+                                <input
+                                    type="text"
+                                    list="answer-type-options"
+                                    className="question-edit-field"
+                                    placeholder="Хариултын төрөл (жиш: country, player, site, count...)"
+                                    value={editForm.answerType}
+                                    onChange={(e) => setEditForm({ ...editForm, answerType: e.target.value })}
+                                />
+                                <datalist id="answer-type-options">
+                                    <option value="flag" />
+                                    <option value="map" />
+                                    <option value="year" />
+                                    <option value="country" />
+                                    <option value="player" />
+                                    <option value="real_name" />
+                                    <option value="team" />
+                                    <option value="tournament" />
+                                    <option value="site" />
+                                    <option value="count" />
+                                </datalist>
 
                                 <label>Хэцүү зэрэг:</label>
                                 <select
@@ -222,6 +231,9 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                                     <span className={`difficulty-badge difficulty-${q.difficulty || 'normal'}`}>
                                         {DIFFICULTY_LABELS[q.difficulty] || 'Дунд'}
                                     </span>
+                                    {q.answer_type && (
+                                        <span className="difficulty-badge">{q.answer_type}</span>
+                                    )}
                                 </div>
                                 <div className="question-item-actions">
                                     <Button variant="ghost" onClick={() => startEdit(q)}>Засах</Button>

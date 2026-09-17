@@ -85,7 +85,7 @@ export default function QuizCreator({ user, onDone }) {
                 question_image_url: isQueImg ? questionContent : null,
                 correct_answer: isAnsImg ? 'Visual Answer' : answerContent,
                 answer_image_url: isAnsImg ? answerContent : null,
-                answer_type: isAnsImg && answerType ? answerType : null,
+                answer_type: answerType.trim() || null,
                 difficulty,
             });
             if (insertQErr) throw insertQErr;
@@ -154,17 +154,27 @@ export default function QuizCreator({ user, onDone }) {
                         required
                         placeholder={isAnsImg ? "Зургийн линк оруулна уу..." : "Хариултаа бичнэ үү..."}
                     />
-                    {isAnsImg && (
-                        <select
-                            className="new-category-input"
-                            value={answerType}
-                            onChange={(e) => setAnswerType(e.target.value)}
-                        >
-                            <option value="">Зургийн төрөл (сонголтоор)</option>
-                            <option value="flag">Улсын туг</option>
-                            <option value="map">Map зураг</option>
-                        </select>
-                    )}
+                    <input
+                        type="text"
+                        list="answer-type-options"
+                        className="new-category-input"
+                        placeholder="Хариултын төрөл (жиш: country, player, site, count...)"
+                        value={answerType}
+                        onChange={(e) => setAnswerType(e.target.value)}
+                    />
+                    <datalist id="answer-type-options">
+                        <option value="flag" />
+                        <option value="map" />
+                        <option value="year" />
+                        <option value="country" />
+                        <option value="player" />
+                        <option value="real_name" />
+                        <option value="team" />
+                        <option value="tournament" />
+                        <option value="site" />
+                        <option value="count" />
+                    </datalist>
+                    <p className="field-hint">Ижил төрлийн буруу хариултууд л сонголт болж холилдоно — ялгаатай сэдэвтэй асуултуудыг холихгүйн тулд төрлөө зөв бичээрэй.</p>
                 </div>
 
                 <div className="form-field">
