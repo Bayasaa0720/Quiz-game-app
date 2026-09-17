@@ -9,6 +9,7 @@ export default defineConfig([
   globalIgnores(['dist']),
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
+    ignores: ['api/**'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
@@ -21,6 +22,16 @@ export default defineConfig([
       parserOptions: {
         ecmaFeatures: { jsx: true },
       },
+    },
+  },
+  {
+    // Vercel serverless functions run in Node, not the browser.
+    files: ['api/**/*.js'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: globals.node,
     },
   },
 ])

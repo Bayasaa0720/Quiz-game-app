@@ -77,7 +77,43 @@ export default function QuizCreator({ user, onDone }) {
                 return;
             }
 
-            // 2. Insert the question, matching the quiz_items table columns
+            // 2. Generate AI decoy (wrong) answers — only for text answers; an
+            // image answer needs image decoys, which text generation can't
+            // produce, so those still fall back to the category pool in
+            // Battle.jsx. Failure here is non-fatal: the question still saves,
+            // just without stored decoys.
+            let decoys = null;
+            if (!isAnsImg) {
+                try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const categoryName = selectedCategoryId
+                        ? categories.find(c => c.id === selectedCategoryId)?.name
+                        : newCategoryName.trim();
+                    const aiRes = await fetch('/api/generate-decoys', {
+                        method: 'POST',
+                        headers: {
+                            'content-type': 'application/json',
+                            ...(session?.access_token ? { authorization: `Bearer ${session.access_token}` } : {}),
+                        },
+                        body: JSON.stringify({
+                            question: questionContent,
+                            correct_answer: answerContent,
+                            answer_type: answerType.trim() || null,
+                            category_name: categoryName,
+                        }),
+                    });
+                    if (aiRes.ok) {
+                        const body = await aiRes.json();
+                        if (Array.isArray(body.decoys) && body.decoys.length > 0) decoys = body.decoys;
+                    } else {
+                        console.error('AI decoy generation failed:', aiRes.status, await aiRes.text());
+                    }
+                } catch (aiErr) {
+                    console.error('AI decoy generation error:', aiErr);
+                }
+            }
+
+            // 3. Insert the question, matching the quiz_items table columns
             const { error: insertQErr } = await supabase.from('quiz_items').insert({
                 category_id: catId,
                 user_id: user.id,
@@ -86,6 +122,7 @@ export default function QuizCreator({ user, onDone }) {
                 correct_answer: isAnsImg ? 'Visual Answer' : answerContent,
                 answer_image_url: isAnsImg ? answerContent : null,
                 answer_type: answerType.trim() || null,
+                decoys,
                 difficulty,
             });
             if (insertQErr) throw insertQErr;
@@ -189,8 +226,14 @@ export default function QuizCreator({ user, onDone }) {
                     </select>
                 </div>
 
+                {!isAnsImg && (
+                    <p className="field-hint">
+                        Хадгалахад AI автоматаар энэ асуултад тохирсон 9 хуурамч (буруу) хариулт үүсгэж хадгална — тоглох бүрд тэднээс 3-ыг санамсаргүй сонгож харуулна.
+                    </p>
+                )}
+
                 <Button type="submit" variant="success" disabled={loading} fullWidth>
-                    {loading ? 'Хадгалж байна...' : 'Асуулт хадгалах'}
+                    {loading ? (isAnsImg ? 'Хадгалж байна...' : 'AI decoy үүсгэж, хадгалж байна...') : 'Асуулт хадгалах'}
                 </Button>
             </form>
         </Card>
