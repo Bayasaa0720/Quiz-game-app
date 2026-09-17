@@ -37,7 +37,7 @@ export default function Login({ onLoginSuccess, onSwitchToRegister }) {
                 </Button>
             </form>
             <p className="auth-switch">
-                Акаунт байхгүй юу? <span onClick={onSwitchToRegister}>Энд бүртгүүлнэ үү</span>
+                Акаунт байхгүй юу? <button type="button" className="auth-switch-btn" onClick={onSwitchToRegister}>Энд бүртгүүлнэ үү</button>
             </p>
         </Card>
     );

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Button from './Button.jsx';
 import { ModalContext } from './modalContext.js';
 import './Modal.css';
@@ -48,6 +48,16 @@ export function ModalProvider({ children }) {
         request.resolve(result);
         setRequest(null);
     };
+
+    useEffect(() => {
+        if (!request) return;
+        const onKeyDown = (e) => {
+            if (e.key === 'Escape') close(request.type === 'alert' ? undefined : request.type === 'prompt' ? null : false);
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [request]);
 
     return (
         <ModalContext.Provider value={{ alert, confirm, prompt }}>
