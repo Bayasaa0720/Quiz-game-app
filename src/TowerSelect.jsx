@@ -90,7 +90,7 @@ export default function TowerSelect({
         }
     };
 
-    if (loading) return <p>Таны цамхгуудыг ачааллаж байна...</p>;
+    if (loading) return <p style={{ textAlign: 'center' }}>Таны цамхгуудыг ачааллаж байна...</p>;
     if (loadError) return <ErrorState message="Цамхгуудыг ачаалахад алдаа гарлаа." onRetry={fetchTowers} />;
 
     return (

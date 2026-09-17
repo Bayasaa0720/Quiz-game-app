@@ -53,7 +53,7 @@ export default function AdminDashboard({ onBack }) {
         }
     };
 
-    if (loading) return <p>Цамхгуудыг ачааллаж байна...</p>;
+    if (loading) return <p style={{ textAlign: 'center' }}>Цамхгуудыг ачааллаж байна...</p>;
     if (loadError) return <ErrorState message="Admin мэдээллийг ачаалахад алдаа гарлаа." onRetry={fetchTowers} />;
 
     return (

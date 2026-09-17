@@ -78,7 +78,7 @@ export default function TowerView({ user, categoryId, categoryName, onSelectFloo
         }
     };
 
-    if (loading) return <p>Цамхгийг ачааллаж байна...</p>;
+    if (loading) return <p style={{ textAlign: 'center' }}>Цамхгийг ачааллаж байна...</p>;
     if (loadError) return <ErrorState message="Цамхгийг ачаалахад алдаа гарлаа." onRetry={fetchTower} />;
 
     return (
