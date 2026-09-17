@@ -15,7 +15,7 @@ import { isMuted, toggleMuted } from './sound.js';
 import { useViewportWidth } from './lib/useViewportWidth.js';
 
 // Possible views: 'LOGIN', 'REGISTER', 'TOWER_SELECT', 'TOWER_VIEW', 'BATTLE', 'CREATE_QUESTION', 'MANAGE_QUESTIONS'
-const VIEWS_WITH_SIDEBARS = new Set(['TOWER_SELECT', 'TOWER_VIEW', 'BATTLE']);
+const VIEWS_WITH_SIDEBARS = new Set(['BATTLE']);
 const IDLE_BATTLE_STATE = {
     playerHP: 100,
     playerMaxHP: 100,
