@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import TowerSelect from './TowerSelect.jsx';
 import TowerView from './TowerView.jsx';
 import Battle from './Battle.jsx';
@@ -14,6 +14,9 @@ import { PlayerSidebar, EnemySidebar } from './components/Sidebar.jsx';
 import InstallPrompt from './components/InstallPrompt.jsx';
 import { isMuted, toggleMuted } from './sound.js';
 import { useViewportWidth } from './lib/useViewportWidth.js';
+
+// papaparse/xlsx (bulk import) are heavy and rarely needed — load on demand.
+const BulkImport = lazy(() => import('./BulkImport.jsx'));
 
 // Possible views: 'LOGIN', 'REGISTER', 'TOWER_SELECT', 'TOWER_VIEW', 'BATTLE', 'CREATE_QUESTION', 'MANAGE_QUESTIONS'
 const VIEWS_WITH_SIDEBARS = new Set(['BATTLE']);
@@ -118,6 +121,11 @@ function App() {
         setView('MANAGE_QUESTIONS');
     };
 
+    const handleBulkImport = (categoryId) => {
+        setSelectedCategory({ id: categoryId, name: '' });
+        setView('BULK_IMPORT');
+    };
+
     if (checkingSession) {
         return (
             <div className="app-shell">
@@ -153,6 +161,7 @@ function App() {
                 onSelectTower={handleSelectTower}
                 onCreateQuestion={() => setView('CREATE_QUESTION')}
                 onManageQuestions={handleManageQuestions}
+                onBulkImport={handleBulkImport}
                 onOpenAdminDashboard={() => setView('ADMIN_DASHBOARD')}
                 onOpenLeaderboard={() => setView('LEADERBOARD')}
             />
@@ -197,6 +206,16 @@ function App() {
                 categoryId={selectedCategory.id}
                 onDone={goToTowerSelect}
             />
+        );
+    } else if (view === 'BULK_IMPORT' && selectedCategory) {
+        currentViewContent = (
+            <Suspense fallback={<p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>}>
+                <BulkImport
+                    user={user}
+                    categoryId={selectedCategory.id}
+                    onDone={goToTowerSelect}
+                />
+            </Suspense>
         );
     }
 

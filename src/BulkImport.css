@@ -1,0 +1,77 @@
+.bulk-import-page {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.bulk-import-back {
+    margin-bottom: 4px;
+}
+
+.bulk-import-page h2 {
+    text-align: center;
+    color: var(--accent);
+    margin: 16px 0 4px;
+}
+
+.bulk-import-target {
+    text-align: center;
+    color: var(--text-muted);
+    margin: 0 0 18px;
+}
+
+.bulk-import-step {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+
+.bulk-import-step p {
+    margin: 0 0 10px;
+}
+
+.bulk-import-filename {
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.bulk-import-preview {
+    max-height: 320px;
+    overflow: auto;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    margin-bottom: 14px;
+}
+
+.bulk-import-preview table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.bulk-import-preview th,
+.bulk-import-preview td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+
+.bulk-import-preview th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-panel);
+}
+
+.bulk-import-preview tr.row-error {
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.bulk-import-preview .ok { color: var(--success); }
+.bulk-import-preview .err { color: var(--danger); }
+.bulk-import-step strong.ok { color: var(--success); }
+.bulk-import-step strong.err { color: var(--danger); }

@@ -14,6 +14,7 @@ export default function TowerSelect({
     onSelectTower,
     onCreateQuestion,
     onManageQuestions,
+    onBulkImport,
     onOpenAdminDashboard,
     onOpenLeaderboard,
 }) {
@@ -92,6 +93,14 @@ export default function TowerSelect({
         }
     };
 
+    const handleBulkImport = () => {
+        if (manageCategoryId) {
+            onBulkImport(manageCategoryId);
+        } else {
+            setHint('Эхлээд асуулт нэмэх ангиллаа сонгоно уу.');
+        }
+    };
+
     if (loading) return <p style={{ textAlign: 'center' }}>Таны цамхгуудыг ачааллаж байна...</p>;
     if (loadError) return <ErrorState message="Цамхгуудыг ачаалахад алдаа гарлаа." onRetry={fetchTowers} />;
 
@@ -155,6 +164,7 @@ export default function TowerSelect({
                 {hint && <p className="tower-hint">{hint}</p>}
                 <div className="manage-actions">
                     <Button variant="success" onClick={onCreateQuestion}>Шинэ асуулт нэмэх</Button>
+                    <Button variant="ghost" onClick={handleBulkImport}>Олноор оруулах (CSV/Excel)</Button>
                     <Button variant="ghost" onClick={handleManage}>Асуулт удирдах (Засах/Устгах)</Button>
                 </div>
             </Card>
