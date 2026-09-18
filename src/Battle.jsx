@@ -8,6 +8,7 @@ import EnemyCharacter from './components/EnemyCharacter.jsx';
 import { clampDamage, enemyVariant } from './lib/towerLogic.js';
 import { shuffle } from './lib/arrayUtils.js';
 import { generateRuleBasedDecoys } from './lib/decoyGenerators.js';
+import { awardAchievement } from './lib/achievements.js';
 import './Battle.css';
 
 const PLAYER_START_HP = 3;
@@ -208,6 +209,11 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
                     .eq('floor_index', floor.floor_index + 1)
                     .maybeSingle();
                 setNextFloor(next || null);
+
+                // Achievement-ууд — upsert(ignoreDuplicates) тул давхар дуудахад аюулгүй.
+                awardAchievement(supabase, user.id, 'first_floor');
+                if (playerHP === PLAYER_START_HP) awardAchievement(supabase, user.id, 'flawless_floor');
+                if (!next) awardAchievement(supabase, user.id, 'tower_complete');
             } catch (err) {
                 console.error('Error checking for next floor:', err);
                 setNextFloor(null);

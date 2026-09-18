@@ -4,6 +4,7 @@ import Card from './components/Card.jsx';
 import Button from './components/Button.jsx';
 import ProgressBar from './components/ProgressBar.jsx';
 import ErrorState from './components/ErrorState.jsx';
+import AchievementBadges from './components/AchievementBadges.jsx';
 import { clearedCount } from './lib/towerLogic.js';
 import './TowerSelect.css';
 
@@ -97,6 +98,7 @@ export default function TowerSelect({
         <div className="tower-select">
             <h1>Тавтай морил, {user?.email}!</h1>
             <p className="tower-select-sub">Цамхгаа сонгож дэвшил үзье!</p>
+            <AchievementBadges userId={user?.id} />
 
             <div className="tower-grid">
                 {categories.length === 0 && (

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient.jsx';
 import Button from './components/Button.jsx';
 import ErrorState from './components/ErrorState.jsx';
+import { awardAchievement } from './lib/achievements.js';
 import './Leaderboard.css';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -34,13 +35,16 @@ export default function Leaderboard({ user, onBack }) {
             });
             if (error) throw error;
             setRows(data || []);
+            if (user && data?.some(r => r.user_id === user.id && Number(r.rank) === 1)) {
+                awardAchievement(supabase, user.id, 'leaderboard_top1');
+            }
         } catch (err) {
             console.error('Error loading leaderboard:', err);
             setLoadError(true);
         } finally {
             setLoading(false);
         }
-    }, [categoryId]);
+    }, [categoryId, user]);
 
     useEffect(() => {
         fetchLeaderboard();
