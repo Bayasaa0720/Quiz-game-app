@@ -7,6 +7,7 @@ import PlayerCharacter from './components/PlayerCharacter.jsx';
 import EnemyCharacter from './components/EnemyCharacter.jsx';
 import { clampDamage, enemyVariant } from './lib/towerLogic.js';
 import { shuffle } from './lib/arrayUtils.js';
+import { generateRuleBasedDecoys } from './lib/decoyGenerators.js';
 import './Battle.css';
 
 const PLAYER_START_HP = 3;
@@ -66,6 +67,22 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
             seenValues.add(value);
             wrongs.push({ text: q.correct_answer, img: q.answer_image_url, isCorrect: false });
         }
+
+        // Category pool too thin to fill all 3 slots — top up with offline,
+        // zero-cost rule-based decoys (static per-answer_type option pools /
+        // nearby-number templates; see lib/decoyGenerators.js). Only for
+        // text answers — there's no sensible way to template a fake image.
+        if (wrongs.length < 3 && !isImage(currentQ)) {
+            const needed = 3 - wrongs.length;
+            const ruleBased = generateRuleBasedDecoys(currentQ.answer_type, currentQ.correct_answer, needed + 2);
+            for (const text of ruleBased) {
+                if (wrongs.length >= 3) break;
+                if (seenValues.has(text)) continue;
+                seenValues.add(text);
+                wrongs.push({ text, img: null, isCorrect: false });
+            }
+        }
+
         setOptions(shuffle([correct, ...wrongs]));
     }, []);
 
