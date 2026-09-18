@@ -17,6 +17,7 @@ export default function TowerSelect({
     onBulkImport,
     onOpenAdminDashboard,
     onOpenLeaderboard,
+    onOpenFriends,
 }) {
     const [categories, setCategories] = useState([]);
     const [floorCounts, setFloorCounts] = useState({});
@@ -171,6 +172,10 @@ export default function TowerSelect({
 
             <Button variant="ghost" onClick={onOpenLeaderboard} className="leaderboard-link">
                 🏆 Тэргүүлэгчид
+            </Button>
+
+            <Button variant="ghost" onClick={onOpenFriends} className="leaderboard-link">
+                👥 Найзууд
             </Button>
 
             {isAdmin && (
