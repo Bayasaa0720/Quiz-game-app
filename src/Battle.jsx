@@ -16,8 +16,9 @@ const DAMAGE_TO_PLAYER = 1;
 // Matches (frames / fps) of the attack/hurt sheets in PlayerCharacter/EnemyCharacter, plus a small buffer.
 const ANIM_RETURN_TO_IDLE_MS = { attack: 450, hurt: 360 };
 
-export default function Battle({ user, categoryId, floor, onFloorCleared, onLeaveTower, onHpChange }) {
+export default function Battle({ user, categoryId, floor, onFloorCleared, onGoToFloor, onLeaveTower, onHpChange }) {
     const [questions, setQuestions] = useState([]);
+    const [nextFloor, setNextFloor] = useState(null);
     const [answerPool, setAnswerPool] = useState([]);
     // Front of the queue is the current question. A correct answer removes
     // it for good; a wrong answer sends it to the back so it comes up again
@@ -108,6 +109,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onLeav
         setQueue(shuffle((data || []).map(q => q.id)));
         setPlayerHP(PLAYER_START_HP);
         setEnemyHP(floor.enemy_hp);
+        setNextFloor(null);
         resultSoundPlayed.current = false;
         setStatus('fighting');
     }, [floor, categoryId]);
@@ -198,6 +200,18 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onLeav
             } finally {
                 setSaving(false);
             }
+            try {
+                const { data: next } = await supabase
+                    .from('tower_floors')
+                    .select('id, floor_index, difficulty, question_ids, enemy_hp')
+                    .eq('category_id', categoryId)
+                    .eq('floor_index', floor.floor_index + 1)
+                    .maybeSingle();
+                setNextFloor(next || null);
+            } catch (err) {
+                console.error('Error checking for next floor:', err);
+                setNextFloor(null);
+            }
             setStatus('won');
             return;
         }
@@ -235,7 +249,16 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onLeav
                 </div>
                 <h2>🏆 Дайснийг ялав!</h2>
                 <p>Давхар {floor.floor_index + 1} дийлдлээ.</p>
-                <Button onClick={onFloorCleared} disabled={saving}>Цамхаг руу буцах</Button>
+                <div className="battle-result-actions">
+                    {nextFloor && (
+                        <Button onClick={() => onGoToFloor(nextFloor)} disabled={saving}>
+                            ⚔️ Давхар {nextFloor.floor_index + 1} руу
+                        </Button>
+                    )}
+                    <Button variant={nextFloor ? 'ghost' : 'primary'} onClick={onFloorCleared} disabled={saving}>
+                        Цамхаг руу буцах
+                    </Button>
+                </div>
             </div>
         );
     }

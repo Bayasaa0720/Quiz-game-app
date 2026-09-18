@@ -104,6 +104,13 @@ function App() {
         setView('TOWER_VIEW');
     };
 
+    // Jump straight into the next floor from the "won" screen — stays on
+    // the BATTLE view, just swaps which floor prop Battle gets, so its
+    // loadFloor effect (which depends on `floor`) picks up the new one.
+    const handleGoToFloor = (nextFloor) => {
+        setSelectedFloor(nextFloor);
+        setBattleState(IDLE_BATTLE_STATE);
+    };
 
     const handleManageQuestions = (categoryId) => {
         setSelectedCategory({ id: categoryId, name: '' });
@@ -170,6 +177,7 @@ function App() {
                 categoryId={selectedCategory.id}
                 floor={selectedFloor}
                 onFloorCleared={handleFloorCleared}
+                onGoToFloor={handleGoToFloor}
                 onLeaveTower={goToTowerSelect}
                 onHpChange={setBattleState}
             />
