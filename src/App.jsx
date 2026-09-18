@@ -7,6 +7,7 @@ import QuestionManager from './QuestionManager.jsx';
 import AdminDashboard from './AdminDashboard.jsx';
 import Leaderboard from './Leaderboard.jsx';
 import Friends from './Friends.jsx';
+import TeacherDashboard from './TeacherDashboard.jsx';
 import Login from './Login.jsx';
 import Register from './register.jsx';
 import { supabase } from './supabaseClient.jsx';
@@ -41,6 +42,7 @@ function App() {
     const [battleState, setBattleState] = useState(IDLE_BATTLE_STATE);
     const [checkingSession, setCheckingSession] = useState(true);
     const [sfxMuted, setSfxMuted] = useState(isMuted());
+    const [userRole, setUserRole] = useState(null); // 'student' | 'teacher'
     const viewportWidth = useViewportWidth();
 
     const handleToggleMute = () => {
@@ -62,6 +64,7 @@ function App() {
                 setUser(session.user);
             } else {
                 setUser(null);
+                setUserRole(null);
                 setView('LOGIN');
                 setSelectedCategory(null);
                 setSelectedFloor(null);
@@ -70,6 +73,30 @@ function App() {
 
         return () => subscription.unsubscribe();
     }, []);
+
+    // Signup-ийн үед сонгосон role (user_metadata дотор хадгалагддаг, session
+    // байгаагүй ч алдагдахгүй) — эхний удаа нэвтрэхэд user_profiles мөр
+    // болгож бэхжүүлнэ. upsert(ignoreDuplicates) тул давхар дуудахад аюулгүй
+    // бөгөөд role-ыг хожим дахин бичихгүй (тогтмол үлдэнэ).
+    useEffect(() => {
+        if (!user) return;
+        let cancelled = false;
+        (async () => {
+            const { data } = await supabase.from('user_profiles').select('role').eq('user_id', user.id).maybeSingle();
+            if (cancelled) return;
+            if (data) {
+                setUserRole(data.role);
+                return;
+            }
+            const role = user.user_metadata?.role === 'teacher' ? 'teacher' : 'student';
+            await supabase.from('user_profiles').upsert(
+                { user_id: user.id, role },
+                { onConflict: 'user_id', ignoreDuplicates: true }
+            );
+            if (!cancelled) setUserRole(role);
+        })();
+        return () => { cancelled = true; };
+    }, [user]);
 
     // --- Auth Handlers ---
     const handleLoginSuccess = (userData) => {
@@ -80,6 +107,7 @@ function App() {
     const handleLogout = async () => {
         await supabase.auth.signOut();
         setUser(null);
+        setUserRole(null);
         setView('LOGIN');
         setSelectedCategory(null);
         setSelectedFloor(null);
@@ -166,6 +194,8 @@ function App() {
                 onOpenAdminDashboard={() => setView('ADMIN_DASHBOARD')}
                 onOpenLeaderboard={() => setView('LEADERBOARD')}
                 onOpenFriends={() => setView('FRIENDS')}
+                onOpenClassrooms={() => setView('CLASSROOMS')}
+                userRole={userRole}
             />
         );
     } else if (view === 'ADMIN_DASHBOARD') {
@@ -174,6 +204,8 @@ function App() {
         currentViewContent = <Leaderboard user={user} onBack={goToTowerSelect} />;
     } else if (view === 'FRIENDS') {
         currentViewContent = <Friends user={user} onBack={goToTowerSelect} />;
+    } else if (view === 'CLASSROOMS') {
+        currentViewContent = <TeacherDashboard user={user} onBack={goToTowerSelect} />;
     } else if (view === 'TOWER_VIEW' && selectedCategory) {
         currentViewContent = (
             <TowerView

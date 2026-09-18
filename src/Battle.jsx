@@ -31,6 +31,8 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
     const [isAnswered, setIsAnswered] = useState(false);
     const [playerHP, setPlayerHP] = useState(PLAYER_START_HP);
     const [enemyHP, setEnemyHP] = useState(floor.enemy_hp);
+    const [correctCount, setCorrectCount] = useState(0);
+    const [wrongCount, setWrongCount] = useState(0);
     const [status, setStatus] = useState('loading'); // loading | fighting | won | lost
     const [saving, setSaving] = useState(false);
     const [playerAnim, setPlayerAnim] = useState('idle');
@@ -110,6 +112,8 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
         setQueue(shuffle((data || []).map(q => q.id)));
         setPlayerHP(PLAYER_START_HP);
         setEnemyHP(floor.enemy_hp);
+        setCorrectCount(0);
+        setWrongCount(0);
         setNextFloor(null);
         resultSoundPlayed.current = false;
         setStatus('fighting');
@@ -159,6 +163,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
         setSelectedChoice(choice);
         setIsAnswered(true);
         if (choice.isCorrect) {
+            setCorrectCount(c => c + 1);
             playCorrectHit();
             setPlayerAnim('attack');
             setPlayerTick(t => t + 1);
@@ -170,6 +175,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
             clearTimeout(enemyAnimTimeout.current);
             enemyAnimTimeout.current = setTimeout(() => setEnemyAnim('idle'), ANIM_RETURN_TO_IDLE_MS.hurt);
         } else {
+            setWrongCount(c => c + 1);
             playWrongHit();
             setEnemyAnim('attack');
             setEnemyTick(t => t + 1);
@@ -186,6 +192,17 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
     const handleNext = async () => {
         if (enemyHP <= 0) {
             setSaving(true);
+            // battle_attempts_log эрх (RLS) хараахан тохируулаагүй бол алдаа
+            // гарч болно — багшийн dashboard-д зориулсан статистик тул чимээгүй
+            // алгасна (тулааны үр дүнд нөлөөлөхгүй).
+            supabase.from('battle_attempts_log').insert({
+                user_id: user.id,
+                category_id: categoryId,
+                floor_index: floor.floor_index,
+                outcome: 'won',
+                correct_count: correctCount,
+                wrong_count: wrongCount,
+            }).then(({ error }) => { if (error) console.warn('battle_attempts_log insert skipped:', error.message); });
             try {
                 await supabase.from('tower_progress').upsert(
                     {
@@ -222,6 +239,14 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
             return;
         }
         if (playerHP <= 0) {
+            supabase.from('battle_attempts_log').insert({
+                user_id: user.id,
+                category_id: categoryId,
+                floor_index: floor.floor_index,
+                outcome: 'lost',
+                correct_count: correctCount,
+                wrong_count: wrongCount,
+            }).then(({ error }) => { if (error) console.warn('battle_attempts_log insert skipped:', error.message); });
             setStatus('lost');
             return;
         }

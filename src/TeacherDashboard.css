@@ -1,0 +1,165 @@
+.teacher-dashboard {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.teacher-back {
+    margin-bottom: 12px;
+}
+
+.teacher-dashboard h2 {
+    margin: 0 0 16px;
+    color: var(--accent);
+}
+
+.teacher-create-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.teacher-create-row input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-panel);
+    color: var(--text);
+    font-size: 0.95rem;
+}
+
+.teacher-empty {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 24px 0;
+}
+
+.teacher-classroom-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.teacher-classroom-row {
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.teacher-classroom-row:hover {
+    border-color: var(--accent);
+}
+
+.teacher-classroom-row h3 {
+    margin: 0 0 4px;
+}
+
+.teacher-invite-code {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.teacher-invite-code code {
+    background: var(--bg-panel);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent);
+    letter-spacing: 0.03em;
+}
+
+.teacher-roster-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 16px 0 10px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.teacher-roster {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.teacher-student-card {
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg-panel);
+    overflow: hidden;
+}
+
+.teacher-student-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    cursor: pointer;
+}
+
+.teacher-student-name {
+    font-weight: 600;
+}
+
+.teacher-student-stats {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.teacher-student-detail {
+    padding: 12px 14px 16px;
+    border-top: 1px solid var(--border-strong);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.teacher-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.teacher-sparkline {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 34px;
+}
+
+.teacher-spark-bar {
+    width: 8px;
+    min-height: 4px;
+    background: var(--accent);
+    border-radius: 2px;
+    opacity: 0.8;
+}
+
+.teacher-detail-empty,
+.teacher-detail-loading {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.teacher-breakdown-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.teacher-breakdown-table th,
+.teacher-breakdown-table td {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border-strong);
+}
+
+.teacher-breakdown-table tr.weak td {
+    color: var(--danger, #e05a5a);
+}
+
+.teacher-remove-btn {
+    align-self: flex-start;
+}

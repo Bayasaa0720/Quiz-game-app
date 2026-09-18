@@ -10,6 +10,7 @@ import './TowerSelect.css';
 
 export default function TowerSelect({
     user,
+    userRole,
     onLogout,
     onSelectTower,
     onCreateQuestion,
@@ -18,6 +19,7 @@ export default function TowerSelect({
     onOpenAdminDashboard,
     onOpenLeaderboard,
     onOpenFriends,
+    onOpenClassrooms,
 }) {
     const [categories, setCategories] = useState([]);
     const [floorCounts, setFloorCounts] = useState({});
@@ -28,6 +30,8 @@ export default function TowerSelect({
     const [hint, setHint] = useState('');
     const [towerSearch, setTowerSearch] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
+    const [joinCode, setJoinCode] = useState('');
+    const [joinHint, setJoinHint] = useState('');
 
     useEffect(() => {
         supabase.rpc('is_app_admin').then(({ data, error }) => {
@@ -100,6 +104,18 @@ export default function TowerSelect({
         } else {
             setHint('Эхлээд асуулт нэмэх ангиллаа сонгоно уу.');
         }
+    };
+
+    const handleJoinClassroom = async () => {
+        const code = joinCode.trim();
+        if (!code) return;
+        const { data, error } = await supabase.rpc('join_classroom', { p_invite_code: code });
+        if (error) {
+            setJoinHint('Буруу код байна. Багшаасаа шалгаарай.');
+            return;
+        }
+        setJoinHint(`"${data?.[0]?.classroom_name || ''}" ангид амжилттай нэгдлээ!`);
+        setJoinCode('');
     };
 
     if (loading) return <p style={{ textAlign: 'center' }}>Таны цамхгуудыг ачааллаж байна...</p>;
@@ -177,6 +193,28 @@ export default function TowerSelect({
             <Button variant="ghost" onClick={onOpenFriends} className="leaderboard-link">
                 👥 Найзууд
             </Button>
+
+            {userRole === 'teacher' && (
+                <Button variant="ghost" onClick={onOpenClassrooms} className="leaderboard-link">
+                    🏫 Миний ангиуд
+                </Button>
+            )}
+
+            {userRole === 'student' && (
+                <Card className="join-classroom-panel">
+                    <h3>Ангид нэгдэх</h3>
+                    <div className="join-classroom-row">
+                        <input
+                            type="text"
+                            placeholder="Багшийн код..."
+                            value={joinCode}
+                            onChange={(e) => setJoinCode(e.target.value)}
+                        />
+                        <Button variant="success" onClick={handleJoinClassroom}>Нэгдэх</Button>
+                    </div>
+                    {joinHint && <p className="tower-hint">{joinHint}</p>}
+                </Card>
+            )}
 
             {isAdmin && (
                 <Button variant="ghost" onClick={onOpenAdminDashboard} className="admin-dashboard-link">
