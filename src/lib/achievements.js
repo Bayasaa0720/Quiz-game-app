@@ -5,6 +5,7 @@ export const ACHIEVEMENTS = [
     { id: 'tower_complete', icon: '🗼', name: 'Цамхаг эзэн', description: 'Нэг цамхгийг бүрэн дийлсэн' },
     { id: 'flawless_floor', icon: '💯', name: 'Цэвэр ялалт', description: 'Ямар ч буруу хариулгүйгээр давхар дийлсэн' },
     { id: 'leaderboard_top1', icon: '🏆', name: 'Тэргүүлэгч', description: 'Leaderboard-т 1-р байранд орсон' },
+    { id: 'duel_first_win', icon: '⚔️', name: 'Дуэлийн ялагч', description: '1v1 өрсөлдөөнд анх удаа ялсан' },
 ];
 
 export async function awardAchievement(supabase, userId, achievementId) {

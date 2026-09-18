@@ -26,6 +26,13 @@
     color: var(--accent);
 }
 
+.tower-view-duel-btn {
+    display: block;
+    margin: 0 auto 18px;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
 .tower-empty {
     text-align: center;
     color: var(--text-muted);

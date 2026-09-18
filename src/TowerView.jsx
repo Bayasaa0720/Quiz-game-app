@@ -10,7 +10,7 @@ import './TowerView.css';
 
 const DIFFICULTY_LABELS = { easy: 'Хялбар', normal: 'Дунд', hard: 'Хэцүү' };
 
-export default function TowerView({ user, categoryId, categoryName, onSelectFloor, onBack }) {
+export default function TowerView({ user, categoryId, categoryName, onSelectFloor, onStartDuel, onBack }) {
     const [floors, setFloors] = useState([]);
     const [highestCleared, setHighestCleared] = useState(-1);
     const [loading, setLoading] = useState(true);
@@ -89,6 +89,10 @@ export default function TowerView({ user, categoryId, categoryName, onSelectFloo
             <div className="tower-view-walker">
                 <PlayerCharacter anim="walk" size={64} />
             </div>
+
+            <Button variant="ghost" onClick={() => onStartDuel(categoryId, categoryName)} className="tower-view-duel-btn">
+                ⚔️ 1v1 өрсөлдөх
+            </Button>
 
             {isAdmin && (
                 <Button

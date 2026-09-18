@@ -7,7 +7,7 @@ import PlayerCharacter from './components/PlayerCharacter.jsx';
 import EnemyCharacter from './components/EnemyCharacter.jsx';
 import { clampDamage, enemyVariant } from './lib/towerLogic.js';
 import { shuffle } from './lib/arrayUtils.js';
-import { generateRuleBasedDecoys } from './lib/decoyGenerators.js';
+import { buildOptions } from './lib/generateOptions.js';
 import { awardAchievement } from './lib/achievements.js';
 import './Battle.css';
 
@@ -52,45 +52,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
     }, []);
 
     const generateOptions = useCallback((currentQ, pool) => {
-        const correct = { text: currentQ.correct_answer, img: currentQ.answer_image_url, isCorrect: true };
-        const displayValue = (q) => q.answer_image_url || q.correct_answer;
-        const isImage = (q) => !!q.answer_image_url;
-        const others = pool.filter(q => q.id !== currentQ.id);
-        // Хариултын "төрөл" (зурган/текст) хэзээ ч холилдохгүй байх ёстой тул зөвхөн ижил
-        // төрлийн (зурган бол ижил answer_type, эсвэл текст) асуултуудаас л декой сонгоно.
-        const kindPool = others.filter(q => isImage(q) === isImage(currentQ));
-        // answer_type байхгүй (null) асуултуудыг ч гэсэн тусдаа "төрөл" гэж үзнэ —
-        // ингэснээр жишээ нь он (жил) хариулттай асуулт нэрийн хариулттай асуулттай холилдохгүй.
-        const sameType = kindPool.filter(q => (q.answer_type || null) === (currentQ.answer_type || null));
-        const rest = kindPool.filter(q => !sameType.includes(q));
-        const candidates = [...shuffle(sameType), ...shuffle(rest)];
-
-        const seenValues = new Set([displayValue(currentQ)]);
-        const wrongs = [];
-        for (const q of candidates) {
-            if (wrongs.length >= 3) break;
-            const value = displayValue(q);
-            if (seenValues.has(value)) continue;
-            seenValues.add(value);
-            wrongs.push({ text: q.correct_answer, img: q.answer_image_url, isCorrect: false });
-        }
-
-        // Category pool too thin to fill all 3 slots — top up with offline,
-        // zero-cost rule-based decoys (static per-answer_type option pools /
-        // nearby-number templates; see lib/decoyGenerators.js). Only for
-        // text answers — there's no sensible way to template a fake image.
-        if (wrongs.length < 3 && !isImage(currentQ)) {
-            const needed = 3 - wrongs.length;
-            const ruleBased = generateRuleBasedDecoys(currentQ.answer_type, currentQ.correct_answer, needed + 2);
-            for (const text of ruleBased) {
-                if (wrongs.length >= 3) break;
-                if (seenValues.has(text)) continue;
-                seenValues.add(text);
-                wrongs.push({ text, img: null, isCorrect: false });
-            }
-        }
-
-        setOptions(shuffle([correct, ...wrongs]));
+        setOptions(buildOptions(currentQ, pool));
     }, []);
 
     const loadFloor = useCallback(async () => {

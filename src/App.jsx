@@ -8,6 +8,7 @@ import AdminDashboard from './AdminDashboard.jsx';
 import Leaderboard from './Leaderboard.jsx';
 import Friends from './Friends.jsx';
 import TeacherDashboard from './TeacherDashboard.jsx';
+import Duel from './Duel.jsx';
 import Login from './Login.jsx';
 import Register from './register.jsx';
 import { supabase } from './supabaseClient.jsx';
@@ -131,6 +132,11 @@ function App() {
         setView('BATTLE');
     };
 
+    const handleStartDuel = (categoryId, categoryName) => {
+        setSelectedCategory({ id: categoryId, name: categoryName });
+        setView('DUEL');
+    };
+
     const handleFloorCleared = () => {
         setSelectedFloor(null);
         setBattleState(IDLE_BATTLE_STATE);
@@ -213,6 +219,16 @@ function App() {
                 categoryId={selectedCategory.id}
                 categoryName={selectedCategory.name}
                 onSelectFloor={handleSelectFloor}
+                onStartDuel={handleStartDuel}
+                onBack={goToTowerSelect}
+            />
+        );
+    } else if (view === 'DUEL' && selectedCategory) {
+        currentViewContent = (
+            <Duel
+                user={user}
+                categoryId={selectedCategory.id}
+                categoryName={selectedCategory.name}
                 onBack={goToTowerSelect}
             />
         );
