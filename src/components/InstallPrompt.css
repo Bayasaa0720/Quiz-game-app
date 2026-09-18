@@ -1,0 +1,51 @@
+.install-prompt {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: 14px 16px;
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.install-prompt-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.88rem;
+}
+
+.install-prompt-text strong {
+    color: var(--accent);
+}
+
+.install-prompt-text span {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.install-prompt-actions {
+    display: flex;
+    gap: 8px;
+    flex: none;
+}
+
+@media (max-width: 420px) {
+    .install-prompt {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .install-prompt-actions {
+        justify-content: flex-end;
+    }
+}

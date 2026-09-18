@@ -11,6 +11,7 @@ import Register from './register.jsx';
 import { supabase } from './supabaseClient.jsx';
 import { ModalProvider } from './components/ModalProvider.jsx';
 import { PlayerSidebar, EnemySidebar } from './components/Sidebar.jsx';
+import InstallPrompt from './components/InstallPrompt.jsx';
 import { isMuted, toggleMuted } from './sound.js';
 import { useViewportWidth } from './lib/useViewportWidth.js';
 
@@ -253,6 +254,7 @@ function App() {
                     )}
                 </div>
             </div>
+            <InstallPrompt />
         </ModalProvider>
     );
 }
