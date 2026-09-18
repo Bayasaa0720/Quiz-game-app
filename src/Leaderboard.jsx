@@ -8,14 +8,30 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 
 export default function Leaderboard({ user, onBack }) {
     const [rows, setRows] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [categoryId, setCategoryId] = useState(''); // '' = бүх категори нийлүүлсэн
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
+
+    useEffect(() => {
+        supabase
+            .from('categories')
+            .select('id, name')
+            .or(`user_id.eq.${user?.id},is_global.eq.true`)
+            .order('name', { ascending: true })
+            .then(({ data, error }) => {
+                if (!error) setCategories(data || []);
+            });
+    }, [user]);
 
     const fetchLeaderboard = useCallback(async () => {
         setLoading(true);
         setLoadError(false);
         try {
-            const { data, error } = await supabase.rpc('get_leaderboard', { p_limit: 20 });
+            const { data, error } = await supabase.rpc('get_leaderboard', {
+                p_category_id: categoryId || null,
+                p_limit: 20,
+            });
             if (error) throw error;
             setRows(data || []);
         } catch (err) {
@@ -24,22 +40,37 @@ export default function Leaderboard({ user, onBack }) {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [categoryId]);
 
     useEffect(() => {
         fetchLeaderboard();
     }, [fetchLeaderboard]);
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Тэргүүлэгчдийг ачааллаж байна...</p>;
     if (loadError) return <ErrorState message="Тэргүүлэгчдийг ачаалахад алдаа гарлаа." onRetry={fetchLeaderboard} />;
 
     return (
         <div className="leaderboard-page">
             <Button variant="ghost" onClick={onBack} className="leaderboard-back">← Буцах</Button>
             <h2>🏆 Тэргүүлэгчид</h2>
-            <p className="leaderboard-sub">Нийт дийлсэн давхрын тоогоор</p>
 
-            {rows.length === 0 ? (
+            <select
+                className="leaderboard-category-select"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+            >
+                <option value="">Бүх цамхаг (нийт)</option>
+                {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+            </select>
+
+            <p className="leaderboard-sub">
+                {categoryId ? 'Тухайн цамхагт дийлсэн давхрын тоогоор' : 'Нийт дийлсэн давхрын тоогоор'}
+            </p>
+
+            {loading ? (
+                <p style={{ textAlign: 'center' }}>Тэргүүлэгчдийг ачааллаж байна...</p>
+            ) : rows.length === 0 ? (
                 <p className="leaderboard-empty">Одоогоор хэн ч давхар дийлээгүй байна.</p>
             ) : (
                 <ol className="leaderboard-list">
