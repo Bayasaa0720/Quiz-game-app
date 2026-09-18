@@ -47,20 +47,6 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
         const correct = { text: currentQ.correct_answer, img: currentQ.answer_image_url, isCorrect: true };
         const displayValue = (q) => q.answer_image_url || q.correct_answer;
         const isImage = (q) => !!q.answer_image_url;
-
-        // Prefer AI-generated decoys stored on the question itself (created
-        // once, up front — see QuizCreator/api/generate-decoys) over the
-        // category pool: they're guaranteed topically relevant to THIS
-        // question rather than just "some other answer of the same type".
-        // Picking 3 at random out of up to 9 stored decoys means replaying
-        // the same question doesn't always show the same three wrong options.
-        const storedDecoys = Array.isArray(currentQ.decoys) ? currentQ.decoys.filter(Boolean) : [];
-        if (!isImage(currentQ) && storedDecoys.length >= 3) {
-            const wrongs = shuffle(storedDecoys).slice(0, 3).map(text => ({ text, img: null, isCorrect: false }));
-            setOptions(shuffle([correct, ...wrongs]));
-            return;
-        }
-
         const others = pool.filter(q => q.id !== currentQ.id);
         // Хариултын "төрөл" (зурган/текст) хэзээ ч холилдохгүй байх ёстой тул зөвхөн ижил
         // төрлийн (зурган бол ижил answer_type, эсвэл текст) асуултуудаас л декой сонгоно.
