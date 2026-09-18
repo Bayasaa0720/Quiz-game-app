@@ -19,8 +19,11 @@ const ANIM_RETURN_TO_IDLE_MS = { attack: 450, hurt: 360 };
 export default function Battle({ user, categoryId, floor, onFloorCleared, onDefeated, onHpChange }) {
     const [questions, setQuestions] = useState([]);
     const [answerPool, setAnswerPool] = useState([]);
-    const [order, setOrder] = useState([]);
-    const [currentPos, setCurrentPos] = useState(0);
+    // Front of the queue is the current question. A correct answer removes
+    // it for good; a wrong answer sends it to the back so it comes up again
+    // later — a question already answered correctly must never reappear in
+    // the same battle.
+    const [queue, setQueue] = useState([]);
     const [options, setOptions] = useState([]);
     const [selectedChoice, setSelectedChoice] = useState(null);
     const [isAnswered, setIsAnswered] = useState(false);
@@ -102,8 +105,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
         }
         setQuestions(data || []);
         setAnswerPool(poolData || []);
-        setOrder(shuffle((data || []).map(q => q.id)));
-        setCurrentPos(0);
+        setQueue(shuffle((data || []).map(q => q.id)));
         setPlayerHP(PLAYER_START_HP);
         setEnemyHP(floor.enemy_hp);
         resultSoundPlayed.current = false;
@@ -115,14 +117,14 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
     }, [loadFloor]);
 
     useEffect(() => {
-        if (status !== 'fighting' || questions.length === 0 || order.length === 0) return;
-        const currentQ = questions.find(q => q.id === order[currentPos]);
+        if (status !== 'fighting' || questions.length === 0 || queue.length === 0) return;
+        const currentQ = questions.find(q => q.id === queue[0]);
         if (currentQ) {
             generateOptions(currentQ, answerPool);
             setSelectedChoice(null);
             setIsAnswered(false);
         }
-    }, [status, questions, order, currentPos, answerPool, generateOptions]);
+    }, [status, questions, queue, answerPool, generateOptions]);
 
     useEffect(() => {
         onHpChange?.({
@@ -203,11 +205,16 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
             setStatus('lost');
             return;
         }
-        setCurrentPos(pos => {
-            const next = pos + 1;
-            if (next >= order.length) {
-                setOrder(shuffle(order));
-                return 0;
+        setQueue(q => {
+            const [current, ...rest] = q;
+            const next = selectedChoice?.isCorrect ? rest : [...rest, current];
+            if (next.length === 0) {
+                // Safety net only: every question has now been answered
+                // correctly at least once but the enemy still has HP left
+                // (enemy_hp doesn't evenly divide by DAMAGE_TO_ENEMY for
+                // this floor's question count) — reshuffle the full set
+                // again rather than soft-locking the battle.
+                return shuffle(questions.map(qq => qq.id));
             }
             return next;
         });
@@ -247,7 +254,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
         );
     }
 
-    const currentQ = questions.find(q => q.id === order[currentPos]);
+    const currentQ = questions.find(q => q.id === queue[0]);
     if (!currentQ) return null;
 
     const isFinalAction = isAnswered && (enemyHP <= 0 || playerHP <= 0);
