@@ -34,9 +34,13 @@ alter table classrooms enable row level security;
 
 create policy "classrooms_teacher_all" on classrooms
   for all using (auth.uid() = teacher_user_id) with check (auth.uid() = teacher_user_id);
+-- Санаатайгаар сурагчид зориулсан "classrooms" SELECT policy алга — сурагч
+-- classroom_members-ийг харж шалгах, classroom_members нь эргээд classrooms-ийг
+-- харж шалгах mutual policy бол Postgres-т "infinite recursion detected in
+-- policy" алдаа өгдөг тул хассан. Апп дотор сурагч тал classrooms хүснэгтийг
+-- шууд уншдаггүй (join_classroom RPC-ээс ангийн нэрийг авдаг) тул хэрэггүй.
 
 -- 3) Ангийн гишүүд (сурагч нэг ба олон ангид харьяалагдаж болно)
--- classrooms-ийн доорх "member_select" policy-с өмнө үүсгэх ёстой (доор ашиглагдана).
 create table if not exists classroom_members (
   classroom_id uuid references classrooms(id) on delete cascade,
   student_user_id uuid references auth.users(id) on delete cascade,
@@ -45,14 +49,6 @@ create table if not exists classroom_members (
 );
 
 alter table classroom_members enable row level security;
-
-create policy "classrooms_member_select" on classrooms
-  for select using (
-    exists (
-      select 1 from classroom_members cm
-      where cm.classroom_id = classrooms.id and cm.student_user_id = auth.uid()
-    )
-  );
 
 create policy "classroom_members_teacher_all" on classroom_members
   for all using (
