@@ -16,7 +16,7 @@ const DAMAGE_TO_PLAYER = 1;
 // Matches (frames / fps) of the attack/hurt sheets in PlayerCharacter/EnemyCharacter, plus a small buffer.
 const ANIM_RETURN_TO_IDLE_MS = { attack: 450, hurt: 360 };
 
-export default function Battle({ user, categoryId, floor, onFloorCleared, onDefeated, onHpChange }) {
+export default function Battle({ user, categoryId, floor, onFloorCleared, onLeaveTower, onHpChange }) {
     const [questions, setQuestions] = useState([]);
     const [answerPool, setAnswerPool] = useState([]);
     // Front of the queue is the current question. A correct answer removes
@@ -249,7 +249,10 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onDefe
                 </div>
                 <h2>💀 Ялагдлаа...</h2>
                 <p>Дахин бэлдээд оролдоорой!</p>
-                <Button variant="danger" onClick={onDefeated}>Цамхаг сонгох руу буцах</Button>
+                <div className="battle-result-actions">
+                    <Button onClick={loadFloor}>🔁 Дахин оролдох</Button>
+                    <Button variant="ghost" onClick={onLeaveTower}>← Цамхаг сонгох руу буцах</Button>
+                </div>
             </div>
         );
     }

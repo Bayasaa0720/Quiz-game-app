@@ -104,9 +104,6 @@ function App() {
         setView('TOWER_VIEW');
     };
 
-    const handleDefeated = () => {
-        goToTowerSelect();
-    };
 
     const handleManageQuestions = (categoryId) => {
         setSelectedCategory({ id: categoryId, name: '' });
@@ -173,7 +170,7 @@ function App() {
                 categoryId={selectedCategory.id}
                 floor={selectedFloor}
                 onFloorCleared={handleFloorCleared}
-                onDefeated={handleDefeated}
+                onLeaveTower={goToTowerSelect}
                 onHpChange={setBattleState}
             />
         );
