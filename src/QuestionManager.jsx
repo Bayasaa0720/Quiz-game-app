@@ -10,6 +10,7 @@ const DIFFICULTY_LABELS = { easy: 'Хялбар', normal: 'Дунд', hard: 'Х�
 export default function QuestionManager({ user, categoryId, onDone }) {
     const [questions, setQuestions] = useState([]);
     const [categoryName, setCategoryName] = useState('');
+    const [categoryMeta, setCategoryMeta] = useState({ is_global: false, is_public_requested: false });
     const [editingQuestionId, setEditingQuestionId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [searchText, setSearchText] = useState('');
@@ -36,11 +37,14 @@ export default function QuestionManager({ user, categoryId, onDone }) {
         try {
             const { data: cat } = await supabase
                 .from('categories')
-                .select('name')
+                .select('name, is_global, is_public_requested')
                 .eq('id', categoryId)
                 .eq('user_id', user.id)
                 .maybeSingle();
-            if (cat) setCategoryName(cat.name);
+            if (cat) {
+                setCategoryName(cat.name);
+                setCategoryMeta({ is_global: cat.is_global, is_public_requested: cat.is_public_requested });
+            }
 
             const { data, error } = await supabase
                 .from('quiz_items')
@@ -68,6 +72,26 @@ export default function QuestionManager({ user, categoryId, onDone }) {
             } else {
                 setCategoryName(newName);
             }
+        }
+    };
+
+    const handleRequestPublic = async () => {
+        const confirmed = await modal.confirm(
+            `«${categoryName}» цамхгийг нийтэд нээхийг хүсэх үү? Admin зөвшөөрсний дараа бүх хэрэглэгчид харагдана.`,
+            { title: 'Нийтэд нээхийг хүсэх' }
+        );
+        if (!confirmed) return;
+        const { error } = await supabase
+            .from('categories')
+            .update({ is_public_requested: true, is_public_requested_at: new Date().toISOString() })
+            .eq('id', categoryId)
+            .eq('user_id', user.id);
+        if (error) {
+            console.error('Failed to request public:', error);
+            await modal.alert('Хүсэлт илгээхэд алдаа гарлаа.');
+        } else {
+            setCategoryMeta(m => ({ ...m, is_public_requested: true }));
+            await modal.alert('Хүсэлт илгээгдлээ. Admin шалгаад зөвшөөрнө.');
         }
     };
 
@@ -144,6 +168,15 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                 <h2>{categoryName}</h2>
                 <div className="manager-header-actions">
                     <Button onClick={handleRenameCategory}>Нэр солих</Button>
+                    {!categoryMeta.is_global && (
+                        <Button
+                            variant="ghost"
+                            onClick={handleRequestPublic}
+                            disabled={categoryMeta.is_public_requested}
+                        >
+                            {categoryMeta.is_public_requested ? 'Хүсэлт илгээгдсэн' : 'Нийтэд нээхийг хүсэх'}
+                        </Button>
+                    )}
                     <Button variant="danger" onClick={handleDeleteCategory}>Ангилал устгах</Button>
                 </div>
             </div>

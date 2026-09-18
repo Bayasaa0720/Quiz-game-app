@@ -17,6 +17,15 @@
     margin: 0;
 }
 
+.tower-search {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-panel);
+    color: var(--text);
+}
+
 .tower-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

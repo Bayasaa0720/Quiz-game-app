@@ -24,6 +24,7 @@ export default function TowerSelect({
     const [loadError, setLoadError] = useState(false);
     const [manageCategoryId, setManageCategoryId] = useState('');
     const [hint, setHint] = useState('');
+    const [towerSearch, setTowerSearch] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() => {
@@ -100,11 +101,23 @@ export default function TowerSelect({
             <p className="tower-select-sub">Цамхгаа сонгож дэвшил үзье!</p>
             <AchievementBadges userId={user?.id} />
 
+            {categories.length > 3 && (
+                <input
+                    type="text"
+                    className="tower-search"
+                    placeholder="🔍 Цамхаг хайх..."
+                    value={towerSearch}
+                    onChange={(e) => setTowerSearch(e.target.value)}
+                />
+            )}
+
             <div className="tower-grid">
                 {categories.length === 0 && (
                     <p className="tower-empty">Одоогоор цамхаг байхгүй байна. Доор шинэ асуулт нэмж эхлээрэй.</p>
                 )}
-                {categories.map(cat => {
+                {categories
+                    .filter(cat => cat.name.toLowerCase().includes(towerSearch.trim().toLowerCase()))
+                    .map(cat => {
                     const total = floorCounts[cat.id] || 0;
                     const cleared = clearedCount(progressMap[cat.id]);
                     const ready = total > 0;

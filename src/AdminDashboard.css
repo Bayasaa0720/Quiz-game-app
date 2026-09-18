@@ -18,6 +18,18 @@
     color: var(--text-muted);
 }
 
+.admin-section-title {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 20px 0 10px;
+}
+
+.admin-section-title:first-of-type {
+    margin-top: 0;
+}
+
 .admin-tower-list {
     display: flex;
     flex-direction: column;
