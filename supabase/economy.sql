@@ -29,6 +29,7 @@ create table if not exists user_points (
 
 alter table user_points enable row level security;
 
+drop policy if exists "user_points_owner_select" on user_points;
 create policy "user_points_owner_select" on user_points
   for select using (auth.uid() = user_id);
 -- Санаатайгаар INSERT/UPDATE policy алга — оноо зөвхөн SECURITY DEFINER
@@ -62,12 +63,14 @@ alter table user_inventory enable row level security;
 -- эдлэлээ хэн ч харж болно. user_inventory-ийн policy эргээд shop_items-ийг
 -- лавладаггүй тул mutual recursion үүсэхгүй (classrooms.sql-д гарсан алдаа
 -- давтагдахгүй).
+drop policy if exists "shop_items_visible_select" on shop_items;
 create policy "shop_items_visible_select" on shop_items
   for select using (
     is_active = true
     or exists (select 1 from user_inventory ui where ui.item_id = shop_items.id and ui.user_id = auth.uid())
   );
 
+drop policy if exists "user_inventory_owner_select" on user_inventory;
 create policy "user_inventory_owner_select" on user_inventory
   for select using (auth.uid() = user_id);
 -- INSERT зөвхөн shop_purchase_item RPC-ээр хийгдэнэ.
