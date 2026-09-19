@@ -1,12 +1,15 @@
--- Realtime 1v1 duel систем (v5 BRD Feature 04-C) — бүрэн эцсийн хувилбар.
--- (Хуучин duels.sql-ийг аль хэдийн ажиллуулсан бол оронд нь эхлээд
--- economy.sql, дараа нь duels_v2_patch.sql-ийг ажиллуулаарай — энэ файлыг
--- дахин бүхэлд нь ажиллуулах шаардлагагүй.)
+-- Realtime 1v1 duel систем (v5 BRD Feature 04-C).
+--
+-- ЭНЭ ФАЙЛ ЦААШИД ГАНЦ ЭХ СУРВАЛЖ (single source of truth). Логик
+-- өөрчлөгдөх бүрт шинэ patch файл үүсгэхийн оронд ЭНД ШУУД edit хийж,
+-- дараа нь Supabase SQL Editor-т ЭНЭ ФАЙЛЫГ БҮХЭЛД НЬ дахин ажиллуулна —
+-- бүх функц өөрийн CREATE-ийн өмнө DROP FUNCTION IF EXISTS хийдэг тул
+-- дахин ажиллуулахад үргэлж аюулгүй.
 --
 -- Тоглогч 2 нэг ангиллаас 5 санамсаргүй асуулт хамтдаа авч, хамгийн олон
 -- зөв хариулсан нь ялна. Найздаа шууд урих (challenge) боломжтой, эсвэл
 -- нээлттэй queue-гоор санамсаргүй хүнтэй тохирно. 60 секунд хариулаагүй
--- тал автоматаар ялагдана. Ялсан тал 20 оноо авна (economy.sql-ийн
+-- тал автоматаар ялагдана. Ялсан тал 20 coin авна (economy.sql-ийн
 -- user_points хүснэгтэд).
 --
 -- Ажиллуулах дараалал: economy.sql-ийн дараа (user_points, тиймээс шинэ
@@ -35,14 +38,24 @@ create table if not exists duels (
 
 alter table duels enable row level security;
 
+drop policy if exists "duels_participant_select" on duels;
 create policy "duels_participant_select" on duels
   for select using (auth.uid() = player1_id or auth.uid() = player2_id);
 
-alter publication supabase_realtime add table duels;
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'duels'
+  ) then
+    alter publication supabase_realtime add table duels;
+  end if;
+end $$;
 
 -- Тоглогч хайх: эхлэхийн өмнө миний хуучин "waiting" мөрийг цэвэрлэнэ,
 -- нээлттэй ижил ангиллын (challenge биш) тоглолт байвал нэгдэнэ, эсэрхий
 -- бол шинэ тоглолт үүсгэж, өрсөлдөгч хүлээнэ.
+drop function if exists duel_find_match(uuid);
 create or replace function duel_find_match(p_category_id uuid)
 returns uuid
 language plpgsql
@@ -90,6 +103,7 @@ $$;
 grant execute on function duel_find_match(uuid) to authenticated;
 
 -- Хайлт цуцлах (зөвхөн хараахан өрсөлдөгчгүй байгаа өөрийн тоглолт).
+drop function if exists duel_cancel_match(uuid);
 create or replace function duel_cancel_match(p_match_id uuid)
 returns void
 language plpgsql
@@ -104,7 +118,8 @@ $$;
 grant execute on function duel_cancel_match(uuid) to authenticated;
 
 -- Тухайн асуултад хариулав: оноо нэмэх, хоёр тал хариулсан бол дараагийн
--- асуулт руу шилжих эсвэл дуусгах (дуусахад ялагчид 20 оноо олгоно).
+-- асуулт руу шилжих эсвэл дуусгах (дуусахад ялагчид 20 coin олгоно).
+drop function if exists duel_submit_answer(uuid, boolean);
 create or replace function duel_submit_answer(p_match_id uuid, p_is_correct boolean)
 returns void
 language plpgsql
@@ -184,6 +199,7 @@ grant execute on function duel_submit_answer(uuid, boolean) to authenticated;
 
 -- Хариу хүлээгдэж буй тал 60 секундээс дээш хугацаагаар хариулаагүй бол,
 -- аль хэдийн хариулсан тал тоглолтыг өөрийн ялалтаар албадан дуусгаж болно.
+drop function if exists duel_claim_timeout_win(uuid);
 create or replace function duel_claim_timeout_win(p_match_id uuid)
 returns void
 language plpgsql
@@ -227,6 +243,7 @@ $$;
 grant execute on function duel_claim_timeout_win(uuid) to authenticated;
 
 -- Найздаа шууд дуэл урих.
+drop function if exists duel_challenge_friend(uuid, uuid);
 create or replace function duel_challenge_friend(p_friend_id uuid, p_category_id uuid)
 returns uuid
 language plpgsql
@@ -266,6 +283,7 @@ $$;
 grant execute on function duel_challenge_friend(uuid, uuid) to authenticated;
 
 -- Надад ирсэн, хараахан хариулаагүй урилгууд.
+drop function if exists duel_get_pending_challenges();
 create or replace function duel_get_pending_challenges()
 returns table (match_id uuid, category_id uuid, category_name text, challenger_name text, created_at timestamptz)
 language sql
@@ -283,6 +301,7 @@ $$;
 
 grant execute on function duel_get_pending_challenges() to authenticated;
 
+drop function if exists duel_accept_challenge(uuid);
 create or replace function duel_accept_challenge(p_match_id uuid)
 returns void
 language plpgsql
@@ -302,6 +321,7 @@ $$;
 
 grant execute on function duel_accept_challenge(uuid) to authenticated;
 
+drop function if exists duel_decline_challenge(uuid);
 create or replace function duel_decline_challenge(p_match_id uuid)
 returns void
 language plpgsql
@@ -316,6 +336,7 @@ $$;
 grant execute on function duel_decline_challenge(uuid) to authenticated;
 
 -- Дуэлийн түүх (дууссан тоглолтууд).
+drop function if exists duel_get_my_history(int);
 create or replace function duel_get_my_history(p_limit int default 20)
 returns table (
   match_id uuid, category_name text, my_score int, opponent_score int,
@@ -350,6 +371,7 @@ $$;
 grant execute on function duel_get_my_history(int) to authenticated;
 
 -- Тоглолтын мөрийг тоглогчдын нэртэй нь хамт унших (polling fallback + анхны ачаалалт).
+drop function if exists duel_get_match(uuid);
 create or replace function duel_get_match(p_match_id uuid)
 returns table (
   id uuid, category_id uuid, player1_id uuid, player2_id uuid, status text,

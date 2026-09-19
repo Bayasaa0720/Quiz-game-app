@@ -1,16 +1,21 @@
--- Оноо / Дэлгүүр / Инвентар / Армор систем (v5 BRD-ийн Points, урьд нь
+-- Coin / Дэлгүүр / Инвентар / Армор систем (v5 BRD-ийн Points, урьд нь
 -- хойшлуулж байсан, одоо "armor" item болгож хэрэгжүүлж байна).
 --
--- Ажиллуулах дараалал: classrooms.sql, achievements.sql-ийг ажиллуулсны
--- дараа ЭНЭ файлыг ажиллуулна. Үүний дараа duels_v2_patch.sql (эсвэл шинэ
--- суулгалт бол шинэчлэгдсэн duels.sql)-ийг ажиллуулна — тэр файл энэ дэх
--- user_points хүснэгтийг ашигладаг.
+-- ЭНЭ ФАЙЛ ЦААШИД ГАНЦ ЭХ СУРВАЛЖ (single source of truth). Логик
+-- өөрчлөгдөх бүрт шинэ patch файл үүсгэхийн оронд ЭНД ШУУД edit хийж,
+-- дараа нь Supabase SQL Editor-т ЭНЭ ФАЙЛЫГ БҮХЭЛД НЬ дахин ажиллуулна —
+-- бүх функц өөрийн CREATE-ийн өмнө DROP FUNCTION IF EXISTS хийдэг тул
+-- (буцаах төрөл өөрчлөгдсөн ч) дахин ажиллуулахад үргэлж аюулгүй.
 --
--- Оноо farm хийхээс сэргийлэх: давхар анх удаа дийлэхэд л (аль хэдийн
--- дийлсэн давхрыг дахин давахад биш) оноо олгоно — доорх record_floor_win
--- харна уу. Achievement бүрт нэг л удаа (unique constraint-аар хамгаалагдсан)
--- оноо олгоно. Duel ялалт бүрт (2 удаа тоглогч бодитоор өрсөлдсөний эцэст)
--- оноо олгоно.
+-- Ажиллуулах дараалал: classrooms.sql, achievements.sql, дараа нь ЭНЭ
+-- файл, дараа нь duels.sql (тэр файл энэ дэх user_points хүснэгтийг
+-- ашигладаг).
+--
+-- Coin farm хийхээс сэргийлэх: (1) coin зөвхөн admin-ын баталгаажуулсан
+-- (is_global=true) цамхагт л олгоно — хувийн цамхагт дэвшил хадгалагдана,
+-- coin өгөхгүй; (2) давхрыг анх удаа дийлэхэд бүтэн дүн, дахин давахад
+-- үүний 1/10; (3) achievement бүрт нэг л удаа (unique constraint-аар
+-- хамгаалагдсан) coin олгоно.
 --
 -- Supabase Dashboard -> SQL Editor-т ажиллуулна уу.
 
@@ -80,6 +85,7 @@ alter table user_profiles add column if not exists equipped_item_id uuid referen
 -- true) цамхагт л олгоно. Хувь хэрэглэгчийн өөрийн үүсгэсэн цамхаг (өөрөө
 -- хялбар асуулт зохиогоод хязгааргүй "анх удаагийн" давхар үүсгэж болдог)
 -- дэвшил хадгалагдсаар байх ч coin өгөхгүй.
+drop function if exists record_floor_win(uuid, int, boolean);
 create or replace function record_floor_win(p_category_id uuid, p_floor_index int, p_flawless boolean)
 returns numeric
 language plpgsql
@@ -136,6 +142,9 @@ grant execute on function record_floor_win(uuid, int, boolean) to authenticated;
 -- 6) Achievement авахад автоматаар coin олгох (trigger) — хүнд/хөнгөнөөр нь
 -- ялгаатай хэмжээгээр. user_achievements upsert(ignoreDuplicates) ашигладаг
 -- тул давхар insert хийгдэхгүй, тиймээс trigger ч давхар өдөхгүй.
+-- Trigger-ийг эхэлж унтраадаг нь функцийг DROP хийхэд саадгүй байхын тулд.
+drop trigger if exists trg_award_points_for_achievement on user_achievements;
+drop function if exists award_points_for_achievement();
 create or replace function award_points_for_achievement()
 returns trigger
 language plpgsql
@@ -161,12 +170,12 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_award_points_for_achievement on user_achievements;
 create trigger trg_award_points_for_achievement
   after insert on user_achievements
   for each row execute function award_points_for_achievement();
 
 -- 7) Дэлгүүрээс худалдаж авах / идэвхжүүлэх
+drop function if exists shop_purchase_item(uuid);
 create or replace function shop_purchase_item(p_item_id uuid)
 returns int
 language plpgsql
@@ -203,6 +212,7 @@ $$;
 
 grant execute on function shop_purchase_item(uuid) to authenticated;
 
+drop function if exists equip_item(uuid);
 create or replace function equip_item(p_item_id uuid)
 returns void
 language plpgsql
@@ -220,6 +230,7 @@ $$;
 grant execute on function equip_item(uuid) to authenticated;
 
 -- Тухайн тоглогчийн одоо идэвхжүүлсэн армор (Battle.jsx эхлэхдээ дуудна).
+drop function if exists get_my_equipped_armor();
 create or replace function get_my_equipped_armor()
 returns table(item_id uuid, name text, icon text, armor_points int)
 language sql
@@ -236,6 +247,7 @@ $$;
 grant execute on function get_my_equipped_armor() to authenticated;
 
 -- 8) Admin: дэлгүүрийн эдлэл удирдах
+drop function if exists admin_list_shop_items();
 create or replace function admin_list_shop_items()
 returns setof shop_items
 language plpgsql
@@ -253,6 +265,7 @@ $$;
 
 grant execute on function admin_list_shop_items() to authenticated;
 
+drop function if exists admin_upsert_shop_item(uuid, text, text, text, int, int, boolean);
 create or replace function admin_upsert_shop_item(
   p_id uuid, p_name text, p_description text, p_icon text,
   p_armor_points int, p_price int, p_is_active boolean
@@ -287,6 +300,7 @@ $$;
 
 grant execute on function admin_upsert_shop_item(uuid, text, text, text, int, int, boolean) to authenticated;
 
+drop function if exists admin_delete_shop_item(uuid);
 create or replace function admin_delete_shop_item(p_id uuid)
 returns void
 language plpgsql
