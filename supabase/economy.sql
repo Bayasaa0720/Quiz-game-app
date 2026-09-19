@@ -70,10 +70,11 @@ create policy "user_inventory_owner_select" on user_inventory
 -- 4) Идэвхжүүлсэн эдлэл — user_profiles (classrooms.sql-д үүссэн) дээр нэг багана.
 alter table user_profiles add column if not exists equipped_item_id uuid references shop_items(id);
 
--- 5) Давхар дийлэх бүрд (анх удаа болон дахин давахад ч адилхан) давхрын
--- хүнд/хөнгөнөөс хамаарсан coin олгож, tower_progress-ийг сервер талд
--- бичнэ (Battle.jsx цаашид шууд tower_progress бичихээ больж, зөвхөн энэ
--- RPC-ийг дуудна). Хялбар=0.3, дунд=0.5, хүнд=0.7, цэвэр ялалт бол 2 дахин.
+-- 5) Давхар дийлэхэд tower_progress-ийг сервер талд бичиж, давхрын хүнд/
+-- хөнгөнөөс хамаарсан coin олгоно (Battle.jsx цаашид шууд tower_progress
+-- бичихээ больж, зөвхөн энэ RPC-ийг дуудна). Хялбар=0.3, дунд=0.5, хүнд=0.7
+-- — гэхдээ энэ бол зөвхөн АНХ УДАА тухайн давхрыг дийлэхэд; дахин давахад
+-- үүний 1/10-ийг л олгоно. Цэвэр ялалт бол аль ч тохиолдолд 2 дахин.
 create or replace function record_floor_win(p_category_id uuid, p_floor_index int, p_flawless boolean)
 returns numeric
 language plpgsql
@@ -81,10 +82,14 @@ security definer
 set search_path = public
 as $$
 declare
+  v_old_highest int;
   v_difficulty text;
   v_base numeric;
   v_points numeric;
 begin
+  select highest_cleared_floor into v_old_highest
+  from tower_progress where user_id = auth.uid() and category_id = p_category_id;
+
   insert into tower_progress (user_id, category_id, highest_cleared_floor, updated_at)
   values (auth.uid(), p_category_id, p_floor_index, now())
   on conflict (user_id, category_id) do update
@@ -100,7 +105,13 @@ begin
     when 'hard' then 0.7
     else 0.5 -- 'normal' болон тодорхойгүй тохиолдол
   end;
-  v_points := v_base * (case when p_flawless then 2 else 1 end);
+
+  if v_old_highest is null or p_floor_index > v_old_highest then
+    v_points := v_base; -- анх удаа дийлж байна
+  else
+    v_points := v_base / 10; -- дахин давалт
+  end if;
+  v_points := v_points * (case when p_flawless then 2 else 1 end);
 
   insert into user_points (user_id, balance, updated_at)
   values (auth.uid(), v_points, now())
@@ -112,19 +123,30 @@ $$;
 
 grant execute on function record_floor_win(uuid, int, boolean) to authenticated;
 
--- 6) Achievement авахад автоматаар оноо олгох (trigger). user_achievements
--- upsert(ignoreDuplicates) ашигладаг тул давхар insert хийгдэхгүй, тиймээс
--- trigger ч давхар өдөхгүй.
+-- 6) Achievement авахад автоматаар coin олгох (trigger) — хүнд/хөнгөнөөр нь
+-- ялгаатай хэмжээгээр. user_achievements upsert(ignoreDuplicates) ашигладаг
+-- тул давхар insert хийгдэхгүй, тиймээс trigger ч давхар өдөхгүй.
 create or replace function award_points_for_achievement()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_points numeric;
 begin
+  v_points := case new.achievement_id
+    when 'first_floor' then 15      -- хялбар — эхний алхам
+    when 'flawless_floor' then 20   -- дунд зэрэг — анхаарал шаардана
+    when 'duel_first_win' then 25   -- дунд-хүнд — жинхэнэ өрсөлдөгчийг ялах хэрэгтэй
+    when 'tower_complete' then 30   -- хүнд — бүтэн цамхаг дийлэх хэрэгтэй
+    when 'leaderboard_top1' then 30 -- хүнд — #1 байр авах хэрэгтэй
+    else 15
+  end;
+
   insert into user_points (user_id, balance, updated_at)
-  values (new.user_id, 15, now())
-  on conflict (user_id) do update set balance = user_points.balance + 15, updated_at = now();
+  values (new.user_id, v_points, now())
+  on conflict (user_id) do update set balance = user_points.balance + v_points, updated_at = now();
   return new;
 end;
 $$;
