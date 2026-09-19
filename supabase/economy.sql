@@ -94,10 +94,15 @@ begin
 
   if v_old_highest is null or p_floor_index > v_old_highest then
     v_points := 5 + (case when p_flawless then 5 else 0 end);
-    insert into user_points (user_id, balance, updated_at)
-    values (auth.uid(), v_points, now())
-    on conflict (user_id) do update set balance = user_points.balance + v_points, updated_at = now();
+  else
+    -- Аль хэдийн дийлсэн давхрыг дахин давсан ч бага зэрэг урамшуулна
+    -- (farm хийж болохуйц хэмжээнд биш, зөвхөн дасгал хийсний тэмдэг).
+    v_points := 1;
   end if;
+
+  insert into user_points (user_id, balance, updated_at)
+  values (auth.uid(), v_points, now())
+  on conflict (user_id) do update set balance = user_points.balance + v_points, updated_at = now();
 
   return v_points;
 end;
