@@ -302,6 +302,10 @@ $$;
 grant execute on function duel_get_my_history(int) to authenticated;
 
 -- duel_get_match-д round_started_at-ыг нэмж буцаана (timeout тооцоход).
+-- Буцаах баганын бүтэц өөрчлөгдсөн тул CREATE OR REPLACE хийхийн өмнө
+-- хуучин функцийг устгах ёстой (Postgres OUT parameter row type-ийг
+-- шууд солиход зөвшөөрдөггүй).
+drop function if exists duel_get_match(uuid);
 create or replace function duel_get_match(p_match_id uuid)
 returns table (
   id uuid, category_id uuid, player1_id uuid, player2_id uuid, status text,
