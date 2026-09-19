@@ -20,6 +20,10 @@ export default function TowerSelect({
     onOpenLeaderboard,
     onOpenFriends,
     onOpenClassrooms,
+    onOpenInventory,
+    onOpenShop,
+    onOpenDuelHistory,
+    onAcceptChallenge,
 }) {
     const [categories, setCategories] = useState([]);
     const [floorCounts, setFloorCounts] = useState({});
@@ -32,12 +36,30 @@ export default function TowerSelect({
     const [isAdmin, setIsAdmin] = useState(false);
     const [joinCode, setJoinCode] = useState('');
     const [joinHint, setJoinHint] = useState('');
+    const [pointsBalance, setPointsBalance] = useState(0);
+    const [pendingChallenges, setPendingChallenges] = useState([]);
 
     useEffect(() => {
         supabase.rpc('is_app_admin').then(({ data, error }) => {
             if (!error) setIsAdmin(!!data);
         });
-    }, []);
+        supabase.from('user_points').select('balance').eq('user_id', user.id).maybeSingle().then(({ data }) => {
+            setPointsBalance(data?.balance || 0);
+        });
+        supabase.rpc('duel_get_pending_challenges').then(({ data, error }) => {
+            if (!error) setPendingChallenges(data || []);
+        });
+    }, [user.id]);
+
+    const handleAcceptChallenge = (challenge) => {
+        setPendingChallenges(list => list.filter(c => c.match_id !== challenge.match_id));
+        onAcceptChallenge(challenge.match_id, challenge.category_id, challenge.category_name);
+    };
+
+    const handleDeclineChallenge = async (challenge) => {
+        setPendingChallenges(list => list.filter(c => c.match_id !== challenge.match_id));
+        await supabase.rpc('duel_decline_challenge', { p_match_id: challenge.match_id });
+    };
 
     const fetchTowers = useCallback(async () => {
         if (!user) return;
@@ -125,7 +147,23 @@ export default function TowerSelect({
         <div className="tower-select">
             <h1>Тавтай морил, {user?.email}!</h1>
             <p className="tower-select-sub">Цамхгаа сонгож дэвшил үзье!</p>
+            <p className="tower-points-balance">💰 {pointsBalance} оноо</p>
             <AchievementBadges userId={user?.id} />
+
+            {pendingChallenges.length > 0 && (
+                <Card className="pending-challenges-panel">
+                    <h3>⚔️ Дуэлийн урилга</h3>
+                    {pendingChallenges.map(c => (
+                        <div key={c.match_id} className="pending-challenge-row">
+                            <span>{c.challenger_name} — {c.category_name}</span>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                                <Button variant="success" onClick={() => handleAcceptChallenge(c)}>Тоглох</Button>
+                                <Button variant="ghost" onClick={() => handleDeclineChallenge(c)}>Татгалзах</Button>
+                            </div>
+                        </div>
+                    ))}
+                </Card>
+            )}
 
             {categories.length > 3 && (
                 <input
@@ -192,6 +230,18 @@ export default function TowerSelect({
 
             <Button variant="ghost" onClick={onOpenFriends} className="leaderboard-link">
                 👥 Найзууд
+            </Button>
+
+            <Button variant="ghost" onClick={onOpenDuelHistory} className="leaderboard-link">
+                📜 Дуэлийн түүх
+            </Button>
+
+            <Button variant="ghost" onClick={onOpenInventory} className="leaderboard-link">
+                🎒 Инвентар
+            </Button>
+
+            <Button variant="ghost" onClick={onOpenShop} className="leaderboard-link">
+                🛒 Дэлгүүр
             </Button>
 
             {userRole === 'teacher' && (

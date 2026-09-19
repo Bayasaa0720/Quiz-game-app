@@ -9,10 +9,14 @@ import Leaderboard from './Leaderboard.jsx';
 import Friends from './Friends.jsx';
 import TeacherDashboard from './TeacherDashboard.jsx';
 import Duel from './Duel.jsx';
+import DuelHistory from './DuelHistory.jsx';
+import Inventory from './Inventory.jsx';
+import Shop from './Shop.jsx';
 import Login from './Login.jsx';
 import Register from './register.jsx';
 import { supabase } from './supabaseClient.jsx';
 import { ModalProvider } from './components/ModalProvider.jsx';
+import { ToastProvider } from './components/ToastProvider.jsx';
 import { PlayerSidebar, EnemySidebar } from './components/Sidebar.jsx';
 import InstallPrompt from './components/InstallPrompt.jsx';
 import { isMuted, toggleMuted } from './sound.js';
@@ -26,6 +30,8 @@ const VIEWS_WITH_SIDEBARS = new Set(['BATTLE']);
 const IDLE_BATTLE_STATE = {
     playerHP: 100,
     playerMaxHP: 100,
+    armorHP: 0,
+    armorMax: 0,
     enemyHP: 100,
     enemyMaxHP: 100,
     playerAnim: 'idle',
@@ -44,6 +50,7 @@ function App() {
     const [checkingSession, setCheckingSession] = useState(true);
     const [sfxMuted, setSfxMuted] = useState(isMuted());
     const [userRole, setUserRole] = useState(null); // 'student' | 'teacher'
+    const [duelInvite, setDuelInvite] = useState(null); // { matchId, isChallengeAccept } | null
     const viewportWidth = useViewportWidth();
 
     const handleToggleMute = () => {
@@ -119,6 +126,7 @@ function App() {
         setView('TOWER_SELECT');
         setSelectedCategory(null);
         setSelectedFloor(null);
+        setDuelInvite(null);
         setBattleState(IDLE_BATTLE_STATE);
     };
 
@@ -134,6 +142,22 @@ function App() {
 
     const handleStartDuel = (categoryId, categoryName) => {
         setSelectedCategory({ id: categoryId, name: categoryName });
+        setDuelInvite(null);
+        setView('DUEL');
+    };
+
+    // Friends.jsx-ээс найзаа урьсны дараа — challenge аль хэдийн үүссэн
+    // тул Duel.jsx нээлттэй queue хайхгүй, шууд тэр match-руу орно.
+    const handleChallengeCreated = (matchId, categoryId, categoryName) => {
+        setSelectedCategory({ id: categoryId, name: categoryName });
+        setDuelInvite({ matchId, isChallengeAccept: false });
+        setView('DUEL');
+    };
+
+    // TowerSelect дэх "Тоглох" товч дарахад ирсэн урилгыг хүлээн авна.
+    const handleAcceptChallenge = (matchId, categoryId, categoryName) => {
+        setSelectedCategory({ id: categoryId, name: categoryName });
+        setDuelInvite({ matchId, isChallengeAccept: true });
         setView('DUEL');
     };
 
@@ -201,6 +225,10 @@ function App() {
                 onOpenLeaderboard={() => setView('LEADERBOARD')}
                 onOpenFriends={() => setView('FRIENDS')}
                 onOpenClassrooms={() => setView('CLASSROOMS')}
+                onOpenInventory={() => setView('INVENTORY')}
+                onOpenShop={() => setView('SHOP')}
+                onOpenDuelHistory={() => setView('DUEL_HISTORY')}
+                onAcceptChallenge={handleAcceptChallenge}
                 userRole={userRole}
             />
         );
@@ -209,7 +237,13 @@ function App() {
     } else if (view === 'LEADERBOARD') {
         currentViewContent = <Leaderboard user={user} onBack={goToTowerSelect} />;
     } else if (view === 'FRIENDS') {
-        currentViewContent = <Friends user={user} onBack={goToTowerSelect} />;
+        currentViewContent = <Friends user={user} onBack={goToTowerSelect} onChallengeCreated={handleChallengeCreated} />;
+    } else if (view === 'INVENTORY') {
+        currentViewContent = <Inventory user={user} onBack={goToTowerSelect} />;
+    } else if (view === 'SHOP') {
+        currentViewContent = <Shop user={user} onBack={goToTowerSelect} />;
+    } else if (view === 'DUEL_HISTORY') {
+        currentViewContent = <DuelHistory onBack={goToTowerSelect} />;
     } else if (view === 'CLASSROOMS') {
         currentViewContent = <TeacherDashboard user={user} onBack={goToTowerSelect} />;
     } else if (view === 'TOWER_VIEW' && selectedCategory) {
@@ -229,6 +263,8 @@ function App() {
                 user={user}
                 categoryId={selectedCategory.id}
                 categoryName={selectedCategory.name}
+                matchId={duelInvite?.matchId}
+                isChallengeAccept={duelInvite?.isChallengeAccept}
                 onBack={goToTowerSelect}
             />
         );
@@ -278,55 +314,59 @@ function App() {
         : undefined;
 
     return (
-        <ModalProvider>
-            <div className="app-shell">
-                <header className="app-header">
-                    <h1>Flashcard Quiz Master</h1>
-                    <div className="app-header-right">
-                        {user && (
-                            <p className="app-user">Хэрэглэгч: <strong>{user.email}</strong></p>
-                        )}
-                        <button
-                            type="button"
-                            className="mute-toggle"
-                            onClick={handleToggleMute}
-                            aria-label={sfxMuted ? 'Дуу асаах' : 'Дуу хаах'}
-                            title={sfxMuted ? 'Дуу асаах' : 'Дуу хаах'}
-                        >
-                            {sfxMuted ? '🔇' : '🔊'}
-                        </button>
-                    </div>
-                </header>
+        <ToastProvider>
+            <ModalProvider>
+                <div className="app-shell">
+                    <header className="app-header">
+                        <h1>Flashcard Quiz Master</h1>
+                        <div className="app-header-right">
+                            {user && (
+                                <p className="app-user">Хэрэглэгч: <strong>{user.email}</strong></p>
+                            )}
+                            <button
+                                type="button"
+                                className="mute-toggle"
+                                onClick={handleToggleMute}
+                                aria-label={sfxMuted ? 'Дуу асаах' : 'Дуу хаах'}
+                                title={sfxMuted ? 'Дуу асаах' : 'Дуу хаах'}
+                            >
+                                {sfxMuted ? '🔇' : '🔊'}
+                            </button>
+                        </div>
+                    </header>
 
-                <div className={`app-body${showSidebars ? ' with-sidebars' : ''}${inBattle ? ' in-battle' : ''}`}>
-                    {showSidebars && (
-                        <PlayerSidebar
-                            hp={inBattle ? battleState.playerHP : undefined}
-                            maxHp={inBattle ? battleState.playerMaxHP : undefined}
-                            note={inBattle ? undefined : 'Тулаан эхлээгүй байна'}
-                            anim={inBattle ? battleState.playerAnim : 'idle'}
-                            tick={inBattle ? battleState.playerTick : 0}
-                            size={characterSize}
-                        />
-                    )}
-                    <main className="app-main">
-                        {currentViewContent}
-                    </main>
-                    {showSidebars && (
-                        <EnemySidebar
-                            hp={inBattle ? battleState.enemyHP : undefined}
-                            maxHp={inBattle ? battleState.enemyMaxHP : undefined}
-                            note={inBattle ? undefined : 'Тулаан эхлээгүй байна'}
-                            anim={inBattle ? battleState.enemyAnim : 'idle'}
-                            tick={inBattle ? battleState.enemyTick : 0}
-                            variant={inBattle ? battleState.enemyVariant : 'orc'}
-                            size={characterSize}
-                        />
-                    )}
+                    <div className={`app-body${showSidebars ? ' with-sidebars' : ''}${inBattle ? ' in-battle' : ''}`}>
+                        {showSidebars && (
+                            <PlayerSidebar
+                                hp={inBattle ? battleState.playerHP : undefined}
+                                maxHp={inBattle ? battleState.playerMaxHP : undefined}
+                                armor={inBattle ? battleState.armorHP : undefined}
+                                armorMax={inBattle ? battleState.armorMax : undefined}
+                                note={inBattle ? undefined : 'Тулаан эхлээгүй байна'}
+                                anim={inBattle ? battleState.playerAnim : 'idle'}
+                                tick={inBattle ? battleState.playerTick : 0}
+                                size={characterSize}
+                            />
+                        )}
+                        <main className="app-main">
+                            {currentViewContent}
+                        </main>
+                        {showSidebars && (
+                            <EnemySidebar
+                                hp={inBattle ? battleState.enemyHP : undefined}
+                                maxHp={inBattle ? battleState.enemyMaxHP : undefined}
+                                note={inBattle ? undefined : 'Тулаан эхлээгүй байна'}
+                                anim={inBattle ? battleState.enemyAnim : 'idle'}
+                                tick={inBattle ? battleState.enemyTick : 0}
+                                variant={inBattle ? battleState.enemyVariant : 'orc'}
+                                size={characterSize}
+                            />
+                        )}
+                    </div>
                 </div>
-            </div>
-            <InstallPrompt />
-        </ModalProvider>
+                <InstallPrompt />
+            </ModalProvider>
+        </ToastProvider>
     );
 }
 

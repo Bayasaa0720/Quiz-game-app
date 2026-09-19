@@ -1,48 +1,18 @@
--- Realtime 1v1 duel систем (v5 BRD Feature 04-C) — бүрэн эцсийн хувилбар.
--- (Хуучин duels.sql-ийг аль хэдийн ажиллуулсан бол оронд нь эхлээд
--- economy.sql, дараа нь duels_v2_patch.sql-ийг ажиллуулаарай — энэ файлыг
--- дахин бүхэлд нь ажиллуулах шаардлагагүй.)
+-- duels.sql-ийг аль хэдийн ажиллуулсан хэрэглэгчид зориулсан нэмэлт (v2):
+-- - 60 секунд хариулаагүй бол автомат ялагдал (timeout forfeit)
+-- - "waiting" хайлт орхигдвол дараагийн хайлтын үед автоматаар цэвэрлэх
+-- - найздаа шууд дуэл урих (challenge) урсгал
+-- - дуэлийн түүх харах RPC
+-- - ялалтад оноо (20) олгох
 --
--- Тоглогч 2 нэг ангиллаас 5 санамсаргүй асуулт хамтдаа авч, хамгийн олон
--- зөв хариулсан нь ялна. Найздаа шууд урих (challenge) боломжтой, эсвэл
--- нээлттэй queue-гоор санамсаргүй хүнтэй тохирно. 60 секунд хариулаагүй
--- тал автоматаар ялагдана. Ялсан тал 20 оноо авна (economy.sql-ийн
--- user_points хүснэгтэд).
---
--- Ажиллуулах дараалал: economy.sql-ийн дараа (user_points, тиймээс шинэ
--- суулгалт бол эхлээд classrooms.sql -> achievements.sql -> economy.sql ->
--- ЭНЭ файл). Мөн Database -> Replication дотор "duels" хүснэгтэд Realtime
--- асаалттай эсэхийг шалгаарай.
+-- ЭНЭ ФАЙЛЫГ economy.sql-ИЙН ДАРАА ажиллуулна уу (user_points хүснэгтийг
+-- ашигладаг). Supabase Dashboard -> SQL Editor-т ажиллуулна уу.
 
-create table if not exists duels (
-  id uuid primary key default gen_random_uuid(),
-  category_id uuid references categories(id) on delete cascade,
-  player1_id uuid references auth.users(id) on delete cascade,
-  player2_id uuid references auth.users(id) on delete cascade,
-  status text not null default 'waiting' check (status in ('waiting', 'active', 'finished')),
-  question_ids uuid[] not null,
-  current_index int not null default 0,
-  player1_score int not null default 0,
-  player2_score int not null default 0,
-  player1_round_answered boolean not null default false,
-  player2_round_answered boolean not null default false,
-  winner_id uuid references auth.users(id),
-  round_started_at timestamptz not null default now(),
-  is_direct_challenge boolean not null default false,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+alter table duels add column if not exists round_started_at timestamptz not null default now();
+alter table duels add column if not exists is_direct_challenge boolean not null default false;
 
-alter table duels enable row level security;
-
-create policy "duels_participant_select" on duels
-  for select using (auth.uid() = player1_id or auth.uid() = player2_id);
-
-alter publication supabase_realtime add table duels;
-
--- Тоглогч хайх: эхлэхийн өмнө миний хуучин "waiting" мөрийг цэвэрлэнэ,
--- нээлттэй ижил ангиллын (challenge биш) тоглолт байвал нэгдэнэ, эсэрхий
--- бол шинэ тоглолт үүсгэж, өрсөлдөгч хүлээнэ.
+-- duel_find_match: эхлэхийн өмнө миний хуучин "waiting" мөрийг цэвэрлэнэ,
+-- зөвхөн нээлттэй queue-г (challenge биш) хайна, round эхлэх цагийг тэмдэглэнэ.
 create or replace function duel_find_match(p_category_id uuid)
 returns uuid
 language plpgsql
@@ -87,24 +57,8 @@ begin
 end;
 $$;
 
-grant execute on function duel_find_match(uuid) to authenticated;
-
--- Хайлт цуцлах (зөвхөн хараахан өрсөлдөгчгүй байгаа өөрийн тоглолт).
-create or replace function duel_cancel_match(p_match_id uuid)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  delete from duels where id = p_match_id and player1_id = auth.uid() and status = 'waiting';
-end;
-$$;
-
-grant execute on function duel_cancel_match(uuid) to authenticated;
-
--- Тухайн асуултад хариулав: оноо нэмэх, хоёр тал хариулсан бол дараагийн
--- асуулт руу шилжих эсвэл дуусгах (дуусахад ялагчид 20 оноо олгоно).
+-- duel_submit_answer: round дуусахад round_started_at-ыг шинэчилнэ, тоглолт
+-- дуусахад ялагчид 20 оноо олгоно.
 create or replace function duel_submit_answer(p_match_id uuid, p_is_correct boolean)
 returns void
 language plpgsql
@@ -179,8 +133,6 @@ begin
   end if;
 end;
 $$;
-
-grant execute on function duel_submit_answer(uuid, boolean) to authenticated;
 
 -- Хариу хүлээгдэж буй тал 60 секундээс дээш хугацаагаар хариулаагүй бол,
 -- аль хэдийн хариулсан тал тоглолтыг өөрийн ялалтаар албадан дуусгаж болно.
@@ -349,7 +301,7 @@ $$;
 
 grant execute on function duel_get_my_history(int) to authenticated;
 
--- Тоглолтын мөрийг тоглогчдын нэртэй нь хамт унших (polling fallback + анхны ачаалалт).
+-- duel_get_match-д round_started_at-ыг нэмж буцаана (timeout тооцоход).
 create or replace function duel_get_match(p_match_id uuid)
 returns table (
   id uuid, category_id uuid, player1_id uuid, player2_id uuid, status text,

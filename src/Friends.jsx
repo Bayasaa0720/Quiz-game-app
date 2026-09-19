@@ -6,7 +6,7 @@ import ErrorState from './components/ErrorState.jsx';
 import { useModal } from './components/modalContext.js';
 import './Friends.css';
 
-export default function Friends({ user, onBack }) {
+export default function Friends({ user, onBack, onChallengeCreated }) {
     const [friendships, setFriendships] = useState([]);
     const [stats, setStats] = useState({});
     const [loading, setLoading] = useState(true);
@@ -14,7 +14,22 @@ export default function Friends({ user, onBack }) {
     const [searchText, setSearchText] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [searching, setSearching] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [challengeCategoryId, setChallengeCategoryId] = useState('');
+    const [challengingId, setChallengingId] = useState(null);
     const modal = useModal();
+
+    useEffect(() => {
+        supabase
+            .from('categories')
+            .select('id, name, user_id, is_global')
+            .or(`user_id.eq.${user.id},is_global.eq.true`)
+            .order('name', { ascending: true })
+            .then(({ data }) => {
+                setCategories(data || []);
+                if (data?.length) setChallengeCategoryId(prev => prev || data[0].id);
+            });
+    }, [user.id]);
 
     const fetchFriendships = useCallback(async () => {
         setLoading(true);
@@ -89,6 +104,25 @@ export default function Friends({ user, onBack }) {
         if (!error) await fetchFriendships();
     };
 
+    const handleChallenge = async (friendUserId) => {
+        if (!challengeCategoryId) {
+            await modal.alert('Эхлээд сэдэв сонгоно уу.');
+            return;
+        }
+        setChallengingId(friendUserId);
+        const { data: matchId, error } = await supabase.rpc('duel_challenge_friend', {
+            p_friend_id: friendUserId,
+            p_category_id: challengeCategoryId,
+        });
+        setChallengingId(null);
+        if (error) {
+            await modal.alert(error.message || 'Урихад алдаа гарлаа.');
+            return;
+        }
+        const category = categories.find(c => c.id === challengeCategoryId);
+        onChallengeCreated?.(matchId, challengeCategoryId, category?.name || '');
+    };
+
     if (loading) return <p style={{ textAlign: 'center' }}>Найзуудыг ачааллаж байна...</p>;
     if (loadError) return <ErrorState message="Найзуудыг ачаалахад алдаа гарлаа." onRetry={fetchFriendships} />;
 
@@ -158,6 +192,15 @@ export default function Friends({ user, onBack }) {
 
             <div className="friends-section">
                 <h3>Миний найзууд ({accepted.length})</h3>
+                {accepted.length > 0 && categories.length > 0 && (
+                    <select
+                        className="friends-challenge-category"
+                        value={challengeCategoryId}
+                        onChange={(e) => setChallengeCategoryId(e.target.value)}
+                    >
+                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                )}
                 {accepted.length === 0 ? (
                     <p className="friends-empty">Одоогоор найз алга. Дээрээс имэйлээр хайж нэмнэ үү.</p>
                 ) : (
@@ -165,7 +208,16 @@ export default function Friends({ user, onBack }) {
                         <div key={f.friendshipId} className="friends-row">
                             <span>{f.display_name}</span>
                             <span className="friends-score">{f.total_floors_cleared || 0} давхар</span>
-                            <Button variant="ghost" onClick={() => removeFriendship(f.friendshipId)}>Хасах</Button>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                                <Button
+                                    variant="success"
+                                    onClick={() => handleChallenge(f.user_id)}
+                                    disabled={challengingId === f.user_id || !challengeCategoryId}
+                                >
+                                    ⚔️ Урих
+                                </Button>
+                                <Button variant="ghost" onClick={() => removeFriendship(f.friendshipId)}>Хасах</Button>
+                            </div>
                         </div>
                     ))
                 )}

@@ -6,9 +6,14 @@ import ErrorState from './components/ErrorState.jsx';
 import { useModal } from './components/modalContext.js';
 import './AdminDashboard.css';
 
+const EMPTY_SHOP_FORM = { id: null, name: '', description: '', icon: '🛡️', armor_points: 1, price: 10, is_active: true };
+
 export default function AdminDashboard({ onBack }) {
     const [towers, setTowers] = useState([]);
     const [publicRequests, setPublicRequests] = useState([]);
+    const [shopItems, setShopItems] = useState([]);
+    const [shopForm, setShopForm] = useState(EMPTY_SHOP_FORM);
+    const [savingShopItem, setSavingShopItem] = useState(false);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
     const [regeneratingId, setRegeneratingId] = useState(null);
@@ -19,16 +24,18 @@ export default function AdminDashboard({ onBack }) {
         setLoading(true);
         setLoadError(false);
         try {
-            const [{ data: towerData, error: towerErr }, { data: reqData, error: reqErr }] = await Promise.all([
+            const [{ data: towerData, error: towerErr }, { data: reqData, error: reqErr }, { data: shopData, error: shopErr }] = await Promise.all([
                 supabase.rpc('admin_list_towers'),
                 supabase.rpc('admin_list_public_requests'),
+                supabase.rpc('admin_list_shop_items'),
             ]);
             if (towerErr) throw towerErr;
             setTowers(towerData || []);
-            // Хүсэлтийн жагсаалт нь public_gallery.sql ажиллуулаагүй хуучин
-            // environment дээр функц олдохгүй байж болно — тэр тохиолдолд
-            // энэ хэсгийг л хоосон үлдээж, бусад Admin функцийг эвдэхгүй.
+            // Хүсэлтийн жагсаалт болон дэлгүүрийн эдлэл нь public_gallery.sql /
+            // economy.sql ажиллуулаагүй хуучин environment дээр функц олдохгүй
+            // байж болно — тэр тохиолдолд тэр хэсгүүдийг л хоосон үлдээнэ.
             if (!reqErr) setPublicRequests(reqData || []);
+            if (!shopErr) setShopItems(shopData || []);
         } catch (err) {
             console.error('Error loading admin tower overview:', err);
             setLoadError(true);
@@ -97,6 +104,37 @@ export default function AdminDashboard({ onBack }) {
         } finally {
             setDecidingId(null);
         }
+    };
+
+    const handleSaveShopItem = async () => {
+        if (!shopForm.name.trim() || shopForm.price === '' || shopForm.armor_points === '') return;
+        setSavingShopItem(true);
+        try {
+            const { error } = await supabase.rpc('admin_upsert_shop_item', {
+                p_id: shopForm.id,
+                p_name: shopForm.name.trim(),
+                p_description: shopForm.description.trim(),
+                p_icon: shopForm.icon.trim() || '🛡️',
+                p_armor_points: Number(shopForm.armor_points),
+                p_price: Number(shopForm.price),
+                p_is_active: shopForm.is_active,
+            });
+            if (error) throw error;
+            setShopForm(EMPTY_SHOP_FORM);
+            await fetchTowers();
+        } catch (err) {
+            console.error('Error saving shop item:', err);
+            await modal.alert('Хадгалахад алдаа гарлаа.');
+        } finally {
+            setSavingShopItem(false);
+        }
+    };
+
+    const handleDeleteShopItem = async (item) => {
+        const confirmed = await modal.confirm(`«${item.name}» эдлэлийг устгах уу?`, { title: 'Устгах' });
+        if (!confirmed) return;
+        const { error } = await supabase.rpc('admin_delete_shop_item', { p_id: item.id });
+        if (!error) await fetchTowers();
     };
 
     if (loading) return <p style={{ textAlign: 'center' }}>Цамхгуудыг ачааллаж байна...</p>;
@@ -176,6 +214,84 @@ export default function AdminDashboard({ onBack }) {
                             </Card>
                         );
                     })}
+                </div>
+            )}
+
+            <h3 className="admin-section-title">Дэлгүүрийн эдлэл удирдах</h3>
+            <Card className="admin-shop-form">
+                <div className="admin-shop-form-grid">
+                    <input
+                        type="text"
+                        placeholder="Нэр"
+                        value={shopForm.name}
+                        onChange={(e) => setShopForm(f => ({ ...f, name: e.target.value }))}
+                    />
+                    <input
+                        type="text"
+                        placeholder="Icon (emoji)"
+                        value={shopForm.icon}
+                        onChange={(e) => setShopForm(f => ({ ...f, icon: e.target.value }))}
+                    />
+                    <input
+                        type="number"
+                        min="0"
+                        placeholder="Армор"
+                        value={shopForm.armor_points}
+                        onChange={(e) => setShopForm(f => ({ ...f, armor_points: e.target.value }))}
+                    />
+                    <input
+                        type="number"
+                        min="0"
+                        placeholder="Үнэ (оноо)"
+                        value={shopForm.price}
+                        onChange={(e) => setShopForm(f => ({ ...f, price: e.target.value }))}
+                    />
+                </div>
+                <input
+                    type="text"
+                    placeholder="Тайлбар"
+                    value={shopForm.description}
+                    onChange={(e) => setShopForm(f => ({ ...f, description: e.target.value }))}
+                    className="admin-shop-form-desc"
+                />
+                <label className="admin-shop-form-active">
+                    <input
+                        type="checkbox"
+                        checked={shopForm.is_active}
+                        onChange={(e) => setShopForm(f => ({ ...f, is_active: e.target.checked }))}
+                    />
+                    Идэвхтэй (дэлгүүрт харагдана)
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <Button variant="success" onClick={handleSaveShopItem} disabled={savingShopItem}>
+                        {shopForm.id ? 'Хадгалах' : 'Нэмэх'}
+                    </Button>
+                    {shopForm.id && (
+                        <Button variant="ghost" onClick={() => setShopForm(EMPTY_SHOP_FORM)}>Цуцлах</Button>
+                    )}
+                </div>
+            </Card>
+
+            {shopItems.length === 0 ? (
+                <p className="admin-empty">Дэлгүүрт эдлэл алга байна.</p>
+            ) : (
+                <div className="admin-tower-list">
+                    {shopItems.map(item => (
+                        <Card key={item.id} className="admin-tower-row">
+                            <div className="admin-tower-info">
+                                <h3>{item.icon} {item.name}{!item.is_active && ' (идэвхгүй)'}</h3>
+                                <p className="admin-tower-stats">
+                                    Армор: {item.armor_points} · Үнэ: {item.price} оноо
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <Button variant="ghost" onClick={() => setShopForm({ ...item, armor_points: String(item.armor_points), price: String(item.price) })}>
+                                    Засах
+                                </Button>
+                                <Button variant="danger" onClick={() => handleDeleteShopItem(item)}>Устгах</Button>
+                            </div>
+                        </Card>
+                    ))}
                 </div>
             )}
         </div>

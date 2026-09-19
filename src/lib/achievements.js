@@ -8,14 +8,22 @@ export const ACHIEVEMENTS = [
     { id: 'duel_first_win', icon: '⚔️', name: 'Дуэлийн ялагч', description: '1v1 өрсөлдөөнд анх удаа ялсан' },
 ];
 
+// Буцаах утга: анх удаа шинээр авсан бол true (toast мэдэгдэл харуулахад ашиглана),
+// аль хэдийн байсан (эсвэл алдаа гарсан) бол false.
 export async function awardAchievement(supabase, userId, achievementId) {
-    if (!userId) return;
+    if (!userId) return false;
     try {
-        await supabase.from('user_achievements').upsert(
-            { user_id: userId, achievement_id: achievementId },
-            { onConflict: 'user_id,achievement_id', ignoreDuplicates: true }
-        );
+        const { data, error } = await supabase
+            .from('user_achievements')
+            .upsert(
+                { user_id: userId, achievement_id: achievementId },
+                { onConflict: 'user_id,achievement_id', ignoreDuplicates: true }
+            )
+            .select();
+        if (error) throw error;
+        return (data?.length ?? 0) > 0;
     } catch (err) {
         console.error('Failed to award achievement', achievementId, err);
+        return false;
     }
 }

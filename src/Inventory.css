@@ -1,0 +1,62 @@
+.inventory-page {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.inventory-back {
+    margin-bottom: 12px;
+}
+
+.inventory-page h2 {
+    margin: 0 0 4px;
+    color: var(--accent);
+}
+
+.inventory-sub {
+    color: var(--text-muted);
+    margin: 0 0 18px;
+}
+
+.inventory-empty {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 24px 0;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.inventory-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+}
+
+.inventory-item.equipped {
+    border-color: var(--accent);
+}
+
+.inventory-item-icon {
+    font-size: 1.8rem;
+}
+
+.inventory-item h3 {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.inventory-item-desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.inventory-item-armor {
+    font-size: 0.85rem;
+    margin: 0;
+}

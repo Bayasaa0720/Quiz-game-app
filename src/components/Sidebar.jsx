@@ -3,7 +3,7 @@ import PlayerCharacter from './PlayerCharacter.jsx';
 import EnemyCharacter from './EnemyCharacter.jsx';
 import './Sidebar.css';
 
-export function PlayerSidebar({ name, hp, maxHp, note, anim, tick, size }) {
+export function PlayerSidebar({ name, hp, maxHp, armor, armorMax, note, anim, tick, size }) {
     return (
         <aside className="app-sidebar">
             <div className="sidebar-panel">
@@ -17,6 +17,14 @@ export function PlayerSidebar({ name, hp, maxHp, note, anim, tick, size }) {
                     variant="success"
                     label={<span>HP {hp ?? '-'} / {maxHp ?? '-'}</span>}
                 />
+                {armorMax > 0 && (
+                    <ProgressBar
+                        value={armor ?? 0}
+                        max={armorMax}
+                        variant="accent"
+                        label={<span>🛡️ {armor ?? 0} / {armorMax}</span>}
+                    />
+                )}
                 {note && <p className="sidebar-note">{note}</p>}
             </div>
         </aside>

@@ -148,6 +148,34 @@
     gap: 8px;
 }
 
+.tower-points-balance {
+    text-align: center;
+    font-weight: 600;
+    color: var(--accent);
+    margin: -12px 0 0;
+}
+
+.pending-challenges-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-color: var(--accent);
+}
+
+.pending-challenges-panel h3 {
+    margin: 0;
+    color: var(--accent);
+    font-size: 1rem;
+}
+
+.pending-challenge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.9rem;
+}
+
 .join-classroom-row input {
     flex: 1;
     padding: 10px 12px;

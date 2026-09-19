@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient.jsx';
 import Button from './components/Button.jsx';
 import ErrorState from './components/ErrorState.jsx';
 import { awardAchievement } from './lib/achievements.js';
+import { useToast } from './components/toastContext.js';
 import './Leaderboard.css';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -13,6 +14,7 @@ export default function Leaderboard({ user, onBack }) {
     const [categoryId, setCategoryId] = useState(''); // '' = бүх категори нийлүүлсэн
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
+    const { showToast } = useToast();
 
     useEffect(() => {
         supabase
@@ -36,7 +38,9 @@ export default function Leaderboard({ user, onBack }) {
             if (error) throw error;
             setRows(data || []);
             if (user && data?.some(r => r.user_id === user.id && Number(r.rank) === 1)) {
-                awardAchievement(supabase, user.id, 'leaderboard_top1');
+                awardAchievement(supabase, user.id, 'leaderboard_top1').then(isNew => {
+                    if (isNew) showToast({ icon: '🏆', title: 'Шинэ achievement!', message: 'Тэргүүлэгч' });
+                });
             }
         } catch (err) {
             console.error('Error loading leaderboard:', err);
@@ -44,7 +48,7 @@ export default function Leaderboard({ user, onBack }) {
         } finally {
             setLoading(false);
         }
-    }, [categoryId, user]);
+    }, [categoryId, user, showToast]);
 
     useEffect(() => {
         fetchLeaderboard();

@@ -65,3 +65,37 @@
     color: var(--danger);
     font-size: 0.85rem;
 }
+
+.admin-shop-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.admin-shop-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 8px;
+}
+
+.admin-shop-form input[type="text"],
+.admin-shop-form input[type="number"] {
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-panel);
+    color: var(--text);
+}
+
+.admin-shop-form-desc {
+    width: 100%;
+}
+
+.admin-shop-form-active {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}

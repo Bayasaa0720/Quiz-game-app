@@ -9,6 +9,7 @@ import { clampDamage, enemyVariant } from './lib/towerLogic.js';
 import { shuffle } from './lib/arrayUtils.js';
 import { buildOptions } from './lib/generateOptions.js';
 import { awardAchievement } from './lib/achievements.js';
+import { useToast } from './components/toastContext.js';
 import './Battle.css';
 
 const PLAYER_START_HP = 3;
@@ -31,6 +32,8 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
     const [isAnswered, setIsAnswered] = useState(false);
     const [playerHP, setPlayerHP] = useState(PLAYER_START_HP);
     const [enemyHP, setEnemyHP] = useState(floor.enemy_hp);
+    const [armorHP, setArmorHP] = useState(0);
+    const [armorMax, setArmorMax] = useState(0);
     const [correctCount, setCorrectCount] = useState(0);
     const [wrongCount, setWrongCount] = useState(0);
     const [status, setStatus] = useState('loading'); // loading | fighting | won | lost
@@ -43,6 +46,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
     const playerAnimTimeout = useRef(null);
     const enemyAnimTimeout = useRef(null);
     const variant = enemyVariant(floor.floor_index);
+    const { showToast } = useToast();
 
     useEffect(() => {
         return () => {
@@ -57,12 +61,14 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
 
     const loadFloor = useCallback(async () => {
         setStatus('loading');
-        const [{ data, error }, { data: poolData, error: poolError }] = await Promise.all([
+        const [{ data, error }, { data: poolData, error: poolError }, { data: armorRows }] = await Promise.all([
             supabase.from('quiz_items').select('*').in('id', floor.question_ids),
             // Декой сонголтыг зөвхөн энэ давхрын 5 асуултаас биш, тухайн ангиллын БҮХ
             // асуултаас авахын тулд тусад нь татна — ингэснээр ижил төрлийн (зурган/текст)
             // хариулт олдох магадлал өснө.
             supabase.from('quiz_items').select('*').eq('category_id', categoryId),
+            // Идэвхжүүлсэн армор (economy.sql) — байхгүй бол хоосон массив буцна.
+            supabase.rpc('get_my_equipped_armor'),
         ]);
         if (error || poolError) {
             console.error('Error loading battle questions:', error || poolError);
@@ -74,6 +80,9 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
         setQueue(shuffle((data || []).map(q => q.id)));
         setPlayerHP(PLAYER_START_HP);
         setEnemyHP(floor.enemy_hp);
+        const equippedArmor = armorRows?.[0]?.armor_points || 0;
+        setArmorHP(equippedArmor);
+        setArmorMax(equippedArmor);
         setCorrectCount(0);
         setWrongCount(0);
         setNextFloor(null);
@@ -99,6 +108,8 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
         onHpChange?.({
             playerHP,
             playerMaxHP: PLAYER_START_HP,
+            armorHP,
+            armorMax,
             enemyHP: Math.max(enemyHP, 0),
             enemyMaxHP: floor.enemy_hp,
             playerAnim,
@@ -107,7 +118,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
             enemyTick,
             enemyVariant: variant,
         });
-    }, [playerHP, enemyHP, floor.enemy_hp, onHpChange, playerAnim, enemyAnim, playerTick, enemyTick, variant]);
+    }, [playerHP, armorHP, armorMax, enemyHP, floor.enemy_hp, onHpChange, playerAnim, enemyAnim, playerTick, enemyTick, variant]);
 
     useEffect(() => {
         if (resultSoundPlayed.current) return;
@@ -143,7 +154,12 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
             setEnemyTick(t => t + 1);
             setPlayerAnim('hurt');
             setPlayerTick(t => t + 1);
-            setPlayerHP(hp => clampDamage(hp, DAMAGE_TO_PLAYER));
+            // Армор эхэлж шингээнэ (dagt HP хасагдахгүй), армор дуусаад л HP хасагдана.
+            setArmorHP(hp => {
+                if (hp > 0) return hp - 1;
+                setPlayerHP(playerHp => clampDamage(playerHp, DAMAGE_TO_PLAYER));
+                return hp;
+            });
             clearTimeout(enemyAnimTimeout.current);
             enemyAnimTimeout.current = setTimeout(() => setEnemyAnim('idle'), ANIM_RETURN_TO_IDLE_MS.attack);
             clearTimeout(playerAnimTimeout.current);
@@ -165,37 +181,48 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
                 correct_count: correctCount,
                 wrong_count: wrongCount,
             }).then(({ error }) => { if (error) console.warn('battle_attempts_log insert skipped:', error.message); });
+
+            const flawless = wrongCount === 0;
             try {
-                await supabase.from('tower_progress').upsert(
-                    {
-                        user_id: user.id,
-                        category_id: categoryId,
-                        highest_cleared_floor: floor.floor_index,
-                        updated_at: new Date().toISOString(),
-                    },
-                    { onConflict: 'user_id,category_id' }
-                );
-            } catch (err) {
-                console.error('Error saving tower progress:', err);
-            } finally {
-                setSaving(false);
-            }
-            try {
-                const { data: next } = await supabase
-                    .from('tower_floors')
-                    .select('id, floor_index, difficulty, question_ids, enemy_hp')
-                    .eq('category_id', categoryId)
-                    .eq('floor_index', floor.floor_index + 1)
-                    .maybeSingle();
+                // record_floor_win нь сервер талд tower_progress-ийг өөрөө бичдэг
+                // (анх удаа дийлсэн бол л оноо олгож, дахин давахад farm хийхээс
+                // сэргийлдэг) — client шууд tower_progress бичихээ больсон.
+                const [{ data: next }, { data: pointsAwarded }] = await Promise.all([
+                    supabase.from('tower_floors')
+                        .select('id, floor_index, difficulty, question_ids, enemy_hp')
+                        .eq('category_id', categoryId)
+                        .eq('floor_index', floor.floor_index + 1)
+                        .maybeSingle(),
+                    supabase.rpc('record_floor_win', {
+                        p_category_id: categoryId,
+                        p_floor_index: floor.floor_index,
+                        p_flawless: flawless,
+                    }),
+                ]);
                 setNextFloor(next || null);
+                if (pointsAwarded > 0) {
+                    showToast({ icon: '💰', title: `+${pointsAwarded} оноо`, message: flawless ? 'Цэвэр ялалтын бонустой!' : undefined });
+                }
 
                 // Achievement-ууд — upsert(ignoreDuplicates) тул давхар дуудахад аюулгүй.
-                awardAchievement(supabase, user.id, 'first_floor');
-                if (playerHP === PLAYER_START_HP) awardAchievement(supabase, user.id, 'flawless_floor');
-                if (!next) awardAchievement(supabase, user.id, 'tower_complete');
+                awardAchievement(supabase, user.id, 'first_floor').then(isNew => {
+                    if (isNew) showToast({ icon: '🏹', title: 'Шинэ achievement!', message: 'Анхны алхам' });
+                });
+                if (flawless) {
+                    awardAchievement(supabase, user.id, 'flawless_floor').then(isNew => {
+                        if (isNew) showToast({ icon: '💯', title: 'Шинэ achievement!', message: 'Цэвэр ялалт' });
+                    });
+                }
+                if (!next) {
+                    awardAchievement(supabase, user.id, 'tower_complete').then(isNew => {
+                        if (isNew) showToast({ icon: '🗼', title: 'Шинэ achievement!', message: 'Цамхаг эзэн' });
+                    });
+                }
             } catch (err) {
-                console.error('Error checking for next floor:', err);
+                console.error('Error saving floor win:', err);
                 setNextFloor(null);
+            } finally {
+                setSaving(false);
             }
             setStatus('won');
             return;
