@@ -75,6 +75,11 @@ alter table user_profiles add column if not exists equipped_item_id uuid referen
 -- бичихээ больж, зөвхөн энэ RPC-ийг дуудна). Хялбар=0.3, дунд=0.5, хүнд=0.7
 -- — гэхдээ энэ бол зөвхөн АНХ УДАА тухайн давхрыг дийлэхэд; дахин давахад
 -- үүний 1/10-ийг л олгоно. Цэвэр ялалт бол аль ч тохиолдолд 2 дахин.
+--
+-- Farm хийхээс сэргийлэх: coin ЗӨВХӨН admin-ын баталгаажуулсан (is_global =
+-- true) цамхагт л олгоно. Хувь хэрэглэгчийн өөрийн үүсгэсэн цамхаг (өөрөө
+-- хялбар асуулт зохиогоод хязгааргүй "анх удаагийн" давхар үүсгэж болдог)
+-- дэвшил хадгалагдсаар байх ч coin өгөхгүй.
 create or replace function record_floor_win(p_category_id uuid, p_floor_index int, p_flawless boolean)
 returns numeric
 language plpgsql
@@ -83,9 +88,10 @@ set search_path = public
 as $$
 declare
   v_old_highest int;
+  v_is_global boolean;
   v_difficulty text;
   v_base numeric;
-  v_points numeric;
+  v_points numeric := 0;
 begin
   select highest_cleared_floor into v_old_highest
   from tower_progress where user_id = auth.uid() and category_id = p_category_id;
@@ -96,26 +102,30 @@ begin
     set highest_cleared_floor = greatest(tower_progress.highest_cleared_floor, excluded.highest_cleared_floor),
         updated_at = now();
 
-  select difficulty into v_difficulty
-  from tower_floors
-  where category_id = p_category_id and floor_index = p_floor_index;
+  select is_global into v_is_global from categories where id = p_category_id;
 
-  v_base := case v_difficulty
-    when 'easy' then 0.3
-    when 'hard' then 0.7
-    else 0.5 -- 'normal' болон тодорхойгүй тохиолдол
-  end;
+  if v_is_global then
+    select difficulty into v_difficulty
+    from tower_floors
+    where category_id = p_category_id and floor_index = p_floor_index;
 
-  if v_old_highest is null or p_floor_index > v_old_highest then
-    v_points := v_base; -- анх удаа дийлж байна
-  else
-    v_points := v_base / 10; -- дахин давалт
+    v_base := case v_difficulty
+      when 'easy' then 0.3
+      when 'hard' then 0.7
+      else 0.5 -- 'normal' болон тодорхойгүй тохиолдол
+    end;
+
+    if v_old_highest is null or p_floor_index > v_old_highest then
+      v_points := v_base; -- анх удаа дийлж байна
+    else
+      v_points := v_base / 10; -- дахин давалт
+    end if;
+    v_points := v_points * (case when p_flawless then 2 else 1 end);
+
+    insert into user_points (user_id, balance, updated_at)
+    values (auth.uid(), v_points, now())
+    on conflict (user_id) do update set balance = user_points.balance + v_points, updated_at = now();
   end if;
-  v_points := v_points * (case when p_flawless then 2 else 1 end);
-
-  insert into user_points (user_id, balance, updated_at)
-  values (auth.uid(), v_points, now())
-  on conflict (user_id) do update set balance = user_points.balance + v_points, updated_at = now();
 
   return v_points;
 end;
