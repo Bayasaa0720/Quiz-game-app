@@ -242,7 +242,7 @@ export default function AdminDashboard({ onBack }) {
                     <input
                         type="number"
                         min="0"
-                        placeholder="Үнэ (оноо)"
+                        placeholder="Үнэ (coin)"
                         value={shopForm.price}
                         onChange={(e) => setShopForm(f => ({ ...f, price: e.target.value }))}
                     />
@@ -281,7 +281,7 @@ export default function AdminDashboard({ onBack }) {
                             <div className="admin-tower-info">
                                 <h3>{item.icon} {item.name}{!item.is_active && ' (идэвхгүй)'}</h3>
                                 <p className="admin-tower-stats">
-                                    Армор: {item.armor_points} · Үнэ: {item.price} оноо
+                                    Армор: {item.armor_points} · Үнэ: {item.price} coin
                                 </p>
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>

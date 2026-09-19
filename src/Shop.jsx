@@ -4,6 +4,7 @@ import Card from './components/Card.jsx';
 import Button from './components/Button.jsx';
 import ErrorState from './components/ErrorState.jsx';
 import { useModal } from './components/modalContext.js';
+import { formatCoin } from './lib/formatCoin.js';
 import './Shop.css';
 
 export default function Shop({ user, onBack }) {
@@ -27,7 +28,7 @@ export default function Shop({ user, onBack }) {
             if (itemsErr || ownedErr || ptsErr) throw itemsErr || ownedErr || ptsErr;
             setItems(shopItems || []);
             setOwnedIds(new Set((owned || []).map(o => o.item_id)));
-            setBalance(pts?.balance || 0);
+            setBalance(Number(pts?.balance) || 0);
         } catch (err) {
             console.error('Error loading shop:', err);
             setLoadError(true);
@@ -48,7 +49,7 @@ export default function Shop({ user, onBack }) {
             await modal.alert(error.message || 'Худалдаж авахад алдаа гарлаа.');
             return;
         }
-        setBalance(newBalance);
+        setBalance(Number(newBalance) || 0);
         setOwnedIds(s => new Set([...s, item.id]));
     };
 
@@ -60,7 +61,7 @@ export default function Shop({ user, onBack }) {
             <Button variant="ghost" onClick={onBack} className="shop-back">← Цамхаг сонгох руу</Button>
             <div className="shop-header">
                 <h2>🛒 Дэлгүүр</h2>
-                <span className="shop-balance">💰 {balance} оноо</span>
+                <span className="shop-balance">🪙 {formatCoin(balance)} coin</span>
             </div>
 
             {items.length === 0 ? (
@@ -76,13 +77,13 @@ export default function Shop({ user, onBack }) {
                                 <h3>{item.name}</h3>
                                 <p className="shop-item-desc">{item.description}</p>
                                 <p className="shop-item-armor">🛡️ {item.armor_points}</p>
-                                <p className="shop-item-price">💰 {item.price}</p>
+                                <p className="shop-item-price">🪙 {formatCoin(item.price)}</p>
                                 <Button
                                     variant={owned ? 'ghost' : 'success'}
                                     onClick={() => handleBuy(item)}
                                     disabled={owned || !canAfford || buyingId === item.id}
                                 >
-                                    {owned ? '✓ Эзэмшсэн' : canAfford ? 'Худалдаж авах' : 'Оноо хүрэхгүй'}
+                                    {owned ? '✓ Эзэмшсэн' : canAfford ? 'Худалдаж авах' : 'Coin хүрэхгүй'}
                                 </Button>
                             </Card>
                         );

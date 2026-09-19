@@ -14,10 +14,11 @@
 --
 -- Supabase Dashboard -> SQL Editor-т ажиллуулна уу.
 
--- 1) Оноо
+-- 1) Coin (numeric — давхрын хүнд/хөнгөнөөс хамаарсан бутархай дүн өгдөг
+-- тул int биш numeric байх ёстой).
 create table if not exists user_points (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  balance int not null default 0,
+  balance numeric(12, 2) not null default 0,
   updated_at timestamptz not null default now()
 );
 
@@ -69,36 +70,37 @@ create policy "user_inventory_owner_select" on user_inventory
 -- 4) Идэвхжүүлсэн эдлэл — user_profiles (classrooms.sql-д үүссэн) дээр нэг багана.
 alter table user_profiles add column if not exists equipped_item_id uuid references shop_items(id);
 
--- 5) Цамхагийн давхар анх удаа дийлэхэд оноо олгож, tower_progress-ийг
--- сервер талд бичнэ (Battle.jsx цаашид шууд tower_progress бичихээ больж,
--- зөвхөн энэ RPC-ийг дуудна — аль хэдийн дийлсэн давхрыг дахин давахад
--- оноо олгохгүй байхын тулд шаардлагатай).
+-- 5) Давхар дийлэх бүрд (анх удаа болон дахин давахад ч адилхан) давхрын
+-- хүнд/хөнгөнөөс хамаарсан coin олгож, tower_progress-ийг сервер талд
+-- бичнэ (Battle.jsx цаашид шууд tower_progress бичихээ больж, зөвхөн энэ
+-- RPC-ийг дуудна). Хялбар=0.3, дунд=0.5, хүнд=0.7, цэвэр ялалт бол 2 дахин.
 create or replace function record_floor_win(p_category_id uuid, p_floor_index int, p_flawless boolean)
-returns int
+returns numeric
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_old_highest int;
-  v_points int := 0;
+  v_difficulty text;
+  v_base numeric;
+  v_points numeric;
 begin
-  select highest_cleared_floor into v_old_highest
-  from tower_progress where user_id = auth.uid() and category_id = p_category_id;
-
   insert into tower_progress (user_id, category_id, highest_cleared_floor, updated_at)
   values (auth.uid(), p_category_id, p_floor_index, now())
   on conflict (user_id, category_id) do update
     set highest_cleared_floor = greatest(tower_progress.highest_cleared_floor, excluded.highest_cleared_floor),
         updated_at = now();
 
-  if v_old_highest is null or p_floor_index > v_old_highest then
-    v_points := 5 + (case when p_flawless then 5 else 0 end);
-  else
-    -- Аль хэдийн дийлсэн давхрыг дахин давсан ч бага зэрэг урамшуулна
-    -- (farm хийж болохуйц хэмжээнд биш, зөвхөн дасгал хийсний тэмдэг).
-    v_points := 1;
-  end if;
+  select difficulty into v_difficulty
+  from tower_floors
+  where category_id = p_category_id and floor_index = p_floor_index;
+
+  v_base := case v_difficulty
+    when 'easy' then 0.3
+    when 'hard' then 0.7
+    else 0.5 -- 'normal' болон тодорхойгүй тохиолдол
+  end;
+  v_points := v_base * (case when p_flawless then 2 else 1 end);
 
   insert into user_points (user_id, balance, updated_at)
   values (auth.uid(), v_points, now())

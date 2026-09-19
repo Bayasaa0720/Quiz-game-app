@@ -6,6 +6,7 @@ import ProgressBar from './components/ProgressBar.jsx';
 import ErrorState from './components/ErrorState.jsx';
 import AchievementBadges from './components/AchievementBadges.jsx';
 import { clearedCount } from './lib/towerLogic.js';
+import { formatCoin } from './lib/formatCoin.js';
 import './TowerSelect.css';
 
 export default function TowerSelect({
@@ -147,7 +148,7 @@ export default function TowerSelect({
         <div className="tower-select">
             <h1>Тавтай морил, {user?.email}!</h1>
             <p className="tower-select-sub">Цамхгаа сонгож дэвшил үзье!</p>
-            <p className="tower-points-balance">💰 {pointsBalance} оноо</p>
+            <p className="tower-points-balance">🪙 {formatCoin(pointsBalance)} coin</p>
             <AchievementBadges userId={user?.id} />
 
             {pendingChallenges.length > 0 && (

@@ -10,6 +10,7 @@ import { shuffle } from './lib/arrayUtils.js';
 import { buildOptions } from './lib/generateOptions.js';
 import { awardAchievement } from './lib/achievements.js';
 import { useToast } from './components/toastContext.js';
+import { formatCoin } from './lib/formatCoin.js';
 import './Battle.css';
 
 const PLAYER_START_HP = 3;
@@ -184,9 +185,10 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
 
             const flawless = wrongCount === 0;
             try {
-                // record_floor_win нь сервер талд tower_progress-ийг өөрөө бичдэг
-                // (анх удаа дийлсэн бол л оноо олгож, дахин давахад farm хийхээс
-                // сэргийлдэг) — client шууд tower_progress бичихээ больсон.
+                // record_floor_win нь сервер талд tower_progress-ийг өөрөө бичдэг,
+                // мөн давхрын хүнд/хөнгөнөөс хамаарсан coin олгодог (хялбар/дунд/
+                // хүнд, цэвэр ялалтад 2 дахин) — client шууд tower_progress
+                // бичихээ больсон.
                 const [{ data: next }, { data: pointsAwarded }] = await Promise.all([
                     supabase.from('tower_floors')
                         .select('id, floor_index, difficulty, question_ids, enemy_hp')
@@ -200,8 +202,8 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
                     }),
                 ]);
                 setNextFloor(next || null);
-                if (pointsAwarded > 0) {
-                    showToast({ icon: '💰', title: `+${pointsAwarded} оноо`, message: flawless ? 'Цэвэр ялалтын бонустой!' : undefined });
+                if (Number(pointsAwarded) > 0) {
+                    showToast({ icon: '🪙', title: `+${formatCoin(pointsAwarded)} coin`, message: flawless ? 'Цэвэр ялалтын бонустой!' : undefined });
                 }
 
                 // Achievement-ууд — upsert(ignoreDuplicates) тул давхар дуудахад аюулгүй.
