@@ -385,7 +385,6 @@ function App() {
     const activeNavSection = viewToNavSection(view);
     const navSidebarItems = {
         tower: [
-            { label: '🗼 Цамхагууд', view: 'TOWER_SELECT', onClick: goToTowerSelect },
             { label: '🏆 Тэргүүлэгчид', view: 'LEADERBOARD', onClick: () => setView('LEADERBOARD') },
             { label: '📝 Агуулга удирдах', view: 'MANAGE_CONTENT', onClick: goToManageContent },
         ],

@@ -2,25 +2,32 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     text-align: center;
+    padding: 20px 16px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-md);
 }
 
 .sidebar-character-frame {
-    width: 96px;
-    height: 96px;
+    width: 104px;
+    height: 104px;
     border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-panel);
+    background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--accent) 22%, var(--bg-panel)) 0%, var(--bg-panel) 70%);
     border: 2px solid var(--border-strong);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
 .sidebar-name {
     margin: 0;
-    font-weight: 600;
-    font-size: 0.92rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;

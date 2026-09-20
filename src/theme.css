@@ -122,10 +122,11 @@ button {
 }
 
 .app-nav-tabs button.active {
-  background: var(--bg);
-  border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 600;
+  background: var(--gradient);
+  border-color: transparent;
+  color: var(--accent-contrast);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
 }
 
 .app-header-right {
@@ -242,6 +243,9 @@ button {
   padding: 20px 16px;
   border-right: 1px solid var(--border);
   background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .app-sidebar.right {
