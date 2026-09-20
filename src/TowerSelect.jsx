@@ -4,26 +4,16 @@ import Card from './components/Card.jsx';
 import Button from './components/Button.jsx';
 import ProgressBar from './components/ProgressBar.jsx';
 import ErrorState from './components/ErrorState.jsx';
-import AchievementBadges from './components/AchievementBadges.jsx';
 import { clearedCount } from './lib/towerLogic.js';
 import { formatCoin } from './lib/formatCoin.js';
 import './TowerSelect.css';
 
 export default function TowerSelect({
     user,
-    userRole,
     onLogout,
     onSelectTower,
-    onCreateQuestion,
-    onManageQuestions,
-    onBulkImport,
-    onOpenAdminDashboard,
-    onOpenLeaderboard,
-    onOpenFriends,
-    onOpenClassrooms,
-    onOpenInventory,
-    onOpenShop,
-    onOpenDuelHistory,
+    onOpenProfile,
+    onOpenManageContent,
     onAcceptChallenge,
 }) {
     const [categories, setCategories] = useState([]);
@@ -31,19 +21,11 @@ export default function TowerSelect({
     const [progressMap, setProgressMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
-    const [manageCategoryId, setManageCategoryId] = useState('');
-    const [hint, setHint] = useState('');
     const [towerSearch, setTowerSearch] = useState('');
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [joinCode, setJoinCode] = useState('');
-    const [joinHint, setJoinHint] = useState('');
     const [pointsBalance, setPointsBalance] = useState(0);
     const [pendingChallenges, setPendingChallenges] = useState([]);
 
     useEffect(() => {
-        supabase.rpc('is_app_admin').then(({ data, error }) => {
-            if (!error) setIsAdmin(!!data);
-        });
         supabase.from('user_points').select('balance').eq('user_id', user.id).maybeSingle().then(({ data }) => {
             setPointsBalance(data?.balance || 0);
         });
@@ -113,43 +95,25 @@ export default function TowerSelect({
         fetchTowers();
     }, [fetchTowers]);
 
-    const handleManage = () => {
-        if (manageCategoryId) {
-            onManageQuestions(manageCategoryId);
-        } else {
-            setHint('Эхлээд засах ангиллаа сонгоно уу.');
-        }
-    };
-
-    const handleBulkImport = () => {
-        if (manageCategoryId) {
-            onBulkImport(manageCategoryId);
-        } else {
-            setHint('Эхлээд асуулт нэмэх ангиллаа сонгоно уу.');
-        }
-    };
-
-    const handleJoinClassroom = async () => {
-        const code = joinCode.trim();
-        if (!code) return;
-        const { data, error } = await supabase.rpc('join_classroom', { p_invite_code: code });
-        if (error) {
-            setJoinHint('Буруу код байна. Багшаасаа шалгаарай.');
-            return;
-        }
-        setJoinHint(`"${data?.[0]?.classroom_name || ''}" ангид амжилттай нэгдлээ!`);
-        setJoinCode('');
-    };
-
     if (loading) return <p style={{ textAlign: 'center' }}>Таны цамхгуудыг ачааллаж байна...</p>;
     if (loadError) return <ErrorState message="Цамхгуудыг ачаалахад алдаа гарлаа." onRetry={fetchTowers} />;
 
     return (
         <div className="tower-select">
-            <h1>Тавтай морил, {user?.email}!</h1>
-            <p className="tower-select-sub">Цамхгаа сонгож дэвшил үзье!</p>
-            <p className="tower-points-balance">🪙 {formatCoin(pointsBalance)} coin</p>
-            <AchievementBadges userId={user?.id} />
+            <div className="tower-select-header">
+                <div>
+                    <h1>Тавтай морил, {user?.email}!</h1>
+                    <p className="tower-select-sub">Цамхгаа сонгож дэвшил үзье!</p>
+                </div>
+                <button type="button" className="tower-coin-pill" onClick={onOpenProfile} title="Профайл">
+                    🪙 {formatCoin(pointsBalance)}
+                </button>
+            </div>
+
+            <div className="tower-nav-row">
+                <Button variant="ghost" onClick={onOpenProfile}>👤 Профайл</Button>
+                <Button variant="ghost" onClick={onOpenManageContent}>📝 Агуулга удирдах</Button>
+            </div>
 
             {pendingChallenges.length > 0 && (
                 <Card className="pending-challenges-panel">
@@ -178,7 +142,7 @@ export default function TowerSelect({
 
             <div className="tower-grid">
                 {categories.length === 0 && (
-                    <p className="tower-empty">Одоогоор цамхаг байхгүй байна. Доор шинэ асуулт нэмж эхлээрэй.</p>
+                    <p className="tower-empty">Одоогоор цамхаг байхгүй байна. "Агуулга удирдах" цэснээс шинэ асуулт нэмж эхлээрэй.</p>
                 )}
                 {categories
                     .filter(cat => cat.name.toLowerCase().includes(towerSearch.trim().toLowerCase()))
@@ -208,70 +172,6 @@ export default function TowerSelect({
                     );
                 })}
             </div>
-
-            <Card className="manage-panel">
-                <h3>Агуулга удирдах</h3>
-                <select value={manageCategoryId} onChange={(e) => setManageCategoryId(e.target.value)}>
-                    <option value="">-- Ангилал сонгох --</option>
-                    {categories.filter(cat => cat.user_id === user.id).map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                </select>
-                {hint && <p className="tower-hint">{hint}</p>}
-                <div className="manage-actions">
-                    <Button variant="success" onClick={onCreateQuestion}>Шинэ асуулт нэмэх</Button>
-                    <Button variant="ghost" onClick={handleBulkImport}>Олноор оруулах (CSV/Excel)</Button>
-                    <Button variant="ghost" onClick={handleManage}>Асуулт удирдах (Засах/Устгах)</Button>
-                </div>
-            </Card>
-
-            <Button variant="ghost" onClick={onOpenLeaderboard} className="leaderboard-link">
-                🏆 Тэргүүлэгчид
-            </Button>
-
-            <Button variant="ghost" onClick={onOpenFriends} className="leaderboard-link">
-                👥 Найзууд
-            </Button>
-
-            <Button variant="ghost" onClick={onOpenDuelHistory} className="leaderboard-link">
-                📜 Дуэлийн түүх
-            </Button>
-
-            <Button variant="ghost" onClick={onOpenInventory} className="leaderboard-link">
-                🎒 Инвентар
-            </Button>
-
-            <Button variant="ghost" onClick={onOpenShop} className="leaderboard-link">
-                🛒 Дэлгүүр
-            </Button>
-
-            {userRole === 'teacher' && (
-                <Button variant="ghost" onClick={onOpenClassrooms} className="leaderboard-link">
-                    🏫 Миний ангиуд
-                </Button>
-            )}
-
-            {userRole === 'student' && (
-                <Card className="join-classroom-panel">
-                    <h3>Ангид нэгдэх</h3>
-                    <div className="join-classroom-row">
-                        <input
-                            type="text"
-                            placeholder="Багшийн код..."
-                            value={joinCode}
-                            onChange={(e) => setJoinCode(e.target.value)}
-                        />
-                        <Button variant="success" onClick={handleJoinClassroom}>Нэгдэх</Button>
-                    </div>
-                    {joinHint && <p className="tower-hint">{joinHint}</p>}
-                </Card>
-            )}
-
-            {isAdmin && (
-                <Button variant="ghost" onClick={onOpenAdminDashboard} className="admin-dashboard-link">
-                    🛠 Admin: Бүх цамхаг
-                </Button>
-            )}
 
             <Button variant="danger" onClick={onLogout} className="tower-logout">Гарах</Button>
         </div>

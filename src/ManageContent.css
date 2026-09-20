@@ -1,0 +1,40 @@
+.manage-content-page {
+    max-width: 560px;
+    margin: 0 auto;
+}
+
+.manage-content-back {
+    margin-bottom: 12px;
+}
+
+.manage-content-page h2 {
+    margin: 0 0 18px;
+    color: var(--accent);
+    text-align: center;
+}
+
+.manage-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.manage-panel select {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-panel);
+    color: var(--text);
+}
+
+.manage-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.tower-hint {
+    color: var(--danger);
+    font-size: 0.85rem;
+    margin: 0;
+}

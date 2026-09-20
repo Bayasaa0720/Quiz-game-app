@@ -6,15 +6,44 @@
     gap: 22px;
 }
 
+.tower-select-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .tower-select h1 {
     font-size: 1.5rem;
-    text-align: center;
+    margin: 0;
 }
 
 .tower-select-sub {
-    text-align: center;
     color: var(--text-muted);
-    margin: 0;
+    margin: 4px 0 0;
+}
+
+.tower-coin-pill {
+    flex: none;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-panel);
+    color: var(--accent);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.tower-coin-pill:hover {
+    border-color: var(--accent);
+}
+
+.tower-nav-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 .tower-search {
@@ -83,76 +112,8 @@
     margin: 0;
 }
 
-.manage-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.manage-panel h3 {
-    margin: 0;
-    color: var(--accent);
-    font-size: 1rem;
-}
-
-.manage-panel select {
-    padding: 10px 12px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-strong);
-    background: var(--bg-panel);
-    color: var(--text);
-}
-
-.tower-hint {
-    color: var(--danger);
-    font-size: 0.85rem;
-    margin: 0;
-}
-
-.manage-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
 .tower-logout {
     align-self: center;
-}
-
-.admin-dashboard-link {
-    align-self: center;
-    border-color: var(--accent);
-    color: var(--accent);
-}
-
-.leaderboard-link {
-    align-self: center;
-    border-color: var(--accent);
-    color: var(--accent);
-}
-
-.join-classroom-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.join-classroom-panel h3 {
-    margin: 0;
-    color: var(--accent);
-    font-size: 1rem;
-}
-
-.join-classroom-row {
-    display: flex;
-    gap: 8px;
-}
-
-.tower-points-balance {
-    text-align: center;
-    font-weight: 600;
-    color: var(--accent);
-    margin: -12px 0 0;
 }
 
 .pending-challenges-panel {
@@ -174,13 +135,4 @@
     justify-content: space-between;
     gap: 10px;
     font-size: 0.9rem;
-}
-
-.join-classroom-row input {
-    flex: 1;
-    padding: 10px 12px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-strong);
-    background: var(--bg-panel);
-    color: var(--text);
 }

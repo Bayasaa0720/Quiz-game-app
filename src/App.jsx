@@ -12,6 +12,9 @@ import Duel from './Duel.jsx';
 import DuelHistory from './DuelHistory.jsx';
 import Inventory from './Inventory.jsx';
 import Shop from './Shop.jsx';
+import Profile from './Profile.jsx';
+import Achievements from './Achievements.jsx';
+import ManageContent from './ManageContent.jsx';
 import Login from './Login.jsx';
 import Register from './register.jsx';
 import { supabase } from './supabaseClient.jsx';
@@ -130,6 +133,13 @@ function App() {
         setBattleState(IDLE_BATTLE_STATE);
     };
 
+    // Профайл дотроос нээгддэг дэд дэлгэцүүд (achievements, leaderboard,
+    // friends г.м.) буцахдаа шууд цамхаг руу биш, hub руугаа буцна.
+    const goToProfile = () => setView('PROFILE');
+
+    // Мөн адил "Агуулга удирдах" дотроос нээгддэг дэд дэлгэцүүд.
+    const goToManageContent = () => setView('MANAGE_CONTENT');
+
     const handleSelectTower = (categoryId, categoryName) => {
         setSelectedCategory({ id: categoryId, name: categoryName });
         setView('TOWER_VIEW');
@@ -218,34 +228,53 @@ function App() {
                 user={user}
                 onLogout={handleLogout}
                 onSelectTower={handleSelectTower}
+                onOpenProfile={goToProfile}
+                onOpenManageContent={() => setView('MANAGE_CONTENT')}
+                onAcceptChallenge={handleAcceptChallenge}
+            />
+        );
+    } else if (view === 'PROFILE') {
+        currentViewContent = (
+            <Profile
+                user={user}
+                userRole={userRole}
+                onBack={goToTowerSelect}
+                onOpenAchievements={() => setView('ACHIEVEMENTS')}
+                onOpenLeaderboard={() => setView('LEADERBOARD')}
+                onOpenFriends={() => setView('FRIENDS')}
+                onOpenDuelHistory={() => setView('DUEL_HISTORY')}
+                onOpenInventory={() => setView('INVENTORY')}
+                onOpenShop={() => setView('SHOP')}
+                onOpenClassrooms={() => setView('CLASSROOMS')}
+                onOpenAdminDashboard={() => setView('ADMIN_DASHBOARD')}
+            />
+        );
+    } else if (view === 'MANAGE_CONTENT') {
+        currentViewContent = (
+            <ManageContent
+                user={user}
+                onBack={goToTowerSelect}
                 onCreateQuestion={() => setView('CREATE_QUESTION')}
                 onManageQuestions={handleManageQuestions}
                 onBulkImport={handleBulkImport}
-                onOpenAdminDashboard={() => setView('ADMIN_DASHBOARD')}
-                onOpenLeaderboard={() => setView('LEADERBOARD')}
-                onOpenFriends={() => setView('FRIENDS')}
-                onOpenClassrooms={() => setView('CLASSROOMS')}
-                onOpenInventory={() => setView('INVENTORY')}
-                onOpenShop={() => setView('SHOP')}
-                onOpenDuelHistory={() => setView('DUEL_HISTORY')}
-                onAcceptChallenge={handleAcceptChallenge}
-                userRole={userRole}
             />
         );
+    } else if (view === 'ACHIEVEMENTS') {
+        currentViewContent = <Achievements userId={user?.id} onBack={goToProfile} />;
     } else if (view === 'ADMIN_DASHBOARD') {
-        currentViewContent = <AdminDashboard onBack={goToTowerSelect} />;
+        currentViewContent = <AdminDashboard onBack={goToProfile} />;
     } else if (view === 'LEADERBOARD') {
-        currentViewContent = <Leaderboard user={user} onBack={goToTowerSelect} />;
+        currentViewContent = <Leaderboard user={user} onBack={goToProfile} />;
     } else if (view === 'FRIENDS') {
-        currentViewContent = <Friends user={user} onBack={goToTowerSelect} onChallengeCreated={handleChallengeCreated} />;
+        currentViewContent = <Friends user={user} onBack={goToProfile} onChallengeCreated={handleChallengeCreated} />;
     } else if (view === 'INVENTORY') {
-        currentViewContent = <Inventory user={user} onBack={goToTowerSelect} />;
+        currentViewContent = <Inventory user={user} onBack={goToProfile} />;
     } else if (view === 'SHOP') {
-        currentViewContent = <Shop user={user} onBack={goToTowerSelect} />;
+        currentViewContent = <Shop user={user} onBack={goToProfile} />;
     } else if (view === 'DUEL_HISTORY') {
-        currentViewContent = <DuelHistory onBack={goToTowerSelect} />;
+        currentViewContent = <DuelHistory onBack={goToProfile} />;
     } else if (view === 'CLASSROOMS') {
-        currentViewContent = <TeacherDashboard user={user} onBack={goToTowerSelect} />;
+        currentViewContent = <TeacherDashboard user={user} onBack={goToProfile} />;
     } else if (view === 'TOWER_VIEW' && selectedCategory) {
         currentViewContent = (
             <TowerView
@@ -284,7 +313,7 @@ function App() {
         currentViewContent = (
             <QuizCreator
                 user={user} // Assign user_id to new categories/questions
-                onDone={goToTowerSelect}
+                onDone={goToManageContent}
             />
         );
     } else if (view === 'MANAGE_QUESTIONS' && selectedCategory) {
@@ -292,7 +321,7 @@ function App() {
             <QuestionManager
                 user={user} // Secure editing: only owner can edit
                 categoryId={selectedCategory.id}
-                onDone={goToTowerSelect}
+                onDone={goToManageContent}
             />
         );
     } else if (view === 'BULK_IMPORT' && selectedCategory) {
@@ -301,7 +330,7 @@ function App() {
                 <BulkImport
                     user={user}
                     categoryId={selectedCategory.id}
-                    onDone={goToTowerSelect}
+                    onDone={goToManageContent}
                 />
             </Suspense>
         );
