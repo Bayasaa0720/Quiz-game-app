@@ -79,30 +79,53 @@ button {
   min-height: var(--header-height);
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 2px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
   padding: 10px 20px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-panel);
 }
 
-.app-header h1 {
-  font-size: 1.5rem;
+.app-logo {
+  font-size: 1.3rem;
   color: var(--accent);
   letter-spacing: 0.01em;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
 }
 
-.app-header .app-user {
-  font-size: 0.85rem;
+.app-nav-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.app-nav-tabs button {
+  border: 1px solid transparent;
+  background: none;
   color: var(--text-muted);
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  text-align: center;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-.app-header .app-user strong {
+.app-nav-tabs button:hover {
+  color: var(--text);
+}
+
+.app-nav-tabs button.active {
+  background: var(--bg);
+  border-color: var(--accent);
   color: var(--accent);
+  font-weight: 600;
 }
 
 .app-header-right {
@@ -110,8 +133,46 @@ button {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   max-width: 100%;
+}
+
+.app-coin-pill {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.app-avatar-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  flex: none;
+}
+
+.app-avatar-btn:hover {
+  border-color: var(--accent);
+}
+
+.app-avatar-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .mute-toggle {
@@ -143,6 +204,16 @@ button {
 
 .app-body.with-sidebars {
   grid-template-columns: var(--sidebar-width) 1fr var(--sidebar-width);
+}
+
+.app-body.with-nav-sidebar {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .app-body.with-nav-sidebar {
+    grid-template-columns: 200px 1fr;
+  }
 }
 
 .app-main {
@@ -255,11 +326,12 @@ button {
     min-height: auto;
   }
 
-  .app-header h1 {
-    font-size: 1.15rem;
+  .app-logo {
+    font-size: 1.05rem;
   }
 
-  .app-header .app-user {
-    font-size: 0.72rem;
+  .app-nav-tabs button {
+    padding: 5px 8px;
+    font-size: 0.78rem;
   }
 }

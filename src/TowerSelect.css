@@ -6,44 +6,16 @@
     gap: 22px;
 }
 
-.tower-select-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-}
-
 .tower-select h1 {
     font-size: 1.5rem;
+    text-align: center;
     margin: 0;
 }
 
 .tower-select-sub {
+    text-align: center;
     color: var(--text-muted);
     margin: 4px 0 0;
-}
-
-.tower-coin-pill {
-    flex: none;
-    padding: 8px 14px;
-    border-radius: 999px;
-    border: 1px solid var(--border-strong);
-    background: var(--bg-panel);
-    color: var(--accent);
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.tower-coin-pill:hover {
-    border-color: var(--accent);
-}
-
-.tower-nav-row {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
 }
 
 .tower-search {
@@ -110,10 +82,6 @@
     font-size: 0.8rem;
     color: var(--text-muted);
     margin: 0;
-}
-
-.tower-logout {
-    align-self: center;
 }
 
 .pending-challenges-panel {

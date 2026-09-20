@@ -1,0 +1,46 @@
+.learning-page {
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.learning-back {
+    margin-bottom: 12px;
+}
+
+.learning-page h2 {
+    margin: 0 0 18px;
+    color: var(--accent);
+    text-align: center;
+}
+
+.learning-join-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.learning-join-panel h3 {
+    margin: 0;
+    color: var(--accent);
+    font-size: 1rem;
+}
+
+.learning-join-row {
+    display: flex;
+    gap: 8px;
+}
+
+.learning-join-row input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-panel);
+    color: var(--text);
+}
+
+.learning-hint {
+    color: var(--danger);
+    font-size: 0.85rem;
+    margin: 0;
+}

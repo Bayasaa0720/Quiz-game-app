@@ -1,34 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient.jsx';
 import Card from './components/Card.jsx';
-import Button from './components/Button.jsx';
 import ProgressBar from './components/ProgressBar.jsx';
 import ErrorState from './components/ErrorState.jsx';
+import Button from './components/Button.jsx';
 import { clearedCount } from './lib/towerLogic.js';
-import { formatCoin } from './lib/formatCoin.js';
 import './TowerSelect.css';
 
-export default function TowerSelect({
-    user,
-    onLogout,
-    onSelectTower,
-    onOpenProfile,
-    onOpenManageContent,
-    onAcceptChallenge,
-}) {
+export default function TowerSelect({ user, onSelectTower, onAcceptChallenge }) {
     const [categories, setCategories] = useState([]);
     const [floorCounts, setFloorCounts] = useState({});
     const [progressMap, setProgressMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
     const [towerSearch, setTowerSearch] = useState('');
-    const [pointsBalance, setPointsBalance] = useState(0);
     const [pendingChallenges, setPendingChallenges] = useState([]);
 
     useEffect(() => {
-        supabase.from('user_points').select('balance').eq('user_id', user.id).maybeSingle().then(({ data }) => {
-            setPointsBalance(data?.balance || 0);
-        });
         supabase.rpc('duel_get_pending_challenges').then(({ data, error }) => {
             if (!error) setPendingChallenges(data || []);
         });
@@ -100,20 +88,8 @@ export default function TowerSelect({
 
     return (
         <div className="tower-select">
-            <div className="tower-select-header">
-                <div>
-                    <h1>Тавтай морил, {user?.email}!</h1>
-                    <p className="tower-select-sub">Цамхгаа сонгож дэвшил үзье!</p>
-                </div>
-                <button type="button" className="tower-coin-pill" onClick={onOpenProfile} title="Профайл">
-                    🪙 {formatCoin(pointsBalance)}
-                </button>
-            </div>
-
-            <div className="tower-nav-row">
-                <Button variant="ghost" onClick={onOpenProfile}>👤 Профайл</Button>
-                <Button variant="ghost" onClick={onOpenManageContent}>📝 Агуулга удирдах</Button>
-            </div>
+            <h1>Тавтай морил, {user?.email}!</h1>
+            <p className="tower-select-sub">Цамхгаа сонгож дэвшил үзье!</p>
 
             {pendingChallenges.length > 0 && (
                 <Card className="pending-challenges-panel">
@@ -172,8 +148,6 @@ export default function TowerSelect({
                     );
                 })}
             </div>
-
-            <Button variant="danger" onClick={onLogout} className="tower-logout">Гарах</Button>
         </div>
     );
 }
