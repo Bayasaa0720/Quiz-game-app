@@ -418,6 +418,7 @@ function App() {
 
                         {user && (
                             <nav className="app-nav-tabs">
+                                <button type="button" className={activeNavSection === 'tower' ? 'active' : ''} onClick={goToTowerSelect}>🗼 Цамхагууд</button>
                                 <button type="button" className={activeNavSection === 'shop' ? 'active' : ''} onClick={() => setView('SHOP')}>🛒 Дэлгүүр</button>
                                 <button type="button" className={activeNavSection === 'duel' ? 'active' : ''} onClick={() => setView('DUEL_HISTORY')}>⚔️ Duel</button>
                                 <button type="button" className={activeNavSection === 'friends' ? 'active' : ''} onClick={() => setView('FRIENDS')}>👥 Найзууд</button>
