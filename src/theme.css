@@ -222,12 +222,12 @@ button {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  /* Vertically center short content instead of leaving it pinned to the top
-     with empty space below. "safe" falls back to top-alignment once content
-     is taller than the available space, so a long list never starts scrolled
-     off-screen above the viewport. Parent-level, so it can't be overridden
-     by a view's own margin (e.g. `.battle-page { margin: 0 auto }`). */
-  justify-content: safe center;
+  /* Content anchors to the top instead of floating in the vertical center —
+     a page's height (and therefore its visual position) changes constantly
+     as data loads/grows, and re-centering on every change reads as content
+     "jumping" rather than settling in place. Screens that specifically want
+     centered content (e.g. the login card) set their own margin instead. */
+  justify-content: flex-start;
 }
 
 /* Flex children of .app-main default to align-items:stretch, so a bare
