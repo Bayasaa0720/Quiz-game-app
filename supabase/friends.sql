@@ -34,7 +34,9 @@ drop policy if exists "friendships_participant_delete" on friendships;
 create policy "friendships_participant_delete" on friendships
   for delete using (auth.uid() = requester_id or auth.uid() = addressee_id);
 
--- Имэйлээр хэрэглэгч хайх (зөвхөн @ өмнөх нэрийг харуулна, бүтэн имэйл задруулахгүй).
+-- Имэйл ЭСВЭЛ nickname (user_profiles.display_name)-ээр хэрэглэгч хайх.
+-- Имэйлээр олдвол зөвхөн @ өмнөх нэрийг харуулна (бүтэн имэйл задруулахгүй);
+-- nickname тохируулсан бол харин display_name-ийг шууд харуулна.
 drop function if exists search_users_by_email(text);
 create or replace function search_users_by_email(p_query text)
 returns table (user_id uuid, display_name text)
@@ -43,17 +45,20 @@ security definer
 set search_path = public
 stable
 as $$
-  select u.id, split_part(u.email::text, '@', 1) as display_name
+  select u.id, coalesce(up.display_name, split_part(u.email::text, '@', 1)) as display_name
   from auth.users u
-  where u.email ilike '%' || p_query || '%'
+  left join user_profiles up on up.user_id = u.id
+  where (u.email ilike '%' || p_query || '%' or up.display_name ilike '%' || p_query || '%')
     and u.id <> auth.uid()
-  order by u.email
+  order by coalesce(up.display_name, u.email)
   limit 10;
 $$;
 
 grant execute on function search_users_by_email(text) to authenticated;
 
 -- Хэрэглэгчдийн (найзуудын) явцын статистик, харьцуулахад ашиглана.
+-- Тохируулсан nickname байвал түүнийг, эсрэг тохиолдолд имэйлээс гаргасан
+-- нэрийг харуулна (search_users_by_email-тай ижил дүрэм).
 drop function if exists get_user_stats(uuid[]);
 create or replace function get_user_stats(p_user_ids uuid[])
 returns table (user_id uuid, display_name text, total_floors_cleared bigint)
@@ -64,12 +69,13 @@ stable
 as $$
   select
     u.id,
-    split_part(u.email::text, '@', 1) as display_name,
+    coalesce(up.display_name, split_part(u.email::text, '@', 1)) as display_name,
     coalesce(sum(greatest(tp.highest_cleared_floor + 1, 0)), 0) as total_floors_cleared
   from auth.users u
+  left join user_profiles up on up.user_id = u.id
   left join tower_progress tp on tp.user_id = u.id
   where u.id = any(p_user_ids)
-  group by u.id, u.email;
+  group by u.id, u.email, up.display_name;
 $$;
 
 grant execute on function get_user_stats(uuid[]) to authenticated;

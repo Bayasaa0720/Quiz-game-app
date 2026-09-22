@@ -144,7 +144,7 @@ export default function Friends({ user, onBack, onChallengeCreated }) {
             <form className="friends-search" onSubmit={handleSearch}>
                 <input
                     type="text"
-                    placeholder="Имэйлээр хайх..."
+                    placeholder="Имэйл эсвэл nickname-ээр хайх..."
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                 />
