@@ -6,6 +6,7 @@ alter table categories add column if not exists is_public_requested boolean not 
 alter table categories add column if not exists is_public_requested_at timestamptz;
 
 -- Хүлээгдэж буй хүсэлтүүдийг зөвхөн admin харна.
+drop function if exists admin_list_public_requests();
 create or replace function admin_list_public_requests()
 returns table (
   category_id uuid,
@@ -34,6 +35,7 @@ $$;
 grant execute on function admin_list_public_requests() to authenticated;
 
 -- Зөвшөөрөх: is_global = true болгож, хүсэлтийг арилгана.
+drop function if exists admin_approve_public_category(uuid);
 create or replace function admin_approve_public_category(p_category_id uuid)
 returns void
 language plpgsql
@@ -54,6 +56,7 @@ $$;
 grant execute on function admin_approve_public_category(uuid) to authenticated;
 
 -- Татгалзах: зөвхөн хүсэлтийг арилгана, is_global өөрчлөгдөхгүй.
+drop function if exists admin_reject_public_category(uuid);
 create or replace function admin_reject_public_category(p_category_id uuid)
 returns void
 language plpgsql

@@ -4,6 +4,7 @@ import Card from './components/Card.jsx';
 import Button from './components/Button.jsx';
 import ErrorState from './components/ErrorState.jsx';
 import { useModal } from './components/modalContext.js';
+import { useToast } from './components/toastContext.js';
 import { formatCoin } from './lib/formatCoin.js';
 import './Shop.css';
 
@@ -15,6 +16,7 @@ export default function Shop({ user, onBack }) {
     const [loadError, setLoadError] = useState(false);
     const [buyingId, setBuyingId] = useState(null);
     const modal = useModal();
+    const { showToast } = useToast();
 
     const fetchShop = useCallback(async () => {
         setLoading(true);
@@ -51,6 +53,7 @@ export default function Shop({ user, onBack }) {
         }
         setBalance(Number(newBalance) || 0);
         setOwnedIds(s => new Set([...s, item.id]));
+        showToast({ icon: item.icon || '🛡️', title: `${item.name} худалдаж авлаа`, message: 'Идэвхжүүлэхийн тулд 🎒 Инвентар руу орно уу' });
     };
 
     if (loading) return <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>;

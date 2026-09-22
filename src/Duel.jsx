@@ -22,9 +22,14 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [secondsLeft, setSecondsLeft] = useState(null);
     const achievementAwarded = useRef(false);
     const resultSoundPlayed = useRef(false);
     const { showToast } = useToast();
+    // "Дахин тоглох" товч хурдан 2 дараалж дарагдвал, эсвэл component
+    // unmount болсны дараа хуучин дуудлага resolve хийгээд state дарж
+    // бичихээс сэргийлнэ.
+    const searchIdRef = useRef(0);
 
     const fetchMatch = useCallback(async (id) => {
         const { data, error } = await supabase.rpc('duel_get_match', { p_match_id: id });
@@ -42,6 +47,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
 
     // Нээлттэй queue-гоор шинэ өрсөлдөгч хайна (эхний ачаалалт, эсвэл "Дахин тоглох").
     const searchPublicMatch = useCallback(async () => {
+        const mySearchId = ++searchIdRef.current;
         setLoading(true);
         setErrorMsg('');
         setMatch(null);
@@ -52,6 +58,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
         resultSoundPlayed.current = false;
 
         const { data: newMatchId, error: findErr } = await supabase.rpc('duel_find_match', { p_category_id: categoryId });
+        if (mySearchId !== searchIdRef.current) return;
         if (findErr) {
             setErrorMsg(findErr.message || 'Тоглолт эхлүүлэхэд алдаа гарлаа.');
             setLoading(false);
@@ -60,6 +67,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
         setMatchId(newMatchId);
 
         const { data: matchRows } = await supabase.rpc('duel_get_match', { p_match_id: newMatchId });
+        if (mySearchId !== searchIdRef.current) return;
         const initialMatch = matchRows?.[0];
         if (!initialMatch) {
             setErrorMsg('Тоглолтыг ачаалахад алдаа гарлаа.');
@@ -68,6 +76,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
         }
         setMatch(initialMatch);
         await loadQuestionsFor(initialMatch.question_ids);
+        if (mySearchId !== searchIdRef.current) return;
         setLoading(false);
     }, [categoryId, loadQuestionsFor]);
 
@@ -161,7 +170,10 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
 
     // Хариу хүлээгдэж буй тал 60 секунд хариулаагүй бол автомат ялалт нэхэмжилнэ.
     useEffect(() => {
-        if (!matchId || match?.status !== 'active' || !myAnswered || oppAnswered) return;
+        if (!matchId || match?.status !== 'active' || !myAnswered || oppAnswered) {
+            setSecondsLeft(null);
+            return;
+        }
         const startedAt = match.round_started_at ? new Date(match.round_started_at).getTime() : Date.now();
         const remaining = Math.max(0, TIMEOUT_MS - (Date.now() - startedAt));
         const timer = setTimeout(() => {
@@ -169,6 +181,22 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
         }, remaining + 500);
         return () => clearTimeout(timer);
     }, [matchId, match?.status, match?.round_started_at, myAnswered, oppAnswered, fetchMatch]);
+
+    // Дэлгэц дээр харагдах тоолуур — дээрх timeout-той тусдаа, зөвхөн UI.
+    useEffect(() => {
+        if (!match || match.status !== 'active' || !myAnswered || oppAnswered) {
+            setSecondsLeft(null);
+            return;
+        }
+        const startedAt = match.round_started_at ? new Date(match.round_started_at).getTime() : Date.now();
+        const tick = () => {
+            const left = Math.max(0, Math.ceil((TIMEOUT_MS - (Date.now() - startedAt)) / 1000));
+            setSecondsLeft(left);
+        };
+        tick();
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [match, myAnswered, oppAnswered]);
 
     // Ялалт/ялагдал/тэнцлийн дуу — нэг л удаа тоглуулна.
     useEffect(() => {
@@ -275,7 +303,9 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
 
             {myAnswered && (
                 <p className="duel-waiting">
-                    {oppAnswered ? 'Дараагийн асуулт руу шилжиж байна...' : `${oppName || 'Өрсөлдөгч'}-ийг хүлээж байна... (60 секундэд хариулаагүй бол автомат ялна)`}
+                    {oppAnswered
+                        ? 'Дараагийн асуулт руу шилжиж байна...'
+                        : `${oppName || 'Өрсөлдөгч'}-ийг хүлээж байна... (${secondsLeft ?? 60}с дараа автомат ялна)`}
                 </p>
             )}
         </div>

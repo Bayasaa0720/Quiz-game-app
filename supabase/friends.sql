@@ -19,10 +19,13 @@ drop policy if exists "friendships_participant_select" on friendships;
 create policy "friendships_participant_select" on friendships
   for select using (auth.uid() = requester_id or auth.uid() = addressee_id);
 
--- Зөвхөн өөрөөс хүсэлт илгээж болно.
+-- Зөвхөн өөрөөс, зөвхөн 'pending' төлөвтэй хүсэлт илгээж болно. status-ыг
+-- WITH CHECK-д шалгаагүй бол хэрэглэгч insert хийхдээ шууд
+-- status:'accepted' гэж бичээд нөгөө талын зөвшөөрөлгүйгээр "найз" болчихдог
+-- цоорхойтой байсныг эндээс хаав (зөвшөөрөх нь зөвхөн addressee_update-аар).
 drop policy if exists "friendships_requester_insert" on friendships;
 create policy "friendships_requester_insert" on friendships
-  for insert with check (auth.uid() = requester_id);
+  for insert with check (auth.uid() = requester_id and status = 'pending');
 
 -- Хүлээн авагч л 'pending' -> 'accepted' болгож болно.
 drop policy if exists "friendships_addressee_update" on friendships;

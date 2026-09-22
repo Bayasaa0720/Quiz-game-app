@@ -60,7 +60,14 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
         setOptions(buildOptions(currentQ, pool));
     }, []);
 
+    // floor эсвэл categoryId хурдан дараалан солигдвол (жиш нь "Дараагийн
+    // давхар" дараад шууд буцах гэх мэт) хуучин дуудлага шинэ дуудлагаас
+    // ХОЖИМ resolve хийгээд state-ийг хуучин өгөгдлөөр дарж бичихээс
+    // сэргийлнэ — зөвхөн хамгийн сүүлийн дуудлага л state бичнэ.
+    const loadIdRef = useRef(0);
+
     const loadFloor = useCallback(async () => {
+        const myLoadId = ++loadIdRef.current;
         setStatus('loading');
         const [{ data, error }, { data: poolData, error: poolError }, { data: armorRows }] = await Promise.all([
             supabase.from('quiz_items').select('*').in('id', floor.question_ids),
@@ -71,6 +78,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
             // Идэвхжүүлсэн армор (economy.sql) — байхгүй бол хоосон массив буцна.
             supabase.rpc('get_my_equipped_armor'),
         ]);
+        if (myLoadId !== loadIdRef.current) return; // шинэ дуудлага аль хэдийн эхэлсэн
         if (error || poolError) {
             console.error('Error loading battle questions:', error || poolError);
             setStatus('error');

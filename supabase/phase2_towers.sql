@@ -41,7 +41,11 @@ drop policy if exists "tower_floors_no_direct_write" on tower_floors;
 create policy "tower_floors_no_direct_write" on tower_floors
   for all to authenticated using (false) with check (false);
 
--- 4. regenerate_tower_floors() — admin-only materialize функц
+-- 4. regenerate_tower_floors() — admin-only materialize функц.
+-- Давхар бүрд 5 асуулт (өмнө нь 10 байсан, floor_batch_size.sql-ээр
+-- өөрчлөгдсөнийг эндээ нэгтгэв — тэр файл цаашид хэрэггүй, зөвхөн энд
+-- edit хийнэ).
+drop function if exists regenerate_tower_floors(uuid);
 create or replace function regenerate_tower_floors(p_category_id uuid)
 returns void
 language plpgsql
@@ -74,7 +78,7 @@ begin
       order by id
     loop
       batch := batch || q.id;
-      if array_length(batch, 1) = 10 then
+      if array_length(batch, 1) = 5 then
         insert into tower_floors (category_id, floor_index, difficulty, question_ids, enemy_hp)
         values (p_category_id, fidx, lvl, batch, array_length(batch, 1) * 10);
         fidx := fidx + 1;
@@ -106,6 +110,13 @@ create table if not exists tower_progress (
 );
 alter table tower_progress enable row level security;
 
+-- SECURITY: client өөрөө дэвшлээ шууд бичиж чадахгүй (өмнө нь "for all"
+-- байсан тул хэн ч аль ч category_id-д дурын highest_cleared_floor бичиж,
+-- жишээ нь бусдын global цамхгийг зохиомлоор бүрэн дийлсэн болгож чаддаг
+-- цоорхойтой байсныг эндээс хаав). Зөвхөн унших боломжтой — бичилт бүгд
+-- economy.sql-ийн record_floor_win() RPC-ээр (SECURITY DEFINER тул RLS-ийг
+-- алгасдаг) л хийгдэнэ.
 drop policy if exists "tower_progress_owner_all" on tower_progress;
-create policy "tower_progress_owner_all" on tower_progress
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "tower_progress_owner_select" on tower_progress;
+create policy "tower_progress_owner_select" on tower_progress
+  for select using (auth.uid() = user_id);

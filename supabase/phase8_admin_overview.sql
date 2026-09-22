@@ -4,6 +4,7 @@
 -- шууд select хийж чадахгүй. Иймд security-definer функцээр дамжуулж,
 -- зөвхөн app_admins-д бүртгэлтэй хэрэглэгчид бүх өгөгдлийг нэгтгэж харуулна.
 
+drop function if exists admin_list_towers();
 create or replace function admin_list_towers()
 returns table (
   category_id uuid,
@@ -35,3 +36,5 @@ begin
     order by c.name;
 end;
 $$;
+
+grant execute on function admin_list_towers() to authenticated;

@@ -10,19 +10,18 @@ export const ACHIEVEMENTS = [
 ];
 
 // Буцаах утга: анх удаа шинээр авсан бол true (toast мэдэгдэл харуулахад ашиглана),
-// аль хэдийн байсан (эсвэл алдаа гарсан) бол false.
+// аль хэдийн байсан (эсвэл нөхцөл хангаагүй/алдаа гарсан) бол false.
+//
+// claim_achievement() RPC (achievements.sql) серверийн жинхэнэ өгөгдлөөс
+// (tower_progress/battle_attempts_log/duels/leaderboard) achievement-ийг
+// бодитоор хангасан эсэхийг шалгаад л бичдэг — client-ийн "надад энэ
+// achievement өгөөч" гэсэн мэдэгдлийг үнэн гэж шууд итгэдэггүй.
 export async function awardAchievement(supabase, userId, achievementId) {
     if (!userId) return false;
     try {
-        const { data, error } = await supabase
-            .from('user_achievements')
-            .upsert(
-                { user_id: userId, achievement_id: achievementId },
-                { onConflict: 'user_id,achievement_id', ignoreDuplicates: true }
-            )
-            .select();
+        const { data, error } = await supabase.rpc('claim_achievement', { p_achievement_id: achievementId });
         if (error) throw error;
-        return (data?.length ?? 0) > 0;
+        return data === true;
     } catch (err) {
         console.error('Failed to award achievement', achievementId, err);
         return false;

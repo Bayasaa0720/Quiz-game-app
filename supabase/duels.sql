@@ -291,10 +291,11 @@ security definer
 set search_path = public
 stable
 as $$
-  select d.id, d.category_id, c.name, split_part(u.email::text, '@', 1), d.created_at
+  select d.id, d.category_id, c.name, coalesce(up.display_name, split_part(u.email::text, '@', 1)), d.created_at
   from duels d
   join categories c on c.id = d.category_id
   join auth.users u on u.id = d.player1_id
+  left join user_profiles up on up.user_id = d.player1_id
   where d.player2_id = auth.uid() and d.status = 'waiting' and d.is_direct_challenge = true
   order by d.created_at desc;
 $$;
@@ -353,8 +354,8 @@ as $$
     case when d.player1_id = auth.uid() then d.player1_score else d.player2_score end,
     case when d.player1_id = auth.uid() then d.player2_score else d.player1_score end,
     case when d.player1_id = auth.uid()
-      then split_part(u2.email::text, '@', 1)
-      else split_part(u1.email::text, '@', 1) end,
+      then coalesce(up2.display_name, split_part(u2.email::text, '@', 1))
+      else coalesce(up1.display_name, split_part(u1.email::text, '@', 1)) end,
     case when d.winner_id = auth.uid() then 'win'
          when d.winner_id is null then 'tie'
          else 'lose' end,
@@ -363,6 +364,8 @@ as $$
   join categories c on c.id = d.category_id
   left join auth.users u1 on u1.id = d.player1_id
   left join auth.users u2 on u2.id = d.player2_id
+  left join user_profiles up1 on up1.user_id = d.player1_id
+  left join user_profiles up2 on up2.user_id = d.player2_id
   where d.status = 'finished' and (d.player1_id = auth.uid() or d.player2_id = auth.uid())
   order by d.updated_at desc
   limit p_limit;
@@ -377,7 +380,8 @@ returns table (
   id uuid, category_id uuid, player1_id uuid, player2_id uuid, status text,
   question_ids uuid[], current_index int, player1_score int, player2_score int,
   player1_round_answered boolean, player2_round_answered boolean, winner_id uuid,
-  player1_name text, player2_name text, round_started_at timestamptz
+  player1_name text, player2_name text, round_started_at timestamptz,
+  is_direct_challenge boolean
 )
 language sql
 security definer
@@ -387,11 +391,15 @@ as $$
   select d.id, d.category_id, d.player1_id, d.player2_id, d.status,
     d.question_ids, d.current_index, d.player1_score, d.player2_score,
     d.player1_round_answered, d.player2_round_answered, d.winner_id,
-    split_part(u1.email::text, '@', 1), split_part(u2.email::text, '@', 1),
-    d.round_started_at
+    coalesce(up1.display_name, split_part(u1.email::text, '@', 1)),
+    coalesce(up2.display_name, split_part(u2.email::text, '@', 1)),
+    d.round_started_at,
+    d.is_direct_challenge
   from duels d
   left join auth.users u1 on u1.id = d.player1_id
   left join auth.users u2 on u2.id = d.player2_id
+  left join user_profiles up1 on up1.user_id = d.player1_id
+  left join user_profiles up2 on up2.user_id = d.player2_id
   where d.id = p_match_id and (d.player1_id = auth.uid() or d.player2_id = auth.uid());
 $$;
 

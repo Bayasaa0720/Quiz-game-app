@@ -4,6 +4,7 @@
 -- дамжуулж, дуудсан хэрэглэгч өөрөө admin мөн эсэхийг л шалгуулна (бусад
 -- хэрэглэгчийн мэдээлэл алдагдахгүй).
 
+drop function if exists is_app_admin();
 create or replace function is_app_admin()
 returns boolean
 language sql
@@ -12,3 +13,5 @@ set search_path = public
 as $$
   select exists(select 1 from app_admins where user_id = auth.uid());
 $$;
+
+grant execute on function is_app_admin() to authenticated;
