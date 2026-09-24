@@ -7,11 +7,25 @@ import { useModal } from './components/modalContext.js';
 import { useToast } from './components/toastContext.js';
 import { ACHIEVEMENTS } from './lib/achievements.js';
 import { formatCoin } from './lib/formatCoin.js';
+import { isReduceAnimations, setReduceAnimations, isKeyboardShortcutsEnabled, setKeyboardShortcutsEnabled } from './lib/prefs.js';
 import './Profile.css';
 
 const ROLE_LABEL = { teacher: 'Багш', student: 'Хэрэглэгч' };
 
-export default function Profile({ user, userRole, onBack, onLogout, onProfileUpdated }) {
+function ToggleSwitch({ on, onChange, label }) {
+    return (
+        <button
+            type="button"
+            role="switch"
+            aria-checked={on}
+            aria-label={label}
+            className={`toggle-switch${on ? ' on' : ''}`}
+            onClick={() => onChange(!on)}
+        />
+    );
+}
+
+export default function Profile({ user, userRole, onBack, onLogout, onProfileUpdated, sfxMuted, onToggleMute }) {
     const [displayName, setDisplayName] = useState('');
     const [avatarUrl, setAvatarUrl] = useState(null);
     const [balance, setBalance] = useState(0);
@@ -20,6 +34,10 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
     const [loadError, setLoadError] = useState(false);
     const [savingName, setSavingName] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [reduceAnim, setReduceAnim] = useState(isReduceAnimations());
+    const [kbShortcuts, setKbShortcuts] = useState(isKeyboardShortcutsEnabled());
+    const [duelInvitePermission, setDuelInvitePermission] = useState('everyone');
+    const [savingDuelPermission, setSavingDuelPermission] = useState(false);
     const fileInputRef = useRef(null);
     const modal = useModal();
     const { showToast } = useToast();
@@ -29,13 +47,14 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
         setLoadError(false);
         try {
             const [{ data: profile, error: profileErr }, { data: pts }, { data: earned, error: earnedErr }] = await Promise.all([
-                supabase.from('user_profiles').select('display_name, avatar_url').eq('user_id', user.id).maybeSingle(),
+                supabase.from('user_profiles').select('display_name, avatar_url, duel_invite_permission').eq('user_id', user.id).maybeSingle(),
                 supabase.from('user_points').select('balance').eq('user_id', user.id).maybeSingle(),
                 supabase.from('user_achievements').select('achievement_id').eq('user_id', user.id),
             ]);
             if (profileErr || earnedErr) throw profileErr || earnedErr;
             setDisplayName(profile?.display_name || '');
             setAvatarUrl(profile?.avatar_url || null);
+            setDuelInvitePermission(profile?.duel_invite_permission || 'everyone');
             setBalance(pts?.balance || 0);
             setEarnedIds(new Set((earned || []).map(r => r.achievement_id)));
         } catch (err) {
@@ -63,6 +82,29 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
         }
         showToast({ icon: '✓', title: 'Хадгалагдлаа' });
         onProfileUpdated?.({ displayName: displayName.trim() || null, avatarUrl });
+    };
+
+    const handleToggleReduceAnim = (value) => {
+        setReduceAnim(value);
+        setReduceAnimations(value);
+    };
+
+    const handleToggleKbShortcuts = (value) => {
+        setKbShortcuts(value);
+        setKeyboardShortcutsEnabled(value);
+    };
+
+    const handleChangeDuelPermission = async (value) => {
+        if (value === duelInvitePermission) return;
+        const prev = duelInvitePermission;
+        setDuelInvitePermission(value);
+        setSavingDuelPermission(true);
+        const { error } = await supabase.rpc('update_duel_invite_permission', { p_permission: value });
+        setSavingDuelPermission(false);
+        if (error) {
+            setDuelInvitePermission(prev);
+            await modal.alert('Тохиргоо хадгалахад алдаа гарлаа.');
+        }
     };
 
     const handleAvatarClick = () => fileInputRef.current?.click();
@@ -136,6 +178,69 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
                 <p className="profile-email">{user?.email}</p>
                 <p className="profile-role-badge">{ROLE_LABEL[userRole] || userRole}</p>
                 <p className="profile-coin">🪙 {formatCoin(balance)} coin</p>
+            </div>
+
+            <div className="profile-settings">
+                <h3 className="profile-section-title profile-settings-title">⚙️ Тохиргоо</h3>
+
+                <div className="setting-row">
+                    <div className="setting-row-text">
+                        <span className="setting-row-label">Дуу</span>
+                        <span className="setting-row-hint">Зөв/буруу хариултын эффект</span>
+                    </div>
+                    <ToggleSwitch on={!sfxMuted} onChange={() => onToggleMute?.()} label="Дуу" />
+                </div>
+
+                <div className="setting-row">
+                    <div className="setting-row-text">
+                        <span className="setting-row-label">Анимаци багасгах</span>
+                        <span className="setting-row-hint">Шилжилтийн хөдөлгөөнийг хасна</span>
+                    </div>
+                    <ToggleSwitch on={reduceAnim} onChange={handleToggleReduceAnim} label="Анимаци багасгах" />
+                </div>
+
+                <div className="setting-row">
+                    <div className="setting-row-text">
+                        <span className="setting-row-label">Гарын товчлол</span>
+                        <span className="setting-row-hint">Тулаанд 1-4 хариулт, Enter дараах</span>
+                    </div>
+                    <ToggleSwitch on={kbShortcuts} onChange={handleToggleKbShortcuts} label="Гарын товчлол" />
+                </div>
+
+                <div className="setting-row">
+                    <div className="setting-row-text">
+                        <span className="setting-row-label">Хэл</span>
+                        <span className="setting-row-hint">Одоогоор зөвхөн монгол хэл дэмжигдэнэ</span>
+                    </div>
+                    <select className="setting-select" value="mn" disabled>
+                        <option value="mn">Монгол</option>
+                    </select>
+                </div>
+
+                <div className="setting-row">
+                    <div className="setting-row-text">
+                        <span className="setting-row-label">Дуэлийн урилга</span>
+                        <span className="setting-row-hint">Хэн намайг нээлттэй хайлтаар олох боломжтой</span>
+                    </div>
+                    <div className="setting-radio-group">
+                        <button
+                            type="button"
+                            className={duelInvitePermission === 'friends' ? 'active' : ''}
+                            disabled={savingDuelPermission}
+                            onClick={() => handleChangeDuelPermission('friends')}
+                        >
+                            Найзууд
+                        </button>
+                        <button
+                            type="button"
+                            className={duelInvitePermission === 'everyone' ? 'active' : ''}
+                            disabled={savingDuelPermission}
+                            onClick={() => handleChangeDuelPermission('everyone')}
+                        >
+                            Бүгд
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <h3 className="profile-section-title">🏆 Тэмдэгтүүд ({earnedCount} / {ACHIEVEMENTS.length})</h3>

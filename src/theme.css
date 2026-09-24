@@ -1,36 +1,56 @@
 :root {
-  --bg: #0c0c12;
-  --bg-panel: #17171f;
-  --bg-elevated: #1e1e28;
-  --border: #2b2b38;
-  --border-strong: #3a3a4d;
+  /* Nocturne — muted, low-chroma dark palette (see Tower Climb UI.html design deck). */
+  --bg: #101119;
+  --bg-panel: #131522;
+  --bg-elevated: #161826;
+  --bg-elevated-2: #1e2030;
+  --border: rgba(233, 233, 237, 0.08);
+  --border-strong: rgba(233, 233, 237, 0.16);
 
-  --text: #f2f2f7;
+  --text: #e9e9ed;
   --text-muted: #a4a4b5;
+  --text-dim: #71717f;
 
-  --accent: #8b5cf6;
-  --accent-ink: #6d28d9;
-  --accent-contrast: #ffffff;
-  --accent-2: #ec4899;
-  --accent-3: #22d3ee;
-  --gradient: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  --accent: #9184d9;
+  --accent-ink: #5d5294;
+  --accent-soft: #b5abfc;
+  --accent-contrast: #101119;
+  --accent-2: #c2685f;
+  --accent-3: #9184d9;
+  --gradient: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
 
-  --success: #22c55e;
-  --success-ink: #15803d;
-  --danger: #f43f5e;
-  --danger-ink: #be123c;
-  --info: #22d3ee;
-  --info-ink: #0e7490;
+  --success: #6fae7f;
+  --success-ink: #3f7a4f;
+  --danger: #c2685f;
+  --danger-ink: #953f37;
+  --info: #9184d9;
+  --info-ink: #5d5294;
 
   --radius-sm: 6px;
   --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-lg: 14px;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
 
   --sidebar-width: 260px;
   --header-height: 72px;
+}
+
+.reduce-motion,
+.reduce-motion * {
+  transition-duration: 0.001ms !important;
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+}
+
+/* Small-caps section label, used for "ЦАМХАГ" / "ТОХИРГОО" style eyebrows. */
+.eyebrow-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
 }
 
 * {
@@ -52,14 +72,15 @@ body {
   overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
-  font-family: "Segoe UI", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   line-height: 1.5;
 }
 
 h1,
 h2,
 h3 {
-  font-family: Georgia, "Noto Serif", "Times New Roman", serif;
+  font-family: inherit;
+  font-weight: 700;
   margin: 0;
 }
 
@@ -122,11 +143,11 @@ button {
 }
 
 .app-nav-tabs button.active {
-  background: var(--gradient);
+  background: rgba(145, 132, 217, 0.12);
   border-color: transparent;
-  color: var(--accent-contrast);
+  color: var(--text);
   font-weight: 700;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .app-header-right {

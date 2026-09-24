@@ -11,6 +11,7 @@ import { buildOptions } from './lib/generateOptions.js';
 import { awardAchievement } from './lib/achievements.js';
 import { useToast } from './components/toastContext.js';
 import { formatCoin } from './lib/formatCoin.js';
+import { isKeyboardShortcutsEnabled } from './lib/prefs.js';
 import './Battle.css';
 
 const PLAYER_START_HP = 3;
@@ -264,6 +265,23 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
         });
     };
 
+    // Гарын товчлол (Profile > Тохиргоо-оор асаах/унтраах): 1-4 харилт
+    // сонгоно, Enter дараагийн асуулт руу шилжинэ.
+    useEffect(() => {
+        if (status !== 'fighting' || !isKeyboardShortcutsEnabled()) return;
+        const onKeyDown = (e) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            if (!isAnswered && /^[1-4]$/.test(e.key)) {
+                const opt = options[Number(e.key) - 1];
+                if (opt) handleSelect(opt);
+            } else if (isAnswered && e.key === 'Enter') {
+                handleNext();
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    });
+
     if (status === 'loading') return <p style={{ textAlign: 'center' }}>Тулаан бэлдэж байна...</p>;
 
     if (status === 'error') {
@@ -357,6 +375,10 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
                         {isFinalAction ? 'Үзэх →' : 'Дараагийн асуулт →'}
                     </Button>
                 </div>
+            )}
+
+            {isKeyboardShortcutsEnabled() && (
+                <p className="battle-kb-hint">1-4 дарж хариулах · Enter дараагийн асуулт</p>
             )}
         </div>
     );

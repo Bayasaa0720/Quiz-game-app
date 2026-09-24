@@ -14,6 +14,7 @@ import Inventory from './Inventory.jsx';
 import Shop from './Shop.jsx';
 import Profile from './Profile.jsx';
 import ManageContent from './ManageContent.jsx';
+import Onboarding from './Onboarding.jsx';
 import Login from './Login.jsx';
 import Register from './register.jsx';
 import { supabase } from './supabaseClient.jsx';
@@ -23,6 +24,7 @@ import { PlayerSidebar, EnemySidebar } from './components/Sidebar.jsx';
 import NavSidebar from './components/NavSidebar.jsx';
 import InstallPrompt from './components/InstallPrompt.jsx';
 import { isMuted, toggleMuted } from './sound.js';
+import { hasSeenOnboarding, markOnboardingSeen } from './lib/prefs.js';
 import { formatCoin } from './lib/formatCoin.js';
 import { useViewportWidth } from './lib/useViewportWidth.js';
 
@@ -70,6 +72,7 @@ function App() {
     const [displayName, setDisplayName] = useState(null);
     const [avatarUrl, setAvatarUrl] = useState(null);
     const [coinBalance, setCoinBalance] = useState(0);
+    const [equippedArmor, setEquippedArmor] = useState(null); // { name, icon, armor_points } | null
     const [duelInvite, setDuelInvite] = useState(null); // { matchId, isChallengeAccept } | null
     const viewportWidth = useViewportWidth();
 
@@ -81,6 +84,14 @@ function App() {
         if (!uid) return;
         const { data } = await supabase.from('user_points').select('balance').eq('user_id', uid).maybeSingle();
         setCoinBalance(data?.balance || 0);
+    }, []);
+
+    // NavSidebar-ийн "Цамхагууд" section-д одоогийн идэвхжүүлсэн армороо
+    // товч харуулахад ашиглана (шинэ дэлгэц/route биш, зөвхөн харуулалт).
+    const refreshEquippedArmor = useCallback(async (uid) => {
+        if (!uid) return;
+        const { data } = await supabase.rpc('get_my_equipped_armor');
+        setEquippedArmor(data?.[0] || null);
     }, []);
 
     // Restore session on refresh, and stay in sync with auth state (e.g. token refresh, sign-out elsewhere)
@@ -144,13 +155,18 @@ function App() {
         (async () => {
             const { data, error } = await supabase.rpc('is_app_admin');
             if (!error) setIsAdmin(!!data);
-            await refreshCoinBalance(user.id);
+            await Promise.all([refreshCoinBalance(user.id), refreshEquippedArmor(user.id)]);
         })();
-    }, [user, refreshCoinBalance]);
+    }, [user, refreshCoinBalance, refreshEquippedArmor]);
 
     // --- Auth Handlers ---
     const handleLoginSuccess = (userData) => {
         setUser(userData);
+        setView(hasSeenOnboarding(userData.id) ? 'TOWER_SELECT' : 'ONBOARDING');
+    };
+
+    const handleOnboardingDone = () => {
+        markOnboardingSeen(user.id);
         setView('TOWER_SELECT');
     };
 
@@ -175,6 +191,7 @@ function App() {
         setDuelInvite(null);
         setBattleState(IDLE_BATTLE_STATE);
         refreshCoinBalance(user?.id);
+        refreshEquippedArmor(user?.id);
     };
 
     const goToProfile = () => {
@@ -273,6 +290,8 @@ function App() {
                 onSwitchToLogin={() => setView('LOGIN')}
             />
         );
+    } else if (view === 'ONBOARDING') {
+        currentViewContent = <Onboarding onContinue={handleOnboardingDone} />;
     } else if (view === 'TOWER_SELECT') {
         currentViewContent = (
             <TowerSelect
@@ -289,6 +308,8 @@ function App() {
                 onBack={goToTowerSelect}
                 onLogout={handleLogout}
                 onProfileUpdated={handleProfileUpdated}
+                sfxMuted={sfxMuted}
+                onToggleMute={handleToggleMute}
             />
         );
     } else if (view === 'MANAGE_CONTENT') {
@@ -407,6 +428,21 @@ function App() {
         ],
     }[activeNavSection];
 
+    const navSidebarExtra = activeNavSection === 'tower' ? (
+        <div className="nav-sidebar-extra">
+            <span className="eyebrow-label">Одоогийн армор</span>
+            {equippedArmor ? (
+                <>
+                    <span className="nav-sidebar-extra-icon" aria-hidden="true">{equippedArmor.icon || '🛡️'}</span>
+                    <span className="nav-sidebar-extra-name">{equippedArmor.name}</span>
+                    <span className="nav-sidebar-extra-stat">+{equippedArmor.armor_points} армор</span>
+                </>
+            ) : (
+                <span className="nav-sidebar-extra-empty">Идэвхжүүлсэн эдлэл алга</span>
+            )}
+        </div>
+    ) : null;
+
     return (
         <ToastProvider>
             <ModalProvider>
@@ -416,7 +452,7 @@ function App() {
                             🗼 Tower Climb
                         </button>
 
-                        {user && (
+                        {user && view !== 'ONBOARDING' && (
                             <nav className="app-nav-tabs">
                                 <button type="button" className={activeNavSection === 'tower' ? 'active' : ''} onClick={goToTowerSelect}>🗼 Цамхагууд</button>
                                 <button type="button" className={activeNavSection === 'shop' ? 'active' : ''} onClick={() => setView('SHOP')}>🛒 Дэлгүүр</button>
@@ -430,7 +466,7 @@ function App() {
                         )}
 
                         <div className="app-header-right">
-                            {user && <span className="app-coin-pill">🪙 {formatCoin(coinBalance)}</span>}
+                            {user && view !== 'ONBOARDING' && <span className="app-coin-pill">🪙 {formatCoin(coinBalance)}</span>}
                             <button
                                 type="button"
                                 className="mute-toggle"
@@ -440,7 +476,7 @@ function App() {
                             >
                                 {sfxMuted ? '🔇' : '🔊'}
                             </button>
-                            {user && (
+                            {user && view !== 'ONBOARDING' && (
                                 <button type="button" className="app-avatar-btn" onClick={goToProfile} title="Профайл">
                                     {avatarUrl ? (
                                         <img src={avatarUrl} alt="Профайл" />
@@ -465,7 +501,7 @@ function App() {
                                 size={characterSize}
                             />
                         )}
-                        {navSidebarItems && <NavSidebar items={navSidebarItems} activeView={view} />}
+                        {navSidebarItems && <NavSidebar items={navSidebarItems} activeView={view} extra={navSidebarExtra} />}
                         <main className="app-main">
                             {currentViewContent}
                         </main>

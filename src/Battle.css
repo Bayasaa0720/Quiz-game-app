@@ -66,6 +66,12 @@
     margin-top: 28px;
 }
 
+.battle-kb-hint {
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+}
+
 .battle-result h2 {
     margin-bottom: 16px;
 }

@@ -34,9 +34,39 @@
 }
 
 .nav-sidebar-item.active {
-    background: var(--gradient);
-    border-left-color: var(--accent-3);
-    color: var(--accent-contrast);
+    background: rgba(145, 132, 217, 0.1);
+    border-left-color: var(--accent);
+    color: var(--text);
     font-weight: 700;
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
+}
+
+.nav-sidebar-extra {
+    margin-top: 16px;
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav-sidebar-extra-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.nav-sidebar-extra-name {
+    font-size: 0.85rem;
+    color: var(--text);
+    font-weight: 600;
+}
+
+.nav-sidebar-extra-stat {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.nav-sidebar-extra-empty {
+    font-size: 0.8rem;
+    color: var(--text-dim);
 }

@@ -82,3 +82,29 @@ as $$
 $$;
 
 grant execute on function get_user_stats(uuid[]) to authenticated;
+
+-- Profile > Тохиргоо > "Дуэлийн урилга": нээлттэй queue (duel_find_match,
+-- duels.sql) хайхад намайг олоход зөвшөөрөгдсөн этгээд ('everyone' эсвэл
+-- зөвхөн 'friends'). Найздаа шууд урих (duel_challenge_friend) үргэлж
+-- боломжтой хэвээр — энэ тохиргоо зөвхөн нээлттэй хайлтад нөлөөлнө.
+alter table user_profiles add column if not exists duel_invite_permission text not null default 'everyone';
+alter table user_profiles drop constraint if exists user_profiles_duel_invite_permission_check;
+alter table user_profiles add constraint user_profiles_duel_invite_permission_check
+  check (duel_invite_permission in ('everyone', 'friends'));
+
+drop function if exists update_duel_invite_permission(text);
+create or replace function update_duel_invite_permission(p_permission text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_permission not in ('everyone', 'friends') then
+    raise exception 'Буруу утга: %', p_permission;
+  end if;
+  update user_profiles set duel_invite_permission = p_permission where user_id = auth.uid();
+end;
+$$;
+
+grant execute on function update_duel_invite_permission(text) to authenticated;

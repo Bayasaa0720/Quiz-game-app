@@ -12,9 +12,10 @@
 -- тал автоматаар ялагдана. Ялсан тал 20 coin авна (economy.sql-ийн
 -- user_points хүснэгтэд).
 --
--- Ажиллуулах дараалал: economy.sql-ийн дараа (user_points, тиймээс шинэ
--- суулгалт бол эхлээд classrooms.sql -> achievements.sql -> economy.sql ->
--- ЭНЭ файл). Мөн Database -> Replication дотор "duels" хүснэгтэд Realtime
+-- Ажиллуулах дараалал: economy.sql, friends.sql-ийн дараа (user_points,
+-- friendships болон duel_invite_permission багана, тиймээс шинэ суулгалт
+-- бол эхлээд classrooms.sql -> achievements.sql -> economy.sql -> friends.sql
+-- -> ЭНЭ файл). Мөн Database -> Replication дотор "duels" хүснэгтэд Realtime
 -- асаалттай эсэхийг шалгаарай.
 
 create table if not exists duels (
@@ -68,13 +69,24 @@ declare
 begin
   delete from duels where player1_id = auth.uid() and status = 'waiting';
 
-  select id into v_match_id
-  from duels
-  where category_id = p_category_id
-    and status = 'waiting'
-    and is_direct_challenge = false
-    and player1_id <> auth.uid()
-  order by created_at asc
+  -- Тоглогчийг зөвхөн ("Дуэлийн урилга" тохиргоо) 'everyone' сонгосон
+  -- эсвэл биднийг найз болсон бол нэгдүүлнэ.
+  select d.id into v_match_id
+  from duels d
+  where d.category_id = p_category_id
+    and d.status = 'waiting'
+    and d.is_direct_challenge = false
+    and d.player1_id <> auth.uid()
+    and (
+      coalesce((select up.duel_invite_permission from user_profiles up where up.user_id = d.player1_id), 'everyone') = 'everyone'
+      or exists (
+        select 1 from friendships f
+        where f.status = 'accepted'
+          and ((f.requester_id = auth.uid() and f.addressee_id = d.player1_id)
+            or (f.addressee_id = auth.uid() and f.requester_id = d.player1_id))
+      )
+    )
+  order by d.created_at asc
   limit 1
   for update skip locked;
 
