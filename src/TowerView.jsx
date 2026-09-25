@@ -5,10 +5,8 @@ import Button from './components/Button.jsx';
 import { useModal } from './components/modalContext.js';
 import ErrorState from './components/ErrorState.jsx';
 import PlayerCharacter from './components/PlayerCharacter.jsx';
-import { getFloorState } from './lib/towerLogic.js';
+import { getFloorState, DIFFICULTY_LABELS } from './lib/towerLogic.js';
 import './TowerView.css';
-
-const DIFFICULTY_LABELS = { easy: 'Хялбар', normal: 'Дунд', hard: 'Хэцүү' };
 
 export default function TowerView({ user, categoryId, categoryName, onSelectFloor, onStartDuel, onBack }) {
     const [floors, setFloors] = useState([]);
