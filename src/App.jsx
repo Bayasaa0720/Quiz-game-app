@@ -1,30 +1,27 @@
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
-import TowerSelect from './TowerSelect.jsx';
+import Home from './Home.jsx';
 import TowerView from './TowerView.jsx';
 import Battle from './Battle.jsx';
 import QuizCreator from './QuizCreator.jsx';
 import QuestionManager from './QuestionManager.jsx';
 import AdminDashboard from './AdminDashboard.jsx';
 import Leaderboard from './Leaderboard.jsx';
-import Friends from './Friends.jsx';
+import FriendsDuel from './FriendsDuel.jsx';
 import Learning from './Learning.jsx';
 import Duel from './Duel.jsx';
-import DuelHistory from './DuelHistory.jsx';
 import Inventory from './Inventory.jsx';
 import Shop from './Shop.jsx';
 import Profile from './Profile.jsx';
 import ManageContent from './ManageContent.jsx';
 import Onboarding from './Onboarding.jsx';
-import Login from './Login.jsx';
-import Register from './register.jsx';
 import { supabase } from './supabaseClient.jsx';
 import { ModalProvider } from './components/ModalProvider.jsx';
 import { ToastProvider } from './components/ToastProvider.jsx';
 import { PlayerSidebar, EnemySidebar } from './components/Sidebar.jsx';
-import NavSidebar from './components/NavSidebar.jsx';
+import MainSidebar from './components/MainSidebar.jsx';
 import InstallPrompt from './components/InstallPrompt.jsx';
+import Button from './components/Button.jsx';
 import { isMuted, toggleMuted } from './sound.js';
-import { hasSeenOnboarding, markOnboardingSeen } from './lib/prefs.js';
 import { formatCoin } from './lib/formatCoin.js';
 import { useViewportWidth } from './lib/useViewportWidth.js';
 
@@ -32,6 +29,9 @@ import { useViewportWidth } from './lib/useViewportWidth.js';
 const BulkImport = lazy(() => import('./BulkImport.jsx'));
 
 const VIEWS_WITH_BATTLE_SIDEBARS = new Set(['BATTLE']);
+// Зочны горимд зөвхөн World tower тоглох боломжтой (2026-09-26 шийдвэр) —
+// бусад бүх дэлгэц GuestGate-ээр орлогдоно.
+const GUEST_ALLOWED_VIEWS = new Set(['TOWER_SELECT', 'TOWER_VIEW', 'BATTLE']);
 const IDLE_BATTLE_STATE = {
     playerHP: 100,
     playerMaxHP: 100,
@@ -46,22 +46,13 @@ const IDLE_BATTLE_STATE = {
     enemyVariant: 'orc',
 };
 
-// Аль view "hub" бүлэгт (тогтмол sidebar-тай) багтахыг тодорхойлно. Battle,
-// TowerView, Duel тоглолт, асуулт CRUD урсгал зэрэг "gameplay drill-down"
-// горимууд sidebar-гүй, бүтэн дэлгэцээрээ л явна.
-function viewToNavSection(view) {
-    if (['TOWER_SELECT', 'LEADERBOARD', 'MANAGE_CONTENT'].includes(view)) return 'tower';
-    if (['SHOP', 'INVENTORY'].includes(view)) return 'shop';
-    if (view === 'DUEL_HISTORY') return 'duel';
-    if (view === 'FRIENDS') return 'friends';
-    if (view === 'LEARNING') return 'learning';
-    if (view === 'ADMIN_DASHBOARD') return 'admin';
-    return null;
-}
-
 function App() {
-    const [view, setView] = useState('LOGIN');
+    const [view, setView] = useState('ONBOARDING');
     const [user, setUser] = useState(null);
+    const [isGuest, setIsGuest] = useState(false);
+    // Зочны горимын явц — зөвхөн энэ session-д амьдрах ephemeral state,
+    // DB-д хэзээ ч бичигдэхгүй (2026-09-26 шийдвэр). { [categoryId]: highestClearedFloor }
+    const [guestProgress, setGuestProgress] = useState({});
     const [selectedCategory, setSelectedCategory] = useState(null); // { id, name }
     const [selectedFloor, setSelectedFloor] = useState(null);
     const [battleState, setBattleState] = useState(IDLE_BATTLE_STATE);
@@ -72,6 +63,7 @@ function App() {
     const [displayName, setDisplayName] = useState(null);
     const [avatarUrl, setAvatarUrl] = useState(null);
     const [coinBalance, setCoinBalance] = useState(0);
+    const [streak, setStreak] = useState(0);
     const [equippedArmor, setEquippedArmor] = useState(null); // { name, icon, armor_points } | null
     const [duelInvite, setDuelInvite] = useState(null); // { matchId, isChallengeAccept } | null
     const viewportWidth = useViewportWidth();
@@ -86,12 +78,20 @@ function App() {
         setCoinBalance(data?.balance || 0);
     }, []);
 
-    // NavSidebar-ийн "Цамхагууд" section-д одоогийн идэвхжүүлсэн армороо
-    // товч харуулахад ашиглана (шинэ дэлгэц/route биш, зөвхөн харуулалт).
+    // MainSidebar-ийн доод хэсэгт одоогийн идэвхжүүлсэн армороо товч
+    // харуулахад ашиглана (шинэ дэлгэц/route биш, зөвхөн харуулалт).
     const refreshEquippedArmor = useCallback(async (uid) => {
         if (!uid) return;
         const { data } = await supabase.rpc('get_my_equipped_armor');
         setEquippedArmor(data?.[0] || null);
+    }, []);
+
+    // Header-т "N хоног" streak pill — battle_attempts_log-оос сервер талд
+    // тооцоологдоно (шинэ хүснэгт хэрэггүй, supabase/streak.sql харна уу).
+    const refreshStreak = useCallback(async (uid) => {
+        if (!uid) return;
+        const { data, error } = await supabase.rpc('get_my_streak');
+        if (!error) setStreak(Number(data) || 0);
     }, []);
 
     // Restore session on refresh, and stay in sync with auth state (e.g. token refresh, sign-out elsewhere)
@@ -114,7 +114,7 @@ function App() {
                 setDisplayName(null);
                 setAvatarUrl(null);
                 setCoinBalance(0);
-                setView('LOGIN');
+                setView('ONBOARDING');
                 setSelectedCategory(null);
                 setSelectedFloor(null);
             }
@@ -141,11 +141,15 @@ function App() {
                 return;
             }
             const role = user.user_metadata?.role === 'teacher' ? 'teacher' : 'student';
+            const displayNameFromSignup = user.user_metadata?.display_name || null;
             await supabase.from('user_profiles').upsert(
-                { user_id: user.id, role },
+                { user_id: user.id, role, display_name: displayNameFromSignup },
                 { onConflict: 'user_id', ignoreDuplicates: true }
             );
-            if (!cancelled) setUserRole(role);
+            if (!cancelled) {
+                setUserRole(role);
+                setDisplayName(displayNameFromSignup);
+            }
         })();
         return () => { cancelled = true; };
     }, [user]);
@@ -155,30 +159,48 @@ function App() {
         (async () => {
             const { data, error } = await supabase.rpc('is_app_admin');
             if (!error) setIsAdmin(!!data);
-            await Promise.all([refreshCoinBalance(user.id), refreshEquippedArmor(user.id)]);
+            await Promise.all([refreshCoinBalance(user.id), refreshEquippedArmor(user.id), refreshStreak(user.id)]);
         })();
-    }, [user, refreshCoinBalance, refreshEquippedArmor]);
+    }, [user, refreshCoinBalance, refreshEquippedArmor, refreshStreak]);
 
     // --- Auth Handlers ---
-    const handleLoginSuccess = (userData) => {
+    // Onboarding wizard-ийн 3-р алхам (нэвтрэх/бүртгүүлэх) аль хэдийн
+    // танилцуулга/дүрмийг дараад ирсэн тул энд дахин шалгах зүйлгүй.
+    const handleAuthSuccess = (userData) => {
         setUser(userData);
-        setView(hasSeenOnboarding(userData.id) ? 'TOWER_SELECT' : 'ONBOARDING');
+        setIsGuest(false);
+        setView('TOWER_SELECT');
     };
 
-    const handleOnboardingDone = () => {
-        markOnboardingSeen(user.id);
+    const handleGuestContinue = () => {
+        setIsGuest(true);
+        setGuestProgress({});
         setView('TOWER_SELECT');
+    };
+
+    // Зочин "Бүртгүүлэх" дарахад — Onboarding аль хэдийн танилцуулгыг
+    // харуулсан тул шууд 3-р алхам (auth формоос) руу очно.
+    const handleGuestRegister = () => {
+        setIsGuest(false);
+        setView('ONBOARDING');
+    };
+
+    const handleGuestFloorCleared = (categoryId, floorIndex) => {
+        setGuestProgress(g => ({ ...g, [categoryId]: Math.max(g[categoryId] ?? -1, floorIndex) }));
     };
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
         setUser(null);
+        setIsGuest(false);
+        setGuestProgress({});
         setUserRole(null);
         setIsAdmin(false);
         setDisplayName(null);
         setAvatarUrl(null);
         setCoinBalance(0);
-        setView('LOGIN');
+        setStreak(0);
+        setView('ONBOARDING');
         setSelectedCategory(null);
         setSelectedFloor(null);
     };
@@ -192,6 +214,7 @@ function App() {
         setBattleState(IDLE_BATTLE_STATE);
         refreshCoinBalance(user?.id);
         refreshEquippedArmor(user?.id);
+        refreshStreak(user?.id);
     };
 
     const goToProfile = () => {
@@ -238,6 +261,7 @@ function App() {
         setBattleState(IDLE_BATTLE_STATE);
         setView('TOWER_VIEW');
         refreshCoinBalance(user?.id);
+        refreshStreak(user?.id);
     };
 
     // Jump straight into the next floor from the "won" screen — stays on
@@ -276,28 +300,19 @@ function App() {
     // --- View Controller ---
     let currentViewContent;
 
-    if (view === 'LOGIN') {
-        currentViewContent = (
-            <Login
-                onLoginSuccess={handleLoginSuccess}
-                onSwitchToRegister={() => setView('REGISTER')}
-            />
-        );
-    } else if (view === 'REGISTER') {
-        currentViewContent = (
-            <Register
-                onRegistrationSuccess={(loggedInUser) => loggedInUser ? handleLoginSuccess(loggedInUser) : setView('LOGIN')}
-                onSwitchToLogin={() => setView('LOGIN')}
-            />
-        );
-    } else if (view === 'ONBOARDING') {
-        currentViewContent = <Onboarding onContinue={handleOnboardingDone} />;
+    if (view === 'ONBOARDING') {
+        currentViewContent = <Onboarding onAuthSuccess={handleAuthSuccess} onGuestContinue={handleGuestContinue} />;
     } else if (view === 'TOWER_SELECT') {
         currentViewContent = (
-            <TowerSelect
+            <Home
                 user={user}
+                isGuest={isGuest}
+                guestProgress={guestProgress}
+                displayName={displayName}
                 onSelectTower={handleSelectTower}
                 onAcceptChallenge={handleAcceptChallenge}
+                onOpenLeaderboard={() => setView('LEADERBOARD')}
+                onCreateTower={goToManageContent}
             />
         );
     } else if (view === 'PROFILE') {
@@ -327,24 +342,25 @@ function App() {
     } else if (view === 'LEADERBOARD') {
         currentViewContent = <Leaderboard user={user} onBack={goToTowerSelect} />;
     } else if (view === 'FRIENDS') {
-        currentViewContent = <Friends user={user} onBack={goToTowerSelect} onChallengeCreated={handleChallengeCreated} />;
+        currentViewContent = <FriendsDuel user={user} onBack={goToTowerSelect} onChallengeCreated={handleChallengeCreated} />;
     } else if (view === 'INVENTORY') {
         currentViewContent = <Inventory user={user} onBack={goToTowerSelect} />;
     } else if (view === 'SHOP') {
         currentViewContent = <Shop user={user} onBack={goToTowerSelect} />;
-    } else if (view === 'DUEL_HISTORY') {
-        currentViewContent = <DuelHistory onBack={goToTowerSelect} />;
     } else if (view === 'LEARNING') {
         currentViewContent = <Learning user={user} userRole={userRole} onBack={goToTowerSelect} />;
     } else if (view === 'TOWER_VIEW' && selectedCategory) {
         currentViewContent = (
             <TowerView
                 user={user}
+                isGuest={isGuest}
+                guestHighestCleared={guestProgress[selectedCategory.id] ?? -1}
                 categoryId={selectedCategory.id}
                 categoryName={selectedCategory.name}
                 onSelectFloor={handleSelectFloor}
                 onStartDuel={handleStartDuel}
                 onBack={goToTowerSelect}
+                onOpenInventory={() => setView('INVENTORY')}
             />
         );
     } else if (view === 'DUEL' && selectedCategory) {
@@ -362,6 +378,8 @@ function App() {
         currentViewContent = (
             <Battle
                 user={user}
+                isGuest={isGuest}
+                onGuestFloorCleared={handleGuestFloorCleared}
                 categoryId={selectedCategory.id}
                 floor={selectedFloor}
                 onFloorCleared={handleFloorCleared}
@@ -397,76 +415,61 @@ function App() {
         );
     }
 
+    // Зочин зөвхөн World tower тоглох ёстой (2026-09-26 шийдвэр) — бусад
+    // бүх дэлгэц дээр (Profile/Shop/Friends/Learning/Admin г.м) энгийн
+    // "бүртгүүлэх" уриалгаар орлуулна. currentViewContent аль хэдийн бүтсэн
+    // ч JSX element зөвхөн render хийгдэхдээ л биелдэг тул энд дарж бичихэд
+    // доорх салбарууд (жиш нь <Profile user={null}/>) хэзээ ч дуудагдахгүй.
+    if (isGuest && !GUEST_ALLOWED_VIEWS.has(view)) {
+        currentViewContent = (
+            <div className="guest-gate">
+                <h2>🔒 Энэ хэсэг зөвхөн бүртгэлтэй хэрэглэгчид зориулагдсан</h2>
+                <p>Зочны горимд зөвхөн World tower тоглох боломжтой. Бүх боломжийг нээхийн тулд бүртгүүлнэ үү.</p>
+                <div className="guest-gate-actions">
+                    <Button onClick={handleGuestRegister}>Бүртгүүлэх</Button>
+                    <Button variant="ghost" onClick={goToTowerSelect}>← Нүүр рүү буцах</Button>
+                </div>
+            </div>
+        );
+    }
+
     const showBattleSidebars = VIEWS_WITH_BATTLE_SIDEBARS.has(view);
     const inBattle = view === 'BATTLE';
     const characterSize = inBattle && viewportWidth <= 860
         ? (viewportWidth <= 420 ? 50 : 62)
         : undefined;
 
-    const activeNavSection = viewToNavSection(view);
-    const navSidebarItems = {
-        tower: [
-            { label: '🏆 Тэргүүлэгчид', view: 'LEADERBOARD', onClick: () => setView('LEADERBOARD') },
-            { label: '📝 Агуулга удирдах', view: 'MANAGE_CONTENT', onClick: goToManageContent },
-        ],
-        shop: [
-            { label: '🛒 Дэлгүүр', view: 'SHOP', onClick: () => setView('SHOP') },
-            { label: '🎒 Инвентар', view: 'INVENTORY', onClick: () => setView('INVENTORY') },
-        ],
-        duel: [
-            { label: '📜 Дуэлийн түүх', view: 'DUEL_HISTORY', onClick: () => setView('DUEL_HISTORY') },
-            { label: '👥 Найзаа урих', view: 'FRIENDS', onClick: () => setView('FRIENDS') },
-        ],
-        friends: [
-            { label: '👥 Найзууд', view: 'FRIENDS', onClick: () => setView('FRIENDS') },
-        ],
-        learning: [
-            { label: '🎓 Сургалт', view: 'LEARNING', onClick: () => setView('LEARNING') },
-        ],
-        admin: [
-            { label: '🛠 Бүх цамхаг', view: 'ADMIN_DASHBOARD', onClick: () => setView('ADMIN_DASHBOARD') },
-        ],
-    }[activeNavSection];
-
-    const navSidebarExtra = activeNavSection === 'tower' ? (
-        <div className="nav-sidebar-extra">
-            <span className="eyebrow-label">Одоогийн армор</span>
-            {equippedArmor ? (
-                <>
-                    <span className="nav-sidebar-extra-icon" aria-hidden="true">{equippedArmor.icon || '🛡️'}</span>
-                    <span className="nav-sidebar-extra-name">{equippedArmor.name}</span>
-                    <span className="nav-sidebar-extra-stat">+{equippedArmor.armor_points} армор</span>
-                </>
-            ) : (
-                <span className="nav-sidebar-extra-empty">Идэвхжүүлсэн эдлэл алга</span>
-            )}
-        </div>
-    ) : null;
+    const showMainNav = (user || isGuest) && view !== 'ONBOARDING';
+    // Battle-ийн зүүн/баруун HP багана аль хэдийн байгаа тул зөвхөн тэнд
+    // тогтмол sidebar-аа нуугаад, header дэх mobile fallback nav-аар хангана.
+    const showMainSidebar = showMainNav && view !== 'BATTLE';
 
     return (
         <ToastProvider>
             <ModalProvider>
                 <div className="app-shell">
                     <header className="app-header">
-                        <button type="button" className="app-logo" onClick={user ? goToTowerSelect : undefined}>
+                        <button type="button" className="app-logo" onClick={(user || isGuest) ? goToTowerSelect : undefined}>
                             🗼 Tower Climb
                         </button>
 
-                        {user && view !== 'ONBOARDING' && (
+                        {showMainNav && (
+                            // Зөвхөн mobile fallback (desktop дээр MainSidebar-аар
+                            // нуугдана, CSS: .app-nav-tabs { display:none } @900px+).
                             <nav className="app-nav-tabs">
-                                <button type="button" className={activeNavSection === 'tower' ? 'active' : ''} onClick={goToTowerSelect}>🗼 Цамхагууд</button>
-                                <button type="button" className={activeNavSection === 'shop' ? 'active' : ''} onClick={() => setView('SHOP')}>🛒 Дэлгүүр</button>
-                                <button type="button" className={activeNavSection === 'duel' ? 'active' : ''} onClick={() => setView('DUEL_HISTORY')}>⚔️ Duel</button>
-                                <button type="button" className={activeNavSection === 'friends' ? 'active' : ''} onClick={() => setView('FRIENDS')}>👥 Найзууд</button>
-                                <button type="button" className={activeNavSection === 'learning' ? 'active' : ''} onClick={() => setView('LEARNING')}>🎓 Сургалт</button>
+                                <button type="button" className={view === 'TOWER_SELECT' ? 'active' : ''} onClick={goToTowerSelect}>🗼 Цамхагууд</button>
+                                <button type="button" className={view === 'SHOP' || view === 'INVENTORY' ? 'active' : ''} onClick={() => setView('SHOP')}>🛒 Дэлгүүр</button>
+                                <button type="button" className={view === 'FRIENDS' ? 'active' : ''} onClick={() => setView('FRIENDS')}>👥 Найзууд ба Duel</button>
+                                <button type="button" className={view === 'LEARNING' ? 'active' : ''} onClick={() => setView('LEARNING')}>🎓 Сургалт</button>
                                 {isAdmin && (
-                                    <button type="button" className={activeNavSection === 'admin' ? 'active' : ''} onClick={() => setView('ADMIN_DASHBOARD')}>🛠 Admin</button>
+                                    <button type="button" className={view === 'ADMIN_DASHBOARD' ? 'active' : ''} onClick={() => setView('ADMIN_DASHBOARD')}>🛠 Admin</button>
                                 )}
                             </nav>
                         )}
 
                         <div className="app-header-right">
                             {user && view !== 'ONBOARDING' && <span className="app-coin-pill">🪙 {formatCoin(coinBalance)}</span>}
+                            {user && view !== 'ONBOARDING' && streak > 0 && <span className="app-streak-pill">🔥 {streak} хоног</span>}
                             <button
                                 type="button"
                                 className="mute-toggle"
@@ -488,7 +491,28 @@ function App() {
                         </div>
                     </header>
 
-                    <div className={`app-body${showBattleSidebars ? ' with-sidebars' : ''}${inBattle ? ' in-battle' : ''}${navSidebarItems ? ' with-nav-sidebar' : ''}`}>
+                    <div className={`app-body${showBattleSidebars ? ' with-sidebars' : ''}${inBattle ? ' in-battle' : ''}${showMainSidebar ? ' with-main-sidebar' : ''}`}>
+                        {showMainSidebar && (
+                            <MainSidebar
+                                activeView={view}
+                                isAdmin={isAdmin}
+                                isGuest={isGuest}
+                                equippedArmor={equippedArmor}
+                                displayName={isGuest ? 'Зочин' : displayName}
+                                userEmail={user?.email}
+                                userRole={userRole}
+                                onHome={goToTowerSelect}
+                                onLeaderboard={() => setView('LEADERBOARD')}
+                                onFriends={() => setView('FRIENDS')}
+                                onLearning={() => setView('LEARNING')}
+                                onManageContent={goToManageContent}
+                                onShop={() => setView('SHOP')}
+                                onInventory={() => setView('INVENTORY')}
+                                onAdmin={() => setView('ADMIN_DASHBOARD')}
+                                onProfile={goToProfile}
+                                onGuestRegister={handleGuestRegister}
+                            />
+                        )}
                         {showBattleSidebars && (
                             <PlayerSidebar
                                 hp={inBattle ? battleState.playerHP : undefined}
@@ -501,7 +525,6 @@ function App() {
                                 size={characterSize}
                             />
                         )}
-                        {navSidebarItems && <NavSidebar items={navSidebarItems} activeView={view} extra={navSidebarExtra} />}
                         <main className="app-main">
                             {currentViewContent}
                         </main>
@@ -518,7 +541,7 @@ function App() {
                         )}
                     </div>
                 </div>
-                <InstallPrompt />
+                {view !== 'ONBOARDING' && <InstallPrompt />}
             </ModalProvider>
         </ToastProvider>
     );

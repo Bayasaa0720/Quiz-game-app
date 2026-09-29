@@ -20,7 +20,7 @@ const DAMAGE_TO_PLAYER = 1;
 // Matches (frames / fps) of the attack/hurt sheets in PlayerCharacter/EnemyCharacter, plus a small buffer.
 const ANIM_RETURN_TO_IDLE_MS = { attack: 450, hurt: 360 };
 
-export default function Battle({ user, categoryId, floor, onFloorCleared, onGoToFloor, onLeaveTower, onHpChange }) {
+export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId, floor, onFloorCleared, onGoToFloor, onLeaveTower, onHpChange }) {
     const [questions, setQuestions] = useState([]);
     const [nextFloor, setNextFloor] = useState(null);
     const [answerPool, setAnswerPool] = useState([]);
@@ -38,6 +38,8 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
     const [armorMax, setArmorMax] = useState(0);
     const [correctCount, setCorrectCount] = useState(0);
     const [wrongCount, setWrongCount] = useState(0);
+    const [missedQuestions, setMissedQuestions] = useState([]); // [{ id, questionText, questionImage, correctText, correctImage }]
+    const [coinsEarned, setCoinsEarned] = useState(0);
     const [status, setStatus] = useState('loading'); // loading | fighting | won | lost
     const [saving, setSaving] = useState(false);
     const [playerAnim, setPlayerAnim] = useState('idle');
@@ -76,8 +78,8 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
             // асуултаас авахын тулд тусад нь татна — ингэснээр ижил төрлийн (зурган/текст)
             // хариулт олдох магадлал өснө.
             supabase.from('quiz_items').select('*').eq('category_id', categoryId),
-            // Идэвхжүүлсэн армор (economy.sql) — байхгүй бол хоосон массив буцна.
-            supabase.rpc('get_my_equipped_armor'),
+            // Идэвхжүүлсэн армор (economy.sql) — зочинд байхгүй тул шууд хоосон.
+            isGuest ? Promise.resolve({ data: [] }) : supabase.rpc('get_my_equipped_armor'),
         ]);
         if (myLoadId !== loadIdRef.current) return; // шинэ дуудлага аль хэдийн эхэлсэн
         if (error || poolError) {
@@ -95,6 +97,8 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
         setArmorMax(equippedArmor);
         setCorrectCount(0);
         setWrongCount(0);
+        setMissedQuestions([]);
+        setCoinsEarned(0);
         setNextFloor(null);
         resultSoundPlayed.current = false;
         setStatus('fighting');
@@ -159,6 +163,17 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
             enemyAnimTimeout.current = setTimeout(() => setEnemyAnim('idle'), ANIM_RETURN_TO_IDLE_MS.hurt);
         } else {
             setWrongCount(c => c + 1);
+            const missedQ = questions.find(q => q.id === queue[0]);
+            const correctOpt = options.find(o => o.isCorrect);
+            if (missedQ) {
+                setMissedQuestions(list => list.some(m => m.id === missedQ.id) ? list : [...list, {
+                    id: missedQ.id,
+                    questionText: missedQ.quiz_question,
+                    questionImage: missedQ.question_image_url,
+                    correctText: correctOpt?.text,
+                    correctImage: correctOpt?.img,
+                }]);
+            }
             playWrongHit();
             setEnemyAnim('attack');
             setEnemyTick(t => t + 1);
@@ -180,6 +195,30 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
     const handleNext = async () => {
         if (enemyHP <= 0) {
             setSaving(true);
+            const flawless = wrongCount === 0;
+
+            // Зочин: DB-д юу ч бичихгүй (2026-09-26 шийдвэр) — зөвхөн дараагийн
+            // давхрыг уншиж, App.jsx-ийн ephemeral guestProgress state-ийг
+            // шинэчилнэ. Coin/achievement зочинд байхгүй.
+            if (isGuest) {
+                try {
+                    const { data: next } = await supabase.from('tower_floors')
+                        .select('id, floor_index, difficulty, question_ids, enemy_hp')
+                        .eq('category_id', categoryId)
+                        .eq('floor_index', floor.floor_index + 1)
+                        .maybeSingle();
+                    setNextFloor(next || null);
+                    onGuestFloorCleared?.(categoryId, floor.floor_index);
+                } catch (err) {
+                    console.error('Error loading next floor (guest):', err);
+                    setNextFloor(null);
+                } finally {
+                    setSaving(false);
+                }
+                setStatus('won');
+                return;
+            }
+
             // battle_attempts_log эрх (RLS) хараахан тохируулаагүй бол алдаа
             // гарч болно — багшийн dashboard-д зориулсан статистик тул чимээгүй
             // алгасна (тулааны үр дүнд нөлөөлөхгүй).
@@ -192,7 +231,6 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
                 wrong_count: wrongCount,
             }).then(({ error }) => { if (error) console.warn('battle_attempts_log insert skipped:', error.message); });
 
-            const flawless = wrongCount === 0;
             try {
                 // record_floor_win нь сервер талд tower_progress-ийг өөрөө бичдэг,
                 // мөн давхрын хүнд/хөнгөнөөс хамаарсан coin олгодог (хялбар/дунд/
@@ -211,6 +249,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
                     }),
                 ]);
                 setNextFloor(next || null);
+                setCoinsEarned(Number(pointsAwarded) || 0);
                 if (Number(pointsAwarded) > 0) {
                     showToast({ icon: '🪙', title: `+${formatCoin(pointsAwarded)} coin`, message: flawless ? 'Цэвэр ялалтын бонустой!' : undefined });
                 }
@@ -239,6 +278,10 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
             return;
         }
         if (playerHP <= 0) {
+            if (isGuest) {
+                setStatus('lost');
+                return;
+            }
             supabase.from('battle_attempts_log').insert({
                 user_id: user.id,
                 category_id: categoryId,
@@ -289,6 +332,7 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
     }
 
     if (status === 'won') {
+        const flawless = wrongCount === 0;
         return (
             <div className="battle-page battle-result">
                 <div className="battle-result-characters">
@@ -297,6 +341,39 @@ export default function Battle({ user, categoryId, floor, onFloorCleared, onGoTo
                 </div>
                 <h2>🏆 Дайснийг ялав!</h2>
                 <p>Давхар {floor.floor_index + 1} дийлдлээ.</p>
+                {flawless && <p className="battle-result-flawless">✨ Цэвэр ялалт! Алдаагүй шүү.</p>}
+
+                <div className="battle-result-stats">
+                    <div className="battle-result-stat">
+                        <span className="battle-result-stat-value">{correctCount}</span>
+                        <span className="battle-result-stat-label">Зөв</span>
+                    </div>
+                    <div className="battle-result-stat">
+                        <span className="battle-result-stat-value">{wrongCount}</span>
+                        <span className="battle-result-stat-label">Буруу</span>
+                    </div>
+                    <div className="battle-result-stat">
+                        <span className="battle-result-stat-value">🪙 {coinsEarned}</span>
+                        <span className="battle-result-stat-label">Олсон зоос</span>
+                    </div>
+                </div>
+
+                {missedQuestions.length > 0 && (
+                    <div className="battle-review">
+                        <span className="eyebrow-label">Давтах асуултууд</span>
+                        {missedQuestions.map(m => (
+                            <div key={m.id} className="battle-review-item">
+                                <p className="battle-review-question">
+                                    {m.questionImage ? <img src={m.questionImage} alt="Асуулт" /> : m.questionText}
+                                </p>
+                                <p className="battle-review-answer">
+                                    ✅ {m.correctImage ? <img src={m.correctImage} alt="Зөв хариулт" /> : m.correctText}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 <div className="battle-result-actions">
                     {nextFloor && (
                         <Button onClick={() => onGoToFloor(nextFloor)} disabled={saving}>

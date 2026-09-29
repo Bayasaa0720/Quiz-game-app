@@ -65,3 +65,79 @@
     font-size: 0.85rem;
     margin: 0;
 }
+
+.shop-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.shop-tab {
+    padding: 8px 14px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.shop-tab:hover {
+    color: var(--text);
+}
+
+.shop-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 700;
+}
+
+.quest-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.quest-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.quest-item h3 {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.quest-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quest-progress-track {
+    flex: 1;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--bg);
+    overflow: hidden;
+}
+
+.quest-progress-fill {
+    height: 100%;
+    background: var(--accent);
+}
+
+.quest-progress-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.quest-reward {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--accent-soft);
+}

@@ -26,11 +26,16 @@ export function setKeyboardShortcutsEnabled(value) {
     localStorage.setItem(KEYBOARD_SHORTCUTS_KEY, String(value));
 }
 
-// Танилцуулга (Onboarding) дэлгэцийг хэрэглэгч бүрт нэг л удаа харуулна.
-export function hasSeenOnboarding(userId) {
-    return localStorage.getItem(`quiz_onboarding_seen_${userId}`) === 'true';
+// Onboarding wizard-ийн эхний 2 алхам (танилцуулга/дүрэм) нэвтрэхээс ӨМНӨ
+// харагддаг тул хэрэглэгчийн id-аар биш, энгийн browser-local флагаар
+// л нэг удаа харуулна (дараа нь logout/login хийхэд шууд 3-р алхам буюу
+// нэвтрэх/бүртгүүлэх дэлгэц рүү шулуухан очно).
+const ONBOARDING_INTRO_KEY = 'quiz_onboarding_intro_seen';
+
+export function hasSeenOnboardingIntro() {
+    return localStorage.getItem(ONBOARDING_INTRO_KEY) === 'true';
 }
 
-export function markOnboardingSeen(userId) {
-    localStorage.setItem(`quiz_onboarding_seen_${userId}`, 'true');
+export function markOnboardingIntroSeen() {
+    localStorage.setItem(ONBOARDING_INTRO_KEY, 'true');
 }

@@ -1,12 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabaseClient.jsx';
 import Card from './components/Card.jsx';
 import Button from './components/Button.jsx';
 import ErrorState from './components/ErrorState.jsx';
 import { useModal } from './components/modalContext.js';
-import './Friends.css';
+import './FriendsDuel.css';
 
-export default function Friends({ user, onBack, onChallengeCreated }) {
+const RESULT_LABEL = { win: '🏆 Ялалт', lose: '💀 Ялагдал', tie: '🤝 Тэнцээ' };
+
+// Tower Climb App.html deck-ийн "Найзууд ба Duel" нэгтгэсэн дэлгэц — хуучин
+// Friends.jsx + DuelHistory.jsx-ийн орлуулга.
+export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
     const [friendships, setFriendships] = useState([]);
     const [stats, setStats] = useState({});
     const [loading, setLoading] = useState(true);
@@ -17,6 +21,8 @@ export default function Friends({ user, onBack, onChallengeCreated }) {
     const [categories, setCategories] = useState([]);
     const [challengeCategoryId, setChallengeCategoryId] = useState('');
     const [challengingId, setChallengingId] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(true);
     const modal = useModal();
 
     useEffect(() => {
@@ -29,6 +35,10 @@ export default function Friends({ user, onBack, onChallengeCreated }) {
                 setCategories(data || []);
                 if (data?.length) setChallengeCategoryId(prev => prev || data[0].id);
             });
+        supabase.rpc('duel_get_my_history', { p_limit: 30 }).then(({ data, error }) => {
+            if (!error) setHistory(data || []);
+            setHistoryLoading(false);
+        });
     }, [user.id]);
 
     const fetchFriendships = useCallback(async () => {
@@ -63,6 +73,22 @@ export default function Friends({ user, onBack, onChallengeCreated }) {
     useEffect(() => {
         fetchFriendships();
     }, [fetchFriendships]);
+
+    // duel_get_my_history opponent_id буцаадаггүй тул нэрээр таарууулна
+    // (өрсөлдөгчийн display_name давхцах магадлал бага — яг таг биш ч
+    // шинэ schema/RPC өөрчлөлт хийхгүйгээр хамгийн ойрхон ойролцоо тоо).
+    const duelRecordByName = useMemo(() => {
+        const map = {};
+        history.forEach(h => {
+            if (!h.opponent_name) return;
+            const rec = map[h.opponent_name] || { wins: 0, losses: 0, ties: 0 };
+            if (h.result === 'win') rec.wins++;
+            else if (h.result === 'lose') rec.losses++;
+            else rec.ties++;
+            map[h.opponent_name] = rec;
+        });
+        return map;
+    }, [history]);
 
     const handleSearch = async (e) => {
         e.preventDefault();
@@ -136,10 +162,14 @@ export default function Friends({ user, onBack, onChallengeCreated }) {
         })
         .sort((a, b) => (b.total_floors_cleared || 0) - (a.total_floors_cleared || 0));
 
+    const totalWins = history.filter(h => h.result === 'win').length;
+    const totalLosses = history.filter(h => h.result === 'lose').length;
+    const totalTies = history.filter(h => h.result === 'tie').length;
+
     return (
         <Card className="friends-page">
             <Button variant="ghost" onClick={onBack} className="friends-back">← Буцах</Button>
-            <h2>👥 Найзууд</h2>
+            <h2>👥 Найзууд ба Duel</h2>
 
             <form className="friends-search" onSubmit={handleSearch}>
                 <input
@@ -204,22 +234,56 @@ export default function Friends({ user, onBack, onChallengeCreated }) {
                 {accepted.length === 0 ? (
                     <p className="friends-empty">Одоогоор найз алга. Дээрээс имэйлээр хайж нэмнэ үү.</p>
                 ) : (
-                    accepted.map(f => (
-                        <div key={f.friendshipId} className="friends-row">
-                            <span>{f.display_name}</span>
-                            <span className="friends-score">{f.total_floors_cleared || 0} давхар</span>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                                <Button
-                                    variant="success"
-                                    onClick={() => handleChallenge(f.user_id)}
-                                    disabled={challengingId === f.user_id || !challengeCategoryId}
-                                >
-                                    ⚔️ Урих
-                                </Button>
-                                <Button variant="ghost" onClick={() => removeFriendship(f.friendshipId)}>Хасах</Button>
+                    accepted.map(f => {
+                        const rec = duelRecordByName[f.display_name];
+                        return (
+                            <div key={f.friendshipId} className="friends-row">
+                                <div className="friends-row-main">
+                                    <span>{f.display_name}</span>
+                                    <span className="friends-score">{f.total_floors_cleared || 0} давхар</span>
+                                    {rec && (
+                                        <span className="friends-duel-record">
+                                            ⚔️ {rec.wins}Я / {rec.losses}Я / {rec.ties}Т
+                                        </span>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    <Button
+                                        variant="success"
+                                        onClick={() => handleChallenge(f.user_id)}
+                                        disabled={challengingId === f.user_id || !challengeCategoryId}
+                                    >
+                                        ⚔️ Урих
+                                    </Button>
+                                    <Button variant="ghost" onClick={() => removeFriendship(f.friendshipId)}>Хасах</Button>
+                                </div>
                             </div>
+                        );
+                    })
+                )}
+            </div>
+
+            <div className="friends-section">
+                <h3>Дуэлийн түүх</h3>
+                {historyLoading ? (
+                    <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>
+                ) : history.length === 0 ? (
+                    <p className="friends-empty">Та хараахан дуэл хийгээгүй байна.</p>
+                ) : (
+                    <>
+                        <p className="duel-history-summary">{totalWins} ялалт · {totalLosses} ялагдал · {totalTies} тэнцээ</p>
+                        <div className="duel-history-list">
+                            {history.map(h => (
+                                <Card key={h.match_id} className={`duel-history-row duel-history-${h.result}`}>
+                                    <span className="duel-history-result">{RESULT_LABEL[h.result]}</span>
+                                    <span className="duel-history-category">{h.category_name}</span>
+                                    <span className="duel-history-opponent">vs {h.opponent_name || '—'}</span>
+                                    <span className="duel-history-score">{h.my_score} : {h.opponent_score}</span>
+                                    <span className="duel-history-date">{new Date(h.played_at).toLocaleDateString('mn-MN')}</span>
+                                </Card>
+                            ))}
                         </div>
-                    ))
+                    </>
                 )}
             </div>
         </Card>

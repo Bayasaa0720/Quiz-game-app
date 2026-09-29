@@ -15,8 +15,36 @@ export default function Shop({ user, onBack }) {
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
     const [buyingId, setBuyingId] = useState(null);
+    const [activeTab, setActiveTab] = useState('items'); // 'items' | 'quests'
+    const [quests, setQuests] = useState([]);
+    const [questsLoading, setQuestsLoading] = useState(true);
+    const [claimingId, setClaimingId] = useState(null);
     const modal = useModal();
     const { showToast } = useToast();
+
+    const fetchQuests = useCallback(async () => {
+        setQuestsLoading(true);
+        const { data, error } = await supabase.rpc('get_daily_quests');
+        if (!error) setQuests(data || []);
+        setQuestsLoading(false);
+    }, []);
+
+    useEffect(() => {
+        fetchQuests();
+    }, [fetchQuests]);
+
+    const handleClaimQuest = async (quest) => {
+        setClaimingId(quest.quest_id);
+        const { data: newBalance, error } = await supabase.rpc('claim_daily_quest', { p_quest_id: quest.quest_id });
+        setClaimingId(null);
+        if (error) {
+            await modal.alert(error.message || 'Даалгавар авахад алдаа гарлаа.');
+            return;
+        }
+        setBalance(Number(newBalance) || 0);
+        setQuests(list => list.map(q => q.quest_id === quest.quest_id ? { ...q, claimed: true } : q));
+        showToast({ icon: '🎯', title: `+${quest.coin_reward} coin`, message: quest.label });
+    };
 
     const fetchShop = useCallback(async () => {
         setLoading(true);
@@ -67,7 +95,53 @@ export default function Shop({ user, onBack }) {
                 <span className="shop-balance">🪙 {formatCoin(balance)} coin</span>
             </div>
 
-            {items.length === 0 ? (
+            <div className="shop-tabs">
+                <button
+                    type="button"
+                    className={`shop-tab${activeTab === 'items' ? ' active' : ''}`}
+                    onClick={() => setActiveTab('items')}
+                >
+                    Эдлэлүүд
+                </button>
+                <button
+                    type="button"
+                    className={`shop-tab${activeTab === 'quests' ? ' active' : ''}`}
+                    onClick={() => setActiveTab('quests')}
+                >
+                    🎯 Өдрийн даалгавар
+                </button>
+            </div>
+
+            {activeTab === 'quests' ? (
+                questsLoading ? (
+                    <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>
+                ) : (
+                    <div className="quest-grid">
+                        {quests.map(q => {
+                            const done = q.progress >= q.target;
+                            return (
+                                <Card key={q.quest_id} className="quest-item">
+                                    <h3>{q.label}</h3>
+                                    <div className="quest-progress-row">
+                                        <div className="quest-progress-track">
+                                            <div className="quest-progress-fill" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} />
+                                        </div>
+                                        <span className="quest-progress-label">{q.progress}/{q.target}</span>
+                                    </div>
+                                    <p className="quest-reward">🪙 {formatCoin(q.coin_reward)}</p>
+                                    <Button
+                                        variant={q.claimed ? 'ghost' : 'success'}
+                                        onClick={() => handleClaimQuest(q)}
+                                        disabled={q.claimed || !done || claimingId === q.quest_id}
+                                    >
+                                        {q.claimed ? '✓ Авсан' : done ? 'Шагнал авах' : 'Биелээгүй'}
+                                    </Button>
+                                </Card>
+                            );
+                        })}
+                    </div>
+                )
+            ) : items.length === 0 ? (
                 <p className="shop-empty">Дэлгүүрт эдлэл алга байна.</p>
             ) : (
                 <div className="shop-grid">

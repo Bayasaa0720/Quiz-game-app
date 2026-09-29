@@ -1,7 +1,57 @@
 .tower-view {
     width: 100%;
-    max-width: 600px;
+    max-width: 820px;
     margin: 0 auto;
+}
+
+.tower-view-body {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    gap: 20px;
+    align-items: start;
+}
+
+.tower-view-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tower-view-progress-card,
+.tower-view-loadout-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tower-view-progress-pct {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 2px 0 0;
+    color: var(--accent);
+}
+
+.tower-view-loadout-row {
+    margin: 2px 0 0;
+    font-size: 0.88rem;
+}
+
+.tower-view-loadout-change {
+    margin-top: 8px;
+    align-self: flex-start;
+    background: none;
+    border: none;
+    color: var(--accent-soft);
+    font-size: 0.82rem;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+}
+
+@media (max-width: 700px) {
+    .tower-view-body {
+        grid-template-columns: 1fr;
+    }
 }
 
 .tower-view-back {

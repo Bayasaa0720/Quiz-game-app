@@ -14,6 +14,8 @@ export default function Leaderboard({ user, onBack }) {
     const [categoryId, setCategoryId] = useState(''); // '' = бүх категори нийлүүлсэн
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
+    const [searchText, setSearchText] = useState('');
+    const [sortMode, setSortMode] = useState('rank'); // 'rank' | 'name'
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -56,6 +58,15 @@ export default function Leaderboard({ user, onBack }) {
 
     if (loadError) return <ErrorState message="Тэргүүлэгчдийг ачаалахад алдаа гарлаа." onRetry={fetchLeaderboard} />;
 
+    const myRow = rows.find(r => r.user_id === user?.id);
+
+    const visibleRows = rows
+        .filter(r => r.display_name?.toLowerCase().includes(searchText.trim().toLowerCase()))
+        .slice()
+        .sort((a, b) => sortMode === 'name'
+            ? a.display_name.localeCompare(b.display_name)
+            : Number(a.rank) - Number(b.rank));
+
     return (
         <div className="leaderboard-page">
             <Button variant="ghost" onClick={onBack} className="leaderboard-back">← Буцах</Button>
@@ -72,17 +83,44 @@ export default function Leaderboard({ user, onBack }) {
                 ))}
             </select>
 
+            <div className="leaderboard-filters">
+                <input
+                    type="text"
+                    className="leaderboard-search"
+                    placeholder="🔍 Нэрээр хайх..."
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                />
+                <select
+                    className="leaderboard-sort-select"
+                    value={sortMode}
+                    onChange={(e) => setSortMode(e.target.value)}
+                >
+                    <option value="rank">Эрэмбээр</option>
+                    <option value="name">Нэрээр (A-Я)</option>
+                </select>
+            </div>
+
             <p className="leaderboard-sub">
                 {categoryId ? 'Тухайн цамхагт дийлсэн давхрын тоогоор' : 'Нийт дийлсэн давхрын тоогоор'}
             </p>
+
+            {myRow && (
+                <div className="leaderboard-my-stats">
+                    <span className="eyebrow-label">Миний үзүүлэлт</span>
+                    <p>Эрэмбэ #{myRow.rank} · {myRow.total_floors_cleared} давхар</p>
+                </div>
+            )}
 
             {loading ? (
                 <p style={{ textAlign: 'center' }}>Тэргүүлэгчдийг ачааллаж байна...</p>
             ) : rows.length === 0 ? (
                 <p className="leaderboard-empty">Одоогоор хэн ч давхар дийлээгүй байна.</p>
+            ) : visibleRows.length === 0 ? (
+                <p className="leaderboard-empty">Хайлтад тохирох тоглогч алга.</p>
             ) : (
                 <ol className="leaderboard-list">
-                    {rows.map(row => (
+                    {visibleRows.map(row => (
                         <li
                             key={row.user_id}
                             className={`leaderboard-row${row.user_id === user?.id ? ' is-you' : ''}`}

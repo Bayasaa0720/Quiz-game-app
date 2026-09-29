@@ -92,6 +92,84 @@
     margin-top: 8px;
 }
 
+.battle-result-flawless {
+    color: var(--accent-soft);
+    font-weight: 600;
+}
+
+.battle-result-stats {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin: 16px 0;
+}
+
+.battle-result-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 80px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+}
+
+.battle-result-stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.battle-result-stat-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.battle-review {
+    text-align: left;
+    max-width: 460px;
+    margin: 0 auto 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+}
+
+.battle-review-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.battle-review-item:first-of-type {
+    padding-top: 0;
+    border-top: none;
+}
+
+.battle-review-question {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.battle-review-question img,
+.battle-review-answer img {
+    max-width: 100%;
+    max-height: 100px;
+    border-radius: var(--radius-sm);
+}
+
+.battle-review-answer {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--success);
+}
+
 @media (max-width: 480px) {
     .battle-options {
         grid-template-columns: 1fr;

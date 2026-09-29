@@ -127,6 +127,14 @@ button {
   justify-content: center;
 }
 
+/* Desktop-д MainSidebar тогтмол харагдах тул header-ийн энэ tab-bar зөвхөн
+   mobile fallback (MainSidebar.css-ийн .main-sidebar 900px breakpoint-тэй тааруулав). */
+@media (min-width: 900px) {
+  .app-nav-tabs {
+    display: none;
+  }
+}
+
 .app-nav-tabs button {
   border: 1px solid transparent;
   background: none;
@@ -159,7 +167,8 @@ button {
   max-width: 100%;
 }
 
-.app-coin-pill {
+.app-coin-pill,
+.app-streak-pill {
   padding: 5px 12px;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
@@ -228,13 +237,13 @@ button {
   grid-template-columns: var(--sidebar-width) 1fr var(--sidebar-width);
 }
 
-.app-body.with-nav-sidebar {
+.app-body.with-main-sidebar {
   grid-template-columns: 1fr;
 }
 
 @media (min-width: 900px) {
-  .app-body.with-nav-sidebar {
-    grid-template-columns: 200px 1fr;
+  .app-body.with-main-sidebar {
+    grid-template-columns: var(--sidebar-width) 1fr;
   }
 }
 
@@ -258,6 +267,23 @@ button {
    the same left-hugging text bug. */
 .app-main > p {
   text-align: center;
+}
+
+.guest-gate {
+  max-width: 480px;
+  margin: 60px auto;
+  text-align: center;
+}
+
+.guest-gate p {
+  color: var(--text-muted);
+  margin: 10px 0 20px;
+}
+
+.guest-gate-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
 }
 
 .app-sidebar {
