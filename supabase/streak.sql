@@ -20,7 +20,7 @@ begin
   loop
     exit when not exists (
       select 1 from battle_attempts_log
-      where user_id = auth.uid() and outcome = 'won' and created_at::date = v_day
+      where user_id = auth.uid() and outcome = 'won' and played_at::date = v_day
     );
     v_streak := v_streak + 1;
     v_day := v_day - 1;

@@ -61,10 +61,10 @@ export default function Leaderboard({ user, onBack }) {
     const myRow = rows.find(r => r.user_id === user?.id);
 
     const visibleRows = rows
-        .filter(r => r.display_name?.toLowerCase().includes(searchText.trim().toLowerCase()))
+        .filter(r => (r.display_name || '').toLowerCase().includes(searchText.trim().toLowerCase()))
         .slice()
         .sort((a, b) => sortMode === 'name'
-            ? a.display_name.localeCompare(b.display_name)
+            ? (a.display_name || '').localeCompare(b.display_name || '')
             : Number(a.rank) - Number(b.rank));
 
     return (

@@ -133,6 +133,12 @@ button {
   .app-nav-tabs {
     display: none;
   }
+
+  /* MainSidebar (900px+) нэмэлт лого харуулдаг тул header-ийн лого
+     давхардуулахгүйн тулд зөвхөн mobile дээр л (MainSidebar нуугдсан үед) харуулна. */
+  .app-shell.has-main-sidebar .app-header .app-logo {
+    display: none;
+  }
 }
 
 .app-nav-tabs button {

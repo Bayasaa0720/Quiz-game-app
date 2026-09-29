@@ -1,4 +1,5 @@
 import './MainSidebar.css';
+import { HOME_NAV_VIEWS } from '../lib/navViews.js';
 
 // Тогтмол зүүн sidebar (Tower Climb App.html deck-ийн дагуу) — хуучин
 // app-nav-tabs (header дэх) + NavSidebar (section-контекст дэд цэс)-ийг
@@ -23,7 +24,6 @@ export default function MainSidebar({
     onProfile,
     onGuestRegister,
 }) {
-    const HOME_VIEWS = new Set(['TOWER_SELECT', 'TOWER_VIEW', 'BATTLE', 'DUEL']);
     const isActive = (...views) => views.includes(activeView);
     // Зочин зөвхөн World tower тоглох боломжтой (Нүүр/Тэргүүлэгчид харагдана,
     // бусад товч дарахад App.jsx-ийн GuestGate-рүү орно) — түгжээтэй гэдгийг
@@ -39,7 +39,7 @@ export default function MainSidebar({
             <div className="main-sidebar-items">
                 <button
                     type="button"
-                    className={`main-sidebar-item${isActive(...HOME_VIEWS) ? ' active' : ''}`}
+                    className={`main-sidebar-item${isActive(...HOME_NAV_VIEWS) ? ' active' : ''}`}
                     onClick={onHome}
                 >
                     🏠 Нүүр

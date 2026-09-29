@@ -24,6 +24,7 @@ import Button from './components/Button.jsx';
 import { isMuted, toggleMuted } from './sound.js';
 import { formatCoin } from './lib/formatCoin.js';
 import { useViewportWidth } from './lib/useViewportWidth.js';
+import { HOME_NAV_VIEWS } from './lib/navViews.js';
 
 // papaparse/xlsx (bulk import) are heavy and rarely needed — load on demand.
 const BulkImport = lazy(() => import('./BulkImport.jsx'));
@@ -447,7 +448,7 @@ function App() {
     return (
         <ToastProvider>
             <ModalProvider>
-                <div className="app-shell">
+                <div className={`app-shell${showMainSidebar ? ' has-main-sidebar' : ''}`}>
                     <header className="app-header">
                         <button type="button" className="app-logo" onClick={(user || isGuest) ? goToTowerSelect : undefined}>
                             🗼 Tower Climb
@@ -457,7 +458,7 @@ function App() {
                             // Зөвхөн mobile fallback (desktop дээр MainSidebar-аар
                             // нуугдана, CSS: .app-nav-tabs { display:none } @900px+).
                             <nav className="app-nav-tabs">
-                                <button type="button" className={view === 'TOWER_SELECT' ? 'active' : ''} onClick={goToTowerSelect}>🗼 Цамхагууд</button>
+                                <button type="button" className={HOME_NAV_VIEWS.has(view) ? 'active' : ''} onClick={goToTowerSelect}>🗼 Цамхагууд</button>
                                 <button type="button" className={view === 'SHOP' || view === 'INVENTORY' ? 'active' : ''} onClick={() => setView('SHOP')}>🛒 Дэлгүүр</button>
                                 <button type="button" className={view === 'FRIENDS' ? 'active' : ''} onClick={() => setView('FRIENDS')}>👥 Найзууд ба Duel</button>
                                 <button type="button" className={view === 'LEARNING' ? 'active' : ''} onClick={() => setView('LEARNING')}>🎓 Сургалт</button>

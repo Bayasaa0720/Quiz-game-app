@@ -46,13 +46,13 @@ export default function Home({ user, isGuest, guestProgress, displayName, onSele
             if (!error) setTopPlayers(data || []);
         });
         const since = new Date(Date.now() - 7 * DAY_MS).toISOString();
-        supabase.from('battle_attempts_log').select('created_at')
-            .eq('user_id', user.id).eq('outcome', 'won').gte('created_at', since)
+        supabase.from('battle_attempts_log').select('played_at')
+            .eq('user_id', user.id).eq('outcome', 'won').gte('played_at', since)
             .then(({ data, error }) => {
                 if (error) return;
                 const counts = {};
                 (data || []).forEach(r => {
-                    const day = r.created_at.slice(0, 10);
+                    const day = r.played_at.slice(0, 10);
                     counts[day] = (counts[day] || 0) + 1;
                 });
                 const days = [];

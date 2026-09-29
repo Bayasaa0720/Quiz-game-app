@@ -38,9 +38,9 @@ declare
   v_duels_won int;
 begin
   select count(*) into v_floors_won from battle_attempts_log
-    where user_id = auth.uid() and outcome = 'won' and created_at::date = current_date;
+    where user_id = auth.uid() and outcome = 'won' and played_at::date = current_date;
   select count(*) into v_flawless from battle_attempts_log
-    where user_id = auth.uid() and outcome = 'won' and wrong_count = 0 and created_at::date = current_date;
+    where user_id = auth.uid() and outcome = 'won' and wrong_count = 0 and played_at::date = current_date;
   select count(*) into v_duels_played from duels
     where (player1_id = auth.uid() or player2_id = auth.uid()) and status = 'finished' and updated_at::date = current_date;
   select count(*) into v_duels_won from duels

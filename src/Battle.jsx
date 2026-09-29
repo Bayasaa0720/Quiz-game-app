@@ -102,7 +102,7 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
         setNextFloor(null);
         resultSoundPlayed.current = false;
         setStatus('fighting');
-    }, [floor, categoryId]);
+    }, [floor, categoryId, isGuest]);
 
     useEffect(() => {
         loadFloor();
@@ -202,11 +202,12 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
             // шинэчилнэ. Coin/achievement зочинд байхгүй.
             if (isGuest) {
                 try {
-                    const { data: next } = await supabase.from('tower_floors')
+                    const { data: next, error: nextErr } = await supabase.from('tower_floors')
                         .select('id, floor_index, difficulty, question_ids, enemy_hp')
                         .eq('category_id', categoryId)
                         .eq('floor_index', floor.floor_index + 1)
                         .maybeSingle();
+                    if (nextErr) console.error('Error loading next floor (guest):', nextErr);
                     setNextFloor(next || null);
                     onGuestFloorCleared?.(categoryId, floor.floor_index);
                 } catch (err) {

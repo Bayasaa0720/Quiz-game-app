@@ -23,7 +23,21 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
     const [challengingId, setChallengingId] = useState(null);
     const [history, setHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(true);
+    const [historyError, setHistoryError] = useState(false);
     const modal = useModal();
+
+    const fetchHistory = useCallback(async () => {
+        setHistoryLoading(true);
+        setHistoryError(false);
+        const { data, error } = await supabase.rpc('duel_get_my_history', { p_limit: 30 });
+        if (error) {
+            console.error('Error loading duel history:', error);
+            setHistoryError(true);
+        } else {
+            setHistory(data || []);
+        }
+        setHistoryLoading(false);
+    }, []);
 
     useEffect(() => {
         supabase
@@ -35,11 +49,8 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
                 setCategories(data || []);
                 if (data?.length) setChallengeCategoryId(prev => prev || data[0].id);
             });
-        supabase.rpc('duel_get_my_history', { p_limit: 30 }).then(({ data, error }) => {
-            if (!error) setHistory(data || []);
-            setHistoryLoading(false);
-        });
-    }, [user.id]);
+        fetchHistory();
+    }, [user.id, fetchHistory]);
 
     const fetchFriendships = useCallback(async () => {
         setLoading(true);
@@ -267,6 +278,8 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
                 <h3>Дуэлийн түүх</h3>
                 {historyLoading ? (
                     <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>
+                ) : historyError ? (
+                    <ErrorState message="Дуэлийн түүхийг ачаалахад алдаа гарлаа." onRetry={fetchHistory} />
                 ) : history.length === 0 ? (
                     <p className="friends-empty">Та хараахан дуэл хийгээгүй байна.</p>
                 ) : (
