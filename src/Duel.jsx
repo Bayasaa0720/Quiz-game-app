@@ -33,7 +33,14 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
 
     const fetchMatch = useCallback(async (id) => {
         const { data, error } = await supabase.rpc('duel_get_match', { p_match_id: id });
-        if (!error && data?.[0]) setMatch(data[0]);
+        if (!error && data?.[0]) {
+            setMatch(data[0]);
+        } else if (!error && !data?.[0]) {
+            // Мөр олдохгүй байна — тоглолт цуцлагдсан/арилсан (ж: өрсөлдөгч
+            // хайлтаа цуцалсан). Юу ч харуулахгүй "live lock" болохоос
+            // сэргийлж, хэрэглэгчид тодорхой алдаа үзүүлнэ.
+            setErrorMsg('Тоглолт олдсонгүй — өрсөлдөгч цуцалсан байж магадгүй.');
+        }
     }, []);
 
     const loadQuestionsFor = useCallback(async (questionIds) => {
@@ -217,7 +224,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
         setSubmitting(true);
         if (opt.isCorrect) playCorrectHit(); else playWrongHit();
         try {
-            await supabase.rpc('duel_submit_answer', { p_match_id: matchId, p_is_correct: opt.isCorrect });
+            await supabase.rpc('duel_submit_answer', { p_match_id: matchId, p_answer_text: opt.text, p_answer_image_url: opt.img || null });
             await fetchMatch(matchId);
         } finally {
             setSubmitting(false);

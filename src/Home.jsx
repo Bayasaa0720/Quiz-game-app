@@ -39,17 +39,18 @@ export default function Home({ user, isGuest, guestProgress, displayName, onSele
 
     useEffect(() => {
         if (isGuest) return;
+        let cancelled = false;
         supabase.rpc('duel_get_pending_challenges').then(({ data, error }) => {
-            if (!error) setPendingChallenges(data || []);
+            if (!cancelled && !error) setPendingChallenges(data || []);
         });
         supabase.rpc('get_leaderboard', { p_category_id: null, p_limit: 4 }).then(({ data, error }) => {
-            if (!error) setTopPlayers(data || []);
+            if (!cancelled && !error) setTopPlayers(data || []);
         });
         const since = new Date(Date.now() - 7 * DAY_MS).toISOString();
         supabase.from('battle_attempts_log').select('played_at')
             .eq('user_id', user.id).eq('outcome', 'won').gte('played_at', since)
             .then(({ data, error }) => {
-                if (error) return;
+                if (cancelled || error) return;
                 const counts = {};
                 (data || []).forEach(r => {
                     const day = r.played_at.slice(0, 10);
@@ -62,6 +63,7 @@ export default function Home({ user, isGuest, guestProgress, displayName, onSele
                 }
                 setWeeklyWins(days);
             });
+        return () => { cancelled = true; };
     }, [isGuest, user?.id]);
 
     const handleAcceptChallenge = (challenge) => {

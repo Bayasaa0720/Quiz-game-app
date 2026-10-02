@@ -88,6 +88,7 @@ export default function Leaderboard({ user, onBack }) {
                     type="text"
                     className="leaderboard-search"
                     placeholder="🔍 Нэрээр хайх..."
+                    aria-label="Нэрээр хайх"
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                 />

@@ -1,3 +1,11 @@
+-- !!! SUPERSEDED — ДАХИН АЖИЛЛУУЛАХ ХОРИГЛОНО !!!
+-- Энэ файл нэг удаагийн түүхэн migration (2025 оны эхэнд Neon-ээс
+-- Supabase руу шилжих үед нэг удаа ажиллуулсан). categories/quiz_items
+-- дээр зөвхөн owner-only RLS тогтоодог тул global_towers.sql-ийн
+-- is_global=true нийтийн READ policy-г дахин ажиллуулахад чимээгүй
+-- арилгаж, World Towers/guest mode-ыг эвдэнэ. Зөвхөн архивын зориулалттай,
+-- шинэ суулгалтад ЭНЭ ФАЙЛЫГ АШИГЛАХГҮЙ.
+--
 -- Quiz Master: Neon-ээс Supabase руу шилжих migration
 -- Supabase Dashboard -> SQL Editor-т ажиллуулна уу.
 -- Одоо байгаа categories/quiz_items хүснэгтийг хадгалж, олон-хэрэглэгчийн

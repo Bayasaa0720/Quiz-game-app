@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabaseClient.jsx';
 import Card from './components/Card.jsx';
 import Button from './components/Button.jsx';
@@ -6,8 +6,16 @@ import ErrorState from './components/ErrorState.jsx';
 import { useModal } from './components/modalContext.js';
 import './TeacherDashboard.css';
 
+// Excel/Sheets-д нээхэд "=", "+", "-", "@"-ээр эхэлсэн утгыг томьёо гэж
+// тайлбарлаж болзошгүй (CSV formula injection) тул тийм эгнээг '-ээр
+// угтдаг — ердийн текст тайлбар хэвээр хадгалагдана.
+function sanitizeCsvCell(value) {
+    const str = String(value ?? '');
+    return /^[=+\-@]/.test(str) ? `'${str}` : str;
+}
+
 function downloadCsv(filename, rows, headers) {
-    const csv = [headers.join(','), ...rows.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+    const csv = [headers.join(','), ...rows.map(r => headers.map(h => `"${sanitizeCsvCell(r[h]).replace(/"/g, '""')}"`).join(','))].join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -97,6 +105,11 @@ export default function TeacherDashboard({ user, onBack }) {
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
     const modal = useModal();
+    const mountedRef = useRef(true);
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => { mountedRef.current = false; };
+    }, []);
 
     const fetchClassrooms = useCallback(async () => {
         setLoading(true);
@@ -107,13 +120,14 @@ export default function TeacherDashboard({ user, onBack }) {
                 .select('id, name, invite_code, created_at')
                 .eq('teacher_user_id', user.id)
                 .order('created_at', { ascending: false });
+            if (!mountedRef.current) return;
             if (error) throw error;
             setClassrooms(data || []);
         } catch (err) {
             console.error('Error loading classrooms:', err);
-            setLoadError(true);
+            if (mountedRef.current) setLoadError(true);
         } finally {
-            setLoading(false);
+            if (mountedRef.current) setLoading(false);
         }
     }, [user.id]);
 
@@ -126,22 +140,32 @@ export default function TeacherDashboard({ user, onBack }) {
         if (!error) setRoster(data || []);
     }, []);
 
+    const makeInviteCode = (name) =>
+        `${name.slice(0, 4).toUpperCase().replace(/[^A-ZА-Я0-9]/g, 'X')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
     const handleCreateClassroom = async () => {
         const name = newClassroomName.trim();
         if (!name) return;
-        const inviteCode = `${name.slice(0, 4).toUpperCase().replace(/[^A-ZА-Я0-9]/g, 'X')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-        const { data, error } = await supabase
-            .from('classrooms')
-            .insert({ teacher_user_id: user.id, name, invite_code: inviteCode })
-            .select()
-            .single();
-        if (error) {
-            console.error('Failed to create classroom:', error);
-            await modal.alert('Анги үүсгэхэд алдаа гарлаа.');
-            return;
+        // invite_code нь DB талдаа UNIQUE (classrooms.sql) — санамсаргүй
+        // давталт гарвал (маш бага магадлал) шинэ кодоор хэдхэн удаа дахин
+        // оролдоно, бусад алдааг шууд харуулна.
+        let lastError = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            const { data, error } = await supabase
+                .from('classrooms')
+                .insert({ teacher_user_id: user.id, name, invite_code: makeInviteCode(name) })
+                .select()
+                .single();
+            if (!error) {
+                setNewClassroomName('');
+                setClassrooms(c => [data, ...c]);
+                return;
+            }
+            lastError = error;
+            if (error.code !== '23505') break; // unique_violation биш бол дахин оролдохгүй
         }
-        setNewClassroomName('');
-        setClassrooms(c => [data, ...c]);
+        console.error('Failed to create classroom:', lastError);
+        await modal.alert('Анги үүсгэхэд алдаа гарлаа.');
     };
 
     const openClassroom = async (classroom) => {

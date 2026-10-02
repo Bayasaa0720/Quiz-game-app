@@ -85,18 +85,15 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
         fetchFriendships();
     }, [fetchFriendships]);
 
-    // duel_get_my_history opponent_id буцаадаггүй тул нэрээр таарууулна
-    // (өрсөлдөгчийн display_name давхцах магадлал бага — яг таг биш ч
-    // шинэ schema/RPC өөрчлөлт хийхгүйгээр хамгийн ойрхон ойролцоо тоо).
-    const duelRecordByName = useMemo(() => {
+    const duelRecordById = useMemo(() => {
         const map = {};
         history.forEach(h => {
-            if (!h.opponent_name) return;
-            const rec = map[h.opponent_name] || { wins: 0, losses: 0, ties: 0 };
+            if (!h.opponent_id) return;
+            const rec = map[h.opponent_id] || { wins: 0, losses: 0, ties: 0 };
             if (h.result === 'win') rec.wins++;
             else if (h.result === 'lose') rec.losses++;
             else rec.ties++;
-            map[h.opponent_name] = rec;
+            map[h.opponent_id] = rec;
         });
         return map;
     }, [history]);
@@ -169,7 +166,7 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
         .filter(f => f.status === 'accepted')
         .map(f => {
             const otherId = f.requester_id === user.id ? f.addressee_id : f.requester_id;
-            return { friendshipId: f.id, ...stats[otherId] };
+            return { friendshipId: f.id, userId: otherId, ...stats[otherId] };
         })
         .sort((a, b) => (b.total_floors_cleared || 0) - (a.total_floors_cleared || 0));
 
@@ -246,7 +243,7 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
                     <p className="friends-empty">Одоогоор найз алга. Дээрээс имэйлээр хайж нэмнэ үү.</p>
                 ) : (
                     accepted.map(f => {
-                        const rec = duelRecordByName[f.display_name];
+                        const rec = duelRecordById[f.userId];
                         return (
                             <div key={f.friendshipId} className="friends-row">
                                 <div className="friends-row-main">

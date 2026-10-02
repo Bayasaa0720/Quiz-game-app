@@ -46,6 +46,13 @@ const STATIC_POOLS = {
     civilization: CIVILIZATIONS,
 };
 
+// Decoy generation-д бодитоор дэмжигддэг answer_type утгууд (static pool
+// эсвэл тоон хэв маягийн аль нэг нь байдаг). QuizCreator.jsx болон
+// QuestionManager.jsx-ийн datalist-үүд ЗӨВХӨН эндээс уншина — үгүй бол
+// UI дээр санал болгосон төрөл (жиш: "flag", "map") decoy-гүй үлдэж,
+// multiple-choice чанар нь чимээгүй доройтдог.
+export const SUPPORTED_ANSWER_TYPES = ['year', 'count', ...Object.keys(STATIC_POOLS)];
+
 function pickFromPool(pool, correctAnswer, count) {
     const candidates = pool.filter(v => v.toLowerCase() !== correctAnswer.trim().toLowerCase());
     for (let i = candidates.length - 1; i > 0; i--) {

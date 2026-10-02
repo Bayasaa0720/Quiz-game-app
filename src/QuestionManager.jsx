@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient.jsx';
 import Card from './components/Card.jsx';
 import Button from './components/Button.jsx';
 import { useModal } from './components/modalContext.js';
+import { SUPPORTED_ANSWER_TYPES } from './lib/decoyGenerators.js';
 import './QuestionManager.css';
 
 const DIFFICULTY_LABELS = { easy: 'Хялбар', normal: 'Дунд', hard: 'Хэцүү' };
@@ -27,6 +28,12 @@ export default function QuestionManager({ user, categoryId, onDone }) {
         difficulty: 'normal',
     });
 
+    const mountedRef = useRef(true);
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => { mountedRef.current = false; };
+    }, []);
+
     useEffect(() => {
         fetchData();
     }, [categoryId, user]);
@@ -41,6 +48,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                 .eq('id', categoryId)
                 .eq('user_id', user.id)
                 .maybeSingle();
+            if (!mountedRef.current) return;
             if (cat) {
                 setCategoryName(cat.name);
                 setCategoryMeta({ is_global: cat.is_global, is_public_requested: cat.is_public_requested });
@@ -51,11 +59,11 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                 .select('*')
                 .eq('category_id', categoryId);
             if (error) throw error;
-            setQuestions(data);
+            if (mountedRef.current) setQuestions(data);
         } catch (err) {
             console.error("Fetch error:", err);
         } finally {
-            setLoading(false);
+            if (mountedRef.current) setLoading(false);
         }
     };
 
@@ -125,6 +133,10 @@ export default function QuestionManager({ user, categoryId, onDone }) {
     };
 
     const saveEdit = async (id) => {
+        if (!editForm.text.trim() || !editForm.ans.trim()) {
+            await modal.alert('Асуулт болон хариулт хоосон байж болохгүй.');
+            return;
+        }
         const { error } = await supabase
             .from('quiz_items')
             .update({
@@ -228,16 +240,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                                     onChange={(e) => setEditForm({ ...editForm, answerType: e.target.value })}
                                 />
                                 <datalist id="answer-type-options">
-                                    <option value="flag" />
-                                    <option value="map" />
-                                    <option value="year" />
-                                    <option value="country" />
-                                    <option value="player" />
-                                    <option value="real_name" />
-                                    <option value="team" />
-                                    <option value="tournament" />
-                                    <option value="site" />
-                                    <option value="count" />
+                                    {SUPPORTED_ANSWER_TYPES.map(t => <option key={t} value={t} />)}
                                 </datalist>
 
                                 <label>Хэцүү зэрэг:</label>

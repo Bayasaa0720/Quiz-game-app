@@ -17,6 +17,7 @@ import Onboarding from './Onboarding.jsx';
 import { supabase } from './supabaseClient.jsx';
 import { ModalProvider } from './components/ModalProvider.jsx';
 import { ToastProvider } from './components/ToastProvider.jsx';
+import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { PlayerSidebar, EnemySidebar } from './components/Sidebar.jsx';
 import MainSidebar from './components/MainSidebar.jsx';
 import InstallPrompt from './components/InstallPrompt.jsx';
@@ -358,6 +359,8 @@ function App() {
                 guestHighestCleared={guestProgress[selectedCategory.id] ?? -1}
                 categoryId={selectedCategory.id}
                 categoryName={selectedCategory.name}
+                equippedArmor={equippedArmor}
+                isAdmin={isAdmin}
                 onSelectFloor={handleSelectFloor}
                 onStartDuel={handleStartDuel}
                 onBack={goToTowerSelect}
@@ -527,7 +530,9 @@ function App() {
                             />
                         )}
                         <main className="app-main">
-                            {currentViewContent}
+                            <ErrorBoundary key={view}>
+                                {currentViewContent}
+                            </ErrorBoundary>
                         </main>
                         {showBattleSidebars && (
                             <EnemySidebar

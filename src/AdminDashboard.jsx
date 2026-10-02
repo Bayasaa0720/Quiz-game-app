@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabaseClient.jsx';
 import Card from './components/Card.jsx';
 import Button from './components/Button.jsx';
@@ -19,6 +19,11 @@ export default function AdminDashboard({ onBack }) {
     const [regeneratingId, setRegeneratingId] = useState(null);
     const [decidingId, setDecidingId] = useState(null);
     const modal = useModal();
+    const mountedRef = useRef(true);
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => { mountedRef.current = false; };
+    }, []);
 
     const fetchTowers = useCallback(async () => {
         setLoading(true);
@@ -29,6 +34,7 @@ export default function AdminDashboard({ onBack }) {
                 supabase.rpc('admin_list_public_requests'),
                 supabase.rpc('admin_list_shop_items'),
             ]);
+            if (!mountedRef.current) return;
             if (towerErr) throw towerErr;
             setTowers(towerData || []);
             // Хүсэлтийн жагсаалт болон дэлгүүрийн эдлэл нь public_gallery.sql /
@@ -38,9 +44,9 @@ export default function AdminDashboard({ onBack }) {
             if (!shopErr) setShopItems(shopData || []);
         } catch (err) {
             console.error('Error loading admin tower overview:', err);
-            setLoadError(true);
+            if (mountedRef.current) setLoadError(true);
         } finally {
-            setLoading(false);
+            if (mountedRef.current) setLoading(false);
         }
     }, []);
 

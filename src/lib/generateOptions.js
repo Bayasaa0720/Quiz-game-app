@@ -35,5 +35,13 @@ export function buildOptions(currentQ, pool) {
         }
     }
 
+    // Сэдэвт хангалттай материал байхгүй үед (pool/rule-based хоёулаа
+    // тасарсан) 0 wrong хувилбар гарч, тоглогчид "сонголт"-гүй ганц
+    // товч харуулж болзошгүй. Тийм үед ядаж true/false хэв маягийн нэг
+    // decoy-г доод тал нь нэмж, 1-ийн-1 "quiz"-ийг зайлсхийнэ.
+    if (wrongs.length === 0 && !isImage(currentQ)) {
+        wrongs.push({ text: 'Үгүй', img: null, isCorrect: false });
+    }
+
     return shuffle([correct, ...wrongs]);
 }

@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient.jsx';
 import Card from './components/Card.jsx';
 import Button from './components/Button.jsx';
 import { useModal } from './components/modalContext.js';
+import { SUPPORTED_ANSWER_TYPES } from './lib/decoyGenerators.js';
 import './QuizCreator.css';
 
 export default function QuizCreator({ user, onDone }) {
@@ -66,8 +67,27 @@ export default function QuizCreator({ user, onDone }) {
                         .insert({ name: newCategoryName.trim(), user_id: user.id })
                         .select('id')
                         .single();
-                    if (insertCatErr) throw insertCatErr;
-                    catId = newCat.id;
+                    if (insertCatErr) {
+                        // 23505 = unique_violation — (name, user_id) дээрх
+                        // DB-ийн unique index-д өртсөн тул өөр хэн нэг нь
+                        // (эсвэл давхар submit) яг энэ мөчид ижил нэртэй
+                        // ангилал үүсгэчихсэн байж болно. Crash-лэхийн оронд
+                        // шинээр үүссэн мөрийг дахин уншина.
+                        if (insertCatErr.code === '23505') {
+                            const { data: raceWinner, error: refetchErr } = await supabase
+                                .from('categories')
+                                .select('id')
+                                .eq('name', newCategoryName.trim())
+                                .eq('user_id', user.id)
+                                .single();
+                            if (refetchErr) throw refetchErr;
+                            catId = raceWinner.id;
+                        } else {
+                            throw insertCatErr;
+                        }
+                    } else {
+                        catId = newCat.id;
+                    }
                 }
             }
 
@@ -163,16 +183,7 @@ export default function QuizCreator({ user, onDone }) {
                         onChange={(e) => setAnswerType(e.target.value)}
                     />
                     <datalist id="answer-type-options">
-                        <option value="flag" />
-                        <option value="map" />
-                        <option value="year" />
-                        <option value="country" />
-                        <option value="player" />
-                        <option value="real_name" />
-                        <option value="team" />
-                        <option value="tournament" />
-                        <option value="site" />
-                        <option value="count" />
+                        {SUPPORTED_ANSWER_TYPES.map(t => <option key={t} value={t} />)}
                     </datalist>
                     <p className="field-hint">Ижил төрлийн буруу хариултууд л сонголт болж холилдоно — ялгаатай сэдэвтэй асуултуудыг холихгүйн тулд төрлөө зөв бичээрэй.</p>
                 </div>

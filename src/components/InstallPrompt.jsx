@@ -64,7 +64,7 @@ export default function InstallPrompt() {
         <div className="install-prompt" role="dialog" aria-label="Апп суулгах урилга">
             <div className="install-prompt-text">
                 <strong>Tower Climb-ийг гар утсандаа суулгах уу?</strong>
-                <span>Нэг товшилтоор нээгдэж, offline-д ч ажиллана.</span>
+                <span>Нэг товшилтоор нээгдэж, Нүүр хуудсандаа дүрс болгон нэмэгдэнэ.</span>
             </div>
             <div className="install-prompt-actions">
                 <Button onClick={install}>Суулгах</Button>

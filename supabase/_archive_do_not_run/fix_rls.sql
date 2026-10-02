@@ -1,3 +1,11 @@
+-- !!! SUPERSEDED — ДАХИН АЖИЛЛУУЛАХ ХОРИГЛОНО !!!
+-- Энэ файл categories/quiz_items дээр ЗӨВХӨН owner-only policy үлдээдэг
+-- (бүх хуучин policy-г устгадаг), харин global_towers.sql дараа нь
+-- is_global=true мөрүүдийг ЭНЭ ТЭР ХОЁР ХҮСНЭГТ дээр нийтэд (public/anon)
+-- унших боломжтой болгосон шинэ policy нэмсэн. Энэ файлыг дахин
+-- ажиллуулбал тэр нийтийн READ policy-г чимээгүй устгаж, World Towers
+-- болон guest mode (зочны горим) эвдэнэ. Зөвхөн архивын зориулалттай.
+--
 -- 1-р хэсэг: одоо байгаа бүх policy-г харах (диагностик)
 select schemaname, tablename, policyname, cmd, qual, with_check
 from pg_policies

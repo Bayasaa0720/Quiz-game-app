@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Button from './Button.jsx';
 import { ModalContext } from './modalContext.js';
 import './Modal.css';
@@ -49,22 +49,53 @@ export function ModalProvider({ children }) {
         setRequest(null);
     };
 
+    const modalBoxRef = useRef(null);
+    const previouslyFocusedRef = useRef(null);
+
     useEffect(() => {
         if (!request) return;
         const onKeyDown = (e) => {
-            if (e.key === 'Escape') close(request.type === 'alert' ? undefined : request.type === 'prompt' ? null : false);
+            if (e.key === 'Escape') {
+                close(request.type === 'alert' ? undefined : request.type === 'prompt' ? null : false);
+                return;
+            }
+            if (e.key !== 'Tab') return;
+            const box = modalBoxRef.current;
+            if (!box) return;
+            const focusable = box.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
+            if (focusable.length === 0) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
         };
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [request]);
 
+    useEffect(() => {
+        if (request) {
+            previouslyFocusedRef.current = document.activeElement;
+        } else if (previouslyFocusedRef.current) {
+            previouslyFocusedRef.current.focus?.();
+            previouslyFocusedRef.current = null;
+        }
+    }, [request]);
+
+    const contextValue = useMemo(() => ({ alert, confirm, prompt }), [alert, confirm, prompt]);
+
     return (
-        <ModalContext.Provider value={{ alert, confirm, prompt }}>
+        <ModalContext.Provider value={contextValue}>
             {children}
             {request && (
                 <div className="modal-overlay" role="presentation" onClick={() => close(request.type === 'alert' ? undefined : false)}>
-                    <div className="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title" onClick={(e) => e.stopPropagation()}>
+                    <div ref={modalBoxRef} className="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title" onClick={(e) => e.stopPropagation()}>
                         <h3 id="modal-title" className="modal-title">{request.title}</h3>
                         <p className="modal-message">{request.message}</p>
 

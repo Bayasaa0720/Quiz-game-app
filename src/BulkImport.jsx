@@ -12,21 +12,28 @@ const TEMPLATE_CSV = 'Асуулт,Хариулт,Төрөл (заавал би�
     'Монгол улсын нийслэл хот аль вэ?,Улаанбаатар,city,easy\n' +
     'CS2-т хэдэн bomb site байдаг вэ?,2,count,normal\n';
 
+const IMPORT_CHUNK_SIZE = 200;
+const PREVIEW_ROW_CAP = 500;
+
 export default function BulkImport({ user, categoryId, onDone }) {
     const [rows, setRows] = useState([]);
     const [fileName, setFileName] = useState('');
     const [importing, setImporting] = useState(false);
+    const [importProgress, setImportProgress] = useState(0);
     const [categoryName, setCategoryName] = useState('');
     const modal = useModal();
 
     useEffect(() => {
+        let cancelled = false;
         supabase
             .from('categories')
             .select('name')
             .eq('id', categoryId)
+            .eq('user_id', user.id)
             .maybeSingle()
-            .then(({ data }) => { if (data) setCategoryName(data.name); });
-    }, [categoryId]);
+            .then(({ data }) => { if (!cancelled && data) setCategoryName(data.name); });
+        return () => { cancelled = true; };
+    }, [categoryId, user.id]);
 
     const handleFile = (e) => {
         const file = e.target.files?.[0];
@@ -70,6 +77,7 @@ export default function BulkImport({ user, categoryId, onDone }) {
     const handleImport = async () => {
         if (validRows.length === 0) return;
         setImporting(true);
+        setImportProgress(0);
         try {
             const payload = validRows.map(r => ({
                 category_id: categoryId,
@@ -81,9 +89,18 @@ export default function BulkImport({ user, categoryId, onDone }) {
                 answer_type: r.answerType || null,
                 difficulty: r.difficulty,
             }));
-            const { error } = await supabase.from('quiz_items').insert(payload);
-            if (error) throw error;
-            await modal.alert(`${validRows.length} асуулт амжилттай нэмэгдлээ. Тоглогдох давхарт орохын тулд Admin "Давхар шинэчлэх" хийх шаардлагатайг сануулъя.`);
+            // Том файлыг нэг INSERT-ээр биш, багцаар (chunk) явуулна —
+            // payload/timeout эрсдэлийг багасгаж, муу мөр бүхэл batch-ийг
+            // бус зөвхөн тухайн chunk-ийг амжилтгүй болгоно.
+            let inserted = 0;
+            for (let i = 0; i < payload.length; i += IMPORT_CHUNK_SIZE) {
+                const chunk = payload.slice(i, i + IMPORT_CHUNK_SIZE);
+                const { error } = await supabase.from('quiz_items').insert(chunk);
+                if (error) throw new Error(`${inserted}-ээс хойш зогслоо: ${error.message}`);
+                inserted += chunk.length;
+                setImportProgress(inserted);
+            }
+            await modal.alert(`${inserted} асуулт амжилттай нэмэгдлээ. Тоглогдох давхарт орохын тулд Admin "Давхар шинэчлэх" хийх шаардлагатайг сануулъя.`);
             onDone();
         } catch (err) {
             console.error('Bulk import failed:', err);
@@ -124,7 +141,7 @@ export default function BulkImport({ user, categoryId, onDone }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {rows.map(r => (
+                                {rows.slice(0, PREVIEW_ROW_CAP).map(r => (
                                     <tr key={r.rowNum} className={r.errors.length > 0 ? 'row-error' : ''}>
                                         <td>{r.rowNum}</td>
                                         <td>{r.question}</td>
@@ -136,6 +153,11 @@ export default function BulkImport({ user, categoryId, onDone }) {
                                 ))}
                             </tbody>
                         </table>
+                        {rows.length > PREVIEW_ROW_CAP && (
+                            <p className="bulk-import-preview-note">
+                                Эхний {PREVIEW_ROW_CAP} мөрийг л харуулж байна (нийт {rows.length}). Импорт нэмэх товч бүх зөв мөрийг хамарна.
+                            </p>
+                        )}
                     </div>
 
                     <Button
@@ -144,7 +166,7 @@ export default function BulkImport({ user, categoryId, onDone }) {
                         onClick={handleImport}
                         fullWidth
                     >
-                        {importing ? 'Оруулж байна...' : `${validRows.length} асуулт нэмэх`}
+                        {importing ? `Оруулж байна... (${importProgress}/${validRows.length})` : `${validRows.length} асуулт нэмэх`}
                     </Button>
                 </div>
             )}

@@ -27,16 +27,16 @@ set search_path = public
 stable
 as $$
   select
-    u.id as user_id,
-    split_part(u.email::text, '@', 1) as display_name,
-    coalesce(sum(greatest(tp.highest_cleared_floor + 1, 0)), 0) as total_floors_cleared,
-    rank() over (order by coalesce(sum(greatest(tp.highest_cleared_floor + 1, 0)), 0) desc) as rank
-  from auth.users u
-  left join tower_progress tp
-    on tp.user_id = u.id
-    and (p_category_id is null or tp.category_id = p_category_id)
-  group by u.id, u.email
-  having coalesce(sum(greatest(tp.highest_cleared_floor + 1, 0)), 0) > 0
+    tp.user_id,
+    coalesce(up.display_name, split_part(u.email::text, '@', 1)) as display_name,
+    sum(greatest(tp.highest_cleared_floor + 1, 0)) as total_floors_cleared,
+    rank() over (order by sum(greatest(tp.highest_cleared_floor + 1, 0)) desc) as rank
+  from tower_progress tp
+  join auth.users u on u.id = tp.user_id
+  left join user_profiles up on up.user_id = tp.user_id
+  where p_category_id is null or tp.category_id = p_category_id
+  group by tp.user_id, u.email, up.display_name
+  having sum(greatest(tp.highest_cleared_floor + 1, 0)) > 0
   order by total_floors_cleared desc
   limit p_limit;
 $$;

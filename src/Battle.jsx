@@ -180,11 +180,11 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
             setPlayerAnim('hurt');
             setPlayerTick(t => t + 1);
             // Армор эхэлж шингээнэ (dagt HP хасагдахгүй), армор дуусаад л HP хасагдана.
-            setArmorHP(hp => {
-                if (hp > 0) return hp - 1;
+            if (armorHP > 0) {
+                setArmorHP(hp => hp - 1);
+            } else {
                 setPlayerHP(playerHp => clampDamage(playerHp, DAMAGE_TO_PLAYER));
-                return hp;
-            });
+            }
             clearTimeout(enemyAnimTimeout.current);
             enemyAnimTimeout.current = setTimeout(() => setEnemyAnim('idle'), ANIM_RETURN_TO_IDLE_MS.attack);
             clearTimeout(playerAnimTimeout.current);

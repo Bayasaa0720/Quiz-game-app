@@ -18,8 +18,14 @@ export function normalizeDifficulty(raw) {
 export function rowsFromParsed(records) {
     return records.map((r, i) => {
         const get = (...names) => {
+            const keys = Object.keys(r);
             for (const n of names) {
-                const key = Object.keys(r).find(k => k.trim().toLowerCase().startsWith(n));
+                // Эхлээд яг таг (exact) таарсан багана нэрийг хайна —
+                // ийм үгүй бол л startsWith-ээр уян хатан таарна. Эсрэг
+                // тохиолдолд, ж.нь "Хариулт тайлбар" багана "Хариулт"
+                // гэсэн нэрийг эрэлхийлэх үед буруу холбогддог байв.
+                const exact = keys.find(k => k.trim().toLowerCase() === n);
+                const key = exact || keys.find(k => k.trim().toLowerCase().startsWith(n));
                 if (key && r[key] != null && String(r[key]).trim()) return String(r[key]).trim();
             }
             return '';

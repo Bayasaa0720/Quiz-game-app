@@ -10,6 +10,8 @@ import { formatCoin } from './lib/formatCoin.js';
 import { isReduceAnimations, setReduceAnimations, isKeyboardShortcutsEnabled, setKeyboardShortcutsEnabled } from './lib/prefs.js';
 import './Profile.css';
 
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+
 const ROLE_LABEL = { teacher: 'Багш', student: 'Хэрэглэгч' };
 
 function ToggleSwitch({ on, onChange, label }) {
@@ -115,6 +117,10 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
         if (!file) return;
         if (!file.type.startsWith('image/')) {
             await modal.alert('Зөвхөн зурган файл (jpg, png гэх мэт) сонгоно уу.');
+            return;
+        }
+        if (file.size > AVATAR_MAX_BYTES) {
+            await modal.alert('Зургийн хэмжээ 5MB-аас хэтрэхгүй байх ёстой.');
             return;
         }
 

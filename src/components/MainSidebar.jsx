@@ -40,6 +40,7 @@ export default function MainSidebar({
                 <button
                     type="button"
                     className={`main-sidebar-item${isActive(...HOME_NAV_VIEWS) ? ' active' : ''}`}
+                    aria-current={isActive(...HOME_NAV_VIEWS) ? 'page' : undefined}
                     onClick={onHome}
                 >
                     🏠 Нүүр
@@ -47,6 +48,7 @@ export default function MainSidebar({
                 <button
                     type="button"
                     className={`main-sidebar-item${isActive('LEADERBOARD') ? ' active' : ''}`}
+                    aria-current={isActive('LEADERBOARD') ? 'page' : undefined}
                     onClick={onLeaderboard}
                 >
                     🏆 Тэргүүлэгчид {lock}
@@ -55,6 +57,7 @@ export default function MainSidebar({
                 <button
                     type="button"
                     className={`main-sidebar-item${isActive('FRIENDS') ? ' active' : ''}`}
+                    aria-current={isActive('FRIENDS') ? 'page' : undefined}
                     onClick={onFriends}
                 >
                     👥 Найзууд ба Duel {lock}
@@ -63,6 +66,7 @@ export default function MainSidebar({
                 <button
                     type="button"
                     className={`main-sidebar-item${isActive('LEARNING') ? ' active' : ''}`}
+                    aria-current={isActive('LEARNING') ? 'page' : undefined}
                     onClick={onLearning}
                 >
                     🎓 Сургалт {lock}
@@ -70,6 +74,7 @@ export default function MainSidebar({
                 <button
                     type="button"
                     className={`main-sidebar-item${isActive('MANAGE_CONTENT', 'CREATE_QUESTION', 'MANAGE_QUESTIONS', 'BULK_IMPORT') ? ' active' : ''}`}
+                    aria-current={isActive('MANAGE_CONTENT', 'CREATE_QUESTION', 'MANAGE_QUESTIONS', 'BULK_IMPORT') ? 'page' : undefined}
                     onClick={onManageContent}
                 >
                     ➕ Цамхаг үүсгэх {lock}
@@ -79,6 +84,7 @@ export default function MainSidebar({
                 <button
                     type="button"
                     className={`main-sidebar-item main-sidebar-subitem${isActive('SHOP') ? ' active' : ''}`}
+                    aria-current={isActive('SHOP') ? 'page' : undefined}
                     onClick={onShop}
                 >
                     🛒 Дэлгүүр {lock}
@@ -86,6 +92,7 @@ export default function MainSidebar({
                 <button
                     type="button"
                     className={`main-sidebar-item main-sidebar-subitem${isActive('INVENTORY') ? ' active' : ''}`}
+                    aria-current={isActive('INVENTORY') ? 'page' : undefined}
                     onClick={onInventory}
                 >
                     🎒 Инвентар {lock}
@@ -95,6 +102,7 @@ export default function MainSidebar({
                     <button
                         type="button"
                         className={`main-sidebar-item${isActive('ADMIN_DASHBOARD') ? ' active' : ''}`}
+                        aria-current={isActive('ADMIN_DASHBOARD') ? 'page' : undefined}
                         onClick={onAdmin}
                     >
                         🛠 Admin

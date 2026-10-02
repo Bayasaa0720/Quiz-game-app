@@ -131,8 +131,15 @@ grant execute on function duel_cancel_match(uuid) to authenticated;
 
 -- Тухайн асуултад хариулав: оноо нэмэх, хоёр тал хариулсан бол дараагийн
 -- асуулт руу шилжих эсвэл дуусгах (дуусахад ялагчид 20 coin олгоно).
+--
+-- Аюулгүйн тэмдэглэл (2026-10-02): зөв/буруу эсэхийг ӨМНӨ нь клиент
+-- шууд boolean-ээр дамжуулдаг байсан бол devtools-оор хуурамч "true"
+-- явуулж duel бүрт ялж болдог нүх байсан. Одоо клиент зөвхөн сонгосон
+-- хариултын текст/зураг URL-ийг дамжуулж, зөв эсэхийг энэ функц сервер
+-- талдаа quiz_items-ээс өөрөө тодорхойлно.
 drop function if exists duel_submit_answer(uuid, boolean);
-create or replace function duel_submit_answer(p_match_id uuid, p_is_correct boolean)
+drop function if exists duel_submit_answer(uuid, text, text);
+create or replace function duel_submit_answer(p_match_id uuid, p_answer_text text, p_answer_image_url text default null)
 returns void
 language plpgsql
 security definer
@@ -149,11 +156,16 @@ declare
   v_p1 uuid;
   v_p2 uuid;
   v_winner uuid;
+  v_question_ids uuid[];
+  v_question_id uuid;
+  v_correct_text text;
+  v_correct_img text;
+  v_is_correct boolean;
 begin
   select player1_id = auth.uid(), player1_round_answered, player2_round_answered,
          array_length(question_ids, 1), current_index, player1_score, player2_score,
-         player1_id, player2_id
-  into v_is_p1, v_p1_answered, v_p2_answered, v_total_q, v_cur_idx, v_p1_score, v_p2_score, v_p1, v_p2
+         player1_id, player2_id, question_ids
+  into v_is_p1, v_p1_answered, v_p2_answered, v_total_q, v_cur_idx, v_p1_score, v_p2_score, v_p1, v_p2, v_question_ids
   from duels
   where id = p_match_id and status = 'active'
   for update;
@@ -162,18 +174,25 @@ begin
     raise exception 'Тоглогч биш эсвэл идэвхгүй тоглолт';
   end if;
 
+  v_question_id := v_question_ids[v_cur_idx + 1];
+  select correct_answer, answer_image_url into v_correct_text, v_correct_img
+  from quiz_items where id = v_question_id;
+
+  v_is_correct := (p_answer_text is not distinct from v_correct_text)
+    and (p_answer_image_url is not distinct from v_correct_img);
+
   if v_is_p1 then
     if v_p1_answered then return; end if;
     update duels set
       player1_round_answered = true,
-      player1_score = player1_score + (case when p_is_correct then 1 else 0 end)
+      player1_score = player1_score + (case when v_is_correct then 1 else 0 end)
     where id = p_match_id;
     v_p1_answered := true;
   else
     if v_p2_answered then return; end if;
     update duels set
       player2_round_answered = true,
-      player2_score = player2_score + (case when p_is_correct then 1 else 0 end)
+      player2_score = player2_score + (case when v_is_correct then 1 else 0 end)
     where id = p_match_id;
     v_p2_answered := true;
   end if;
@@ -207,7 +226,7 @@ begin
 end;
 $$;
 
-grant execute on function duel_submit_answer(uuid, boolean) to authenticated;
+grant execute on function duel_submit_answer(uuid, text, text) to authenticated;
 
 -- Хариу хүлээгдэж буй тал 60 секундээс дээш хугацаагаар хариулаагүй бол,
 -- аль хэдийн хариулсан тал тоглолтыг өөрийн ялалтаар албадан дуусгаж болно.
@@ -353,7 +372,7 @@ drop function if exists duel_get_my_history(int);
 create or replace function duel_get_my_history(p_limit int default 20)
 returns table (
   match_id uuid, category_name text, my_score int, opponent_score int,
-  opponent_name text, result text, played_at timestamptz
+  opponent_name text, opponent_id uuid, result text, played_at timestamptz
 )
 language sql
 security definer
@@ -368,6 +387,7 @@ as $$
     case when d.player1_id = auth.uid()
       then coalesce(up2.display_name, split_part(u2.email::text, '@', 1))
       else coalesce(up1.display_name, split_part(u1.email::text, '@', 1)) end,
+    case when d.player1_id = auth.uid() then d.player2_id else d.player1_id end,
     case when d.winner_id = auth.uid() then 'win'
          when d.winner_id is null then 'tie'
          else 'lose' end,

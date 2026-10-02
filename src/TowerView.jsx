@@ -10,14 +10,12 @@ import './TowerView.css';
 
 const PLAYER_START_HP = 3;
 
-export default function TowerView({ user, isGuest, guestHighestCleared, categoryId, categoryName, onSelectFloor, onStartDuel, onBack, onOpenInventory }) {
+export default function TowerView({ user, isGuest, guestHighestCleared, categoryId, categoryName, equippedArmor, isAdmin, onSelectFloor, onStartDuel, onBack, onOpenInventory }) {
     const [floors, setFloors] = useState([]);
     const [highestCleared, setHighestCleared] = useState(-1);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
     const [regenerating, setRegenerating] = useState(false);
-    const [equippedArmor, setEquippedArmor] = useState(null);
     const modal = useModal();
 
     const fetchTower = useCallback(async () => {
@@ -55,16 +53,6 @@ export default function TowerView({ user, isGuest, guestHighestCleared, category
     useEffect(() => {
         fetchTower();
     }, [fetchTower]);
-
-    useEffect(() => {
-        if (isGuest) return;
-        supabase.rpc('is_app_admin').then(({ data, error }) => {
-            if (!error) setIsAdmin(!!data);
-        });
-        supabase.rpc('get_my_equipped_armor').then(({ data, error }) => {
-            if (!error) setEquippedArmor(data?.[0] || null);
-        });
-    }, [isGuest]);
 
     const handleRegenerate = async () => {
         const confirmed = await modal.confirm(

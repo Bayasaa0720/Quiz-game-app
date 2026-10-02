@@ -180,7 +180,7 @@ create trigger trg_award_points_for_achievement
 -- 7) Дэлгүүрээс худалдаж авах / идэвхжүүлэх
 drop function if exists shop_purchase_item(uuid);
 create or replace function shop_purchase_item(p_item_id uuid)
-returns int
+returns numeric
 language plpgsql
 security definer
 set search_path = public
@@ -188,7 +188,7 @@ as $$
 declare
   v_price int;
   v_active boolean;
-  v_balance int;
+  v_balance numeric(12, 2);
 begin
   select price, is_active into v_price, v_active from shop_items where id = p_item_id;
   if v_price is null then
