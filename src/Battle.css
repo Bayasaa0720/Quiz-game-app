@@ -97,6 +97,35 @@
     font-weight: 600;
 }
 
+.review-select-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(100px, 1fr));
+    gap: 10px;
+    width: 100%;
+    max-width: 320px;
+    margin-top: 8px;
+}
+
+.review-select-custom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.review-select-custom input[type="number"] {
+    width: 100px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle, #444);
+    background: var(--surface-1, #1e1e1e);
+    color: inherit;
+}
+
+.review-stop-btn {
+    margin-bottom: 8px;
+}
+
 .battle-result-stats {
     display: flex;
     justify-content: center;
