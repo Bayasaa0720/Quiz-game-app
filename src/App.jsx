@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import Home from './Home.jsx';
 import TowerView from './TowerView.jsx';
 import Battle from './Battle.jsx';
+import Review from './Review.jsx';
 import QuizCreator from './QuizCreator.jsx';
 import QuestionManager from './QuestionManager.jsx';
 import AdminDashboard from './AdminDashboard.jsx';
@@ -33,7 +34,7 @@ const BulkImport = lazy(() => import('./BulkImport.jsx'));
 const VIEWS_WITH_BATTLE_SIDEBARS = new Set(['BATTLE']);
 // Зочны горимд зөвхөн World tower тоглох боломжтой (2026-09-26 шийдвэр) —
 // бусад бүх дэлгэц GuestGate-ээр орлогдоно.
-const GUEST_ALLOWED_VIEWS = new Set(['TOWER_SELECT', 'TOWER_VIEW', 'BATTLE']);
+const GUEST_ALLOWED_VIEWS = new Set(['TOWER_SELECT', 'TOWER_VIEW', 'BATTLE', 'REVIEW']);
 const IDLE_BATTLE_STATE = {
     playerHP: 100,
     playerMaxHP: 100,
@@ -57,6 +58,7 @@ function App() {
     const [guestProgress, setGuestProgress] = useState({});
     const [selectedCategory, setSelectedCategory] = useState(null); // { id, name }
     const [selectedFloor, setSelectedFloor] = useState(null);
+    const [reviewHighestCleared, setReviewHighestCleared] = useState(-1);
     const [battleState, setBattleState] = useState(IDLE_BATTLE_STATE);
     const [checkingSession, setCheckingSession] = useState(true);
     const [sfxMuted, setSfxMuted] = useState(isMuted());
@@ -237,6 +239,12 @@ function App() {
         setView('BATTLE');
     };
 
+    const handleStartReview = (categoryId, categoryName, highestCleared) => {
+        setSelectedCategory({ id: categoryId, name: categoryName });
+        setReviewHighestCleared(highestCleared);
+        setView('REVIEW');
+    };
+
     const handleStartDuel = (categoryId, categoryName) => {
         setSelectedCategory({ id: categoryId, name: categoryName });
         setDuelInvite(null);
@@ -363,6 +371,7 @@ function App() {
                 isAdmin={isAdmin}
                 onSelectFloor={handleSelectFloor}
                 onStartDuel={handleStartDuel}
+                onStartReview={handleStartReview}
                 onBack={goToTowerSelect}
                 onOpenInventory={() => setView('INVENTORY')}
             />
@@ -390,6 +399,15 @@ function App() {
                 onGoToFloor={handleGoToFloor}
                 onLeaveTower={goToTowerSelect}
                 onHpChange={setBattleState}
+            />
+        );
+    } else if (view === 'REVIEW' && selectedCategory) {
+        currentViewContent = (
+            <Review
+                categoryId={selectedCategory.id}
+                categoryName={selectedCategory.name}
+                highestCleared={reviewHighestCleared}
+                onBack={() => setView('TOWER_VIEW')}
             />
         );
     } else if (view === 'CREATE_QUESTION') {

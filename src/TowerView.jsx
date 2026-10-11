@@ -10,7 +10,7 @@ import './TowerView.css';
 
 const PLAYER_START_HP = 3;
 
-export default function TowerView({ user, isGuest, guestHighestCleared, categoryId, categoryName, equippedArmor, isAdmin, onSelectFloor, onStartDuel, onBack, onOpenInventory }) {
+export default function TowerView({ user, isGuest, guestHighestCleared, categoryId, categoryName, equippedArmor, isAdmin, onSelectFloor, onStartDuel, onStartReview, onBack, onOpenInventory }) {
     const [floors, setFloors] = useState([]);
     const [highestCleared, setHighestCleared] = useState(-1);
     const [loading, setLoading] = useState(true);
@@ -94,6 +94,16 @@ export default function TowerView({ user, isGuest, guestHighestCleared, category
             {!isGuest && (
                 <Button variant="ghost" onClick={() => onStartDuel(categoryId, categoryName)} className="tower-view-duel-btn">
                     ⚔️ 1v1 өрсөлдөх
+                </Button>
+            )}
+
+            {highestCleared >= 0 && (
+                <Button
+                    variant="ghost"
+                    onClick={() => onStartReview(categoryId, categoryName, highestCleared)}
+                    className="tower-view-review-btn"
+                >
+                    📚 Дийлсэн асуултаа сэргээх
                 </Button>
             )}
 
