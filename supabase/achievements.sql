@@ -4,9 +4,10 @@
 -- SECURITY: client-ээс шууд insert хийдэггүй (доор харна уу) — зөвхөн
 -- claim_achievement() RPC-ээр, тухайн achievement-ийг жинхэнэ ёсоор
 -- хангасан эсэхийг сервер талд (tower_progress/battle_attempts_log/duels/
--- get_leaderboard-аас) шалгаад л insert хийдэг. Энэ файл classrooms.sql
--- (battle_attempts_log), duels.sql, leaderboard.sql-аас хамааралтай тул
--- эдгээрийн ДАРАА ажиллуулна (эсрэгээрээ ч function биелэлт хийхдээ л
+-- get_leaderboard/get_my_streak/user_points-аас) шалгаад л insert хийдэг.
+-- Энэ файл classrooms.sql (battle_attempts_log), duels.sql, leaderboard.sql,
+-- streak.sql (get_my_streak), economy.sql (user_points)-аас хамааралтай
+-- тул эдгээрийн ДАРАА ажиллуулна (эсрэгээрээ ч function биелэлт хийхдээ л
 -- эдгээр объект хэрэгтэй болдог тул CREATE үед алдаа өгөхгүй).
 -- Supabase Dashboard -> SQL Editor-т ажиллуулна уу.
 
@@ -70,6 +71,16 @@ begin
     v_eligible := exists (
       select 1 from get_leaderboard(null, 1) gl where gl.user_id = auth.uid() and gl.rank = 1
     );
+  elsif p_achievement_id = 'streak_7' then
+    v_eligible := get_my_streak() >= 7;
+  elsif p_achievement_id = 'duel_veteran' then
+    v_eligible := (
+      select count(*) from duels where status = 'finished' and winner_id = auth.uid()
+    ) >= 10;
+  elsif p_achievement_id = 'coin_collector' then
+    v_eligible := (
+      select balance from user_points where user_id = auth.uid()
+    ) >= 100;
   else
     raise exception 'Тодорхойгүй achievement: %', p_achievement_id;
   end if;

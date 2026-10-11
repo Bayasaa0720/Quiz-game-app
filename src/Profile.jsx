@@ -40,6 +40,7 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
     const [kbShortcuts, setKbShortcuts] = useState(isKeyboardShortcutsEnabled());
     const [duelInvitePermission, setDuelInvitePermission] = useState('everyone');
     const [savingDuelPermission, setSavingDuelPermission] = useState(false);
+    const [breakdown, setBreakdown] = useState([]);
     const fileInputRef = useRef(null);
     const modal = useModal();
     const { showToast } = useToast();
@@ -48,17 +49,20 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
         setLoading(true);
         setLoadError(false);
         try {
-            const [{ data: profile, error: profileErr }, { data: pts }, { data: earned, error: earnedErr }] = await Promise.all([
+            const [{ data: profile, error: profileErr }, { data: pts }, { data: earned, error: earnedErr }, { data: breakdownData, error: breakdownErr }] = await Promise.all([
                 supabase.from('user_profiles').select('display_name, avatar_url, duel_invite_permission').eq('user_id', user.id).maybeSingle(),
                 supabase.from('user_points').select('balance').eq('user_id', user.id).maybeSingle(),
                 supabase.from('user_achievements').select('achievement_id').eq('user_id', user.id),
+                supabase.rpc('my_category_breakdown'),
             ]);
             if (profileErr || earnedErr) throw profileErr || earnedErr;
+            if (breakdownErr) console.warn('my_category_breakdown skipped:', breakdownErr.message);
             setDisplayName(profile?.display_name || '');
             setAvatarUrl(profile?.avatar_url || null);
             setDuelInvitePermission(profile?.duel_invite_permission || 'everyone');
             setBalance(pts?.balance || 0);
             setEarnedIds(new Set((earned || []).map(r => r.achievement_id)));
+            setBreakdown(breakdownData || []);
         } catch (err) {
             console.error('Error loading profile:', err);
             setLoadError(true);
@@ -185,6 +189,21 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
                 <p className="profile-role-badge">{ROLE_LABEL[userRole] || userRole}</p>
                 <p className="profile-coin">🪙 {formatCoin(balance)} coin</p>
             </div>
+
+            {breakdown.length > 0 && (
+                <>
+                    <h3 className="profile-section-title">📊 Миний статистик</h3>
+                    <div className="profile-stats-list">
+                        {breakdown.map(row => (
+                            <Card key={row.category_id} className="profile-stats-row">
+                                <span className="profile-stats-category">{row.category_name}</span>
+                                <span className="profile-stats-accuracy">{row.accuracy == null ? '—' : `${row.accuracy}%`}</span>
+                                <span className="profile-stats-counts">✅ {row.correct_total} · ❌ {row.wrong_total}</span>
+                            </Card>
+                        ))}
+                    </div>
+                </>
+            )}
 
             <div className="profile-settings">
                 <h3 className="profile-section-title profile-settings-title">⚙️ Тохиргоо</h3>

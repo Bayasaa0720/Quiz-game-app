@@ -173,6 +173,13 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
                     correctText: correctOpt?.text,
                     correctImage: correctOpt?.img,
                 }]);
+                // Энэ тулаан дуусмагц missedQuestions мартагддаг тул, Review
+                // горимд сул асуулт руу жинлэх зориулалттай тусдаа лог руу
+                // бичнэ (бүх цаг хугацааны түүх) — зочинд хэрэггүй.
+                if (!isGuest) {
+                    supabase.rpc('log_wrong_answer', { p_question_id: missedQ.id })
+                        .then(({ error }) => { if (error) console.warn('log_wrong_answer skipped:', error.message); });
+                }
             }
             playWrongHit();
             setEnemyAnim('attack');
@@ -269,6 +276,12 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
                         if (isNew) showToast({ icon: '🗼', title: 'Шинэ achievement!', message: 'Цамхаг эзэн' });
                     });
                 }
+                awardAchievement(supabase, user.id, 'streak_7').then(isNew => {
+                    if (isNew) showToast({ icon: '🔥', title: 'Шинэ achievement!', message: '7 хоногийн улиран' });
+                });
+                awardAchievement(supabase, user.id, 'coin_collector').then(isNew => {
+                    if (isNew) showToast({ icon: '🪙', title: 'Шинэ achievement!', message: 'Зоос цуглуулагч' });
+                });
             } catch (err) {
                 console.error('Error saving floor win:', err);
                 setNextFloor(null);

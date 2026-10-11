@@ -7,6 +7,9 @@ export const ACHIEVEMENTS = [
     { id: 'duel_first_win', icon: '⚔️', name: 'Дуэлийн ялагч', description: '1v1 өрсөлдөөнд анх удаа ялсан', coin: 25 },
     { id: 'tower_complete', icon: '🗼', name: 'Цамхаг эзэн', description: 'Нэг цамхгийг бүрэн дийлсэн', coin: 30 },
     { id: 'leaderboard_top1', icon: '🏆', name: 'Тэргүүлэгч', description: 'Leaderboard-т 1-р байранд орсон', coin: 30 },
+    { id: 'streak_7', icon: '🔥', name: '7 хоногийн улиран', description: '7 хоног дараалан ялалттайгаар тоглосон', coin: 25 },
+    { id: 'duel_veteran', icon: '🗡️', name: 'Дуэлийн ахмад', description: '1v1 өрсөлдөөнд 10 удаа яллаа', coin: 35 },
+    { id: 'coin_collector', icon: '🪙', name: 'Зоос цуглуулагч', description: '100 coin хуримтлуулсан', coin: 20 },
 ];
 
 // Буцаах утга: анх удаа шинээр авсан бол true (toast мэдэгдэл харуулахад ашиглана),

@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient.jsx';
 import Button from './components/Button.jsx';
 import ErrorState from './components/ErrorState.jsx';
 import { buildOptions } from './lib/generateOptions.js';
-import { shuffle } from './lib/arrayUtils.js';
+import { weightedShuffle } from './lib/arrayUtils.js';
 import { playCorrectHit, playWrongHit } from './sound.js';
 import './Battle.css';
 
@@ -25,6 +25,12 @@ export default function Review({ categoryId, categoryName, highestCleared, onBac
     const [wrongCount, setWrongCount] = useState(0);
     const [isEndless, setIsEndless] = useState(false);
     const [customCount, setCustomCount] = useState('');
+    const [missCounts, setMissCounts] = useState(new Map());
+
+    // Хамгийн их андуурдаг асуултыг жинлэх — нэг асуулт давтагдаж
+    // андуурсан тутамд weight нэмэгдэнэ, гэхдээ бусдыг хасахгүй (max 10
+    // хязгаартай) ингэснээр "зөвхөн тэр асуулт л гарна" болохоос сэргийлнэ.
+    const weightFor = useCallback((q) => 1 + Math.min(missCounts.get(q.id) || 0, 10), [missCounts]);
 
     const load = useCallback(async () => {
         setStatus('loading');
@@ -41,13 +47,14 @@ export default function Review({ categoryId, categoryName, highestCleared, onBac
                 return;
             }
 
-            const { data: poolData, error: poolErr } = await supabase
-                .from('quiz_items')
-                .select('*')
-                .eq('category_id', categoryId);
+            const [{ data: poolData, error: poolErr }, { data: missRows }] = await Promise.all([
+                supabase.from('quiz_items').select('*').eq('category_id', categoryId),
+                supabase.from('wrong_answers_log').select('question_id, miss_count'),
+            ]);
             if (poolErr) throw poolErr;
             setPool(poolData || []);
             setClearedItems((poolData || []).filter(q => clearedIds.has(q.id)));
+            setMissCounts(new Map((missRows || []).map(r => [r.question_id, r.miss_count])));
             setStatus('select');
         } catch (err) {
             console.error('Review load error:', err);
@@ -60,7 +67,7 @@ export default function Review({ categoryId, categoryName, highestCleared, onBac
     const startSession = (count, endless = false) => {
         const n = endless ? clearedItems.length : Math.max(1, Math.min(count, clearedItems.length));
         setIsEndless(endless);
-        setQueue(shuffle(clearedItems).slice(0, n));
+        setQueue(weightedShuffle(clearedItems, weightFor).slice(0, n));
         setIndex(0);
         setCorrectCount(0);
         setWrongCount(0);
@@ -92,7 +99,7 @@ export default function Review({ categoryId, categoryName, highestCleared, onBac
     const handleNext = () => {
         if (index + 1 >= queue.length) {
             if (isEndless) {
-                setQueue(shuffle(clearedItems));
+                setQueue(weightedShuffle(clearedItems, weightFor));
                 setIndex(0);
                 return;
             }
@@ -224,7 +231,7 @@ export default function Review({ categoryId, categoryName, highestCleared, onBac
             {isAnswered && (
                 <div className="battle-next">
                     <Button onClick={handleNext}>
-                        {index + 1 >= queue.length ? 'Дуусгах →' : 'Дараагийн асуулт →'}
+                        {!isEndless && index + 1 >= queue.length ? 'Дуусгах →' : 'Дараагийн асуулт →'}
                     </Button>
                 </div>
             )}

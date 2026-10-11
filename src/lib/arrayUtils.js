@@ -10,3 +10,15 @@ export function shuffle(arr) {
     }
     return result;
 }
+
+// Weighted random order (Efraimidis-Spirakis): items with a higher weight
+// are statistically more likely to land earlier, but it's still a shuffle —
+// not a deterministic sort — so a weight-1 item can still come up first.
+// Used by Review mode to surface frequently-missed questions more often
+// without ever fully excluding the rest.
+export function weightedShuffle(arr, weightFn) {
+    return arr
+        .map(item => ({ item, key: Math.pow(Math.random(), 1 / Math.max(weightFn(item), 0.0001)) }))
+        .sort((a, b) => b.key - a.key)
+        .map(({ item }) => item);
+}

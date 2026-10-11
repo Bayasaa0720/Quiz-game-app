@@ -164,6 +164,9 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
             awardAchievement(supabase, user.id, 'duel_first_win').then(isNew => {
                 if (isNew) showToast({ icon: '⚔️', title: 'Шинэ achievement!', message: 'Дуэлийн ялагч' });
             });
+            awardAchievement(supabase, user.id, 'duel_veteran').then(isNew => {
+                if (isNew) showToast({ icon: '🗡️', title: 'Шинэ achievement!', message: 'Дуэлийн ахмад' });
+            });
         }
     }, [match, user.id, showToast]);
 

@@ -163,6 +163,9 @@ begin
     when 'duel_first_win' then 25   -- дунд-хүнд — жинхэнэ өрсөлдөгчийг ялах хэрэгтэй
     when 'tower_complete' then 30   -- хүнд — бүтэн цамхаг дийлэх хэрэгтэй
     when 'leaderboard_top1' then 30 -- хүнд — #1 байр авах хэрэгтэй
+    when 'streak_7' then 25         -- дунд-хүнд — 7 хоног дараалан тоглох хэрэгтэй
+    when 'duel_veteran' then 35     -- хүнд — 10 дуэл ялах хэрэгтэй
+    when 'coin_collector' then 20   -- хялбар-дунд — хугацаа өнгөрөхөд хүрдэг
     else 15
   end;
 
