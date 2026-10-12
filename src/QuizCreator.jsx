@@ -23,7 +23,30 @@ export default function QuizCreator({ user, onDone }) {
     const [difficulty, setDifficulty] = useState('normal');
 
     const [loading, setLoading] = useState(false);
+    const [typeCount, setTypeCount] = useState(null);
     const modal = useModal();
+
+    // Сонгосон answer_type-тай ижил төрлийн бусад асуултын тоог (энэ
+    // ангилалд) live харуулна — decoy сан хэр баялаг байгааг зохиогчид
+    // мэдүүлнэ. Зөвхөн одоо байгаа ангилал сонгосон үед л (шинэ ангилалд
+    // лавлах юм алга).
+    useEffect(() => {
+        const type = answerType.trim();
+        if (!selectedCategoryId || !type) {
+            setTypeCount(null);
+            return;
+        }
+        let cancelled = false;
+        const timer = setTimeout(async () => {
+            const { count, error } = await supabase
+                .from('quiz_items')
+                .select('id', { count: 'exact', head: true })
+                .eq('category_id', selectedCategoryId)
+                .eq('answer_type', type);
+            if (!cancelled && !error) setTypeCount(count ?? 0);
+        }, 400);
+        return () => { cancelled = true; clearTimeout(timer); };
+    }, [selectedCategoryId, answerType]);
 
     useEffect(() => {
         const fetchCats = async () => {
@@ -185,6 +208,11 @@ export default function QuizCreator({ user, onDone }) {
                     <datalist id="answer-type-options">
                         {SUPPORTED_ANSWER_TYPES.map(t => <option key={t} value={t} />)}
                     </datalist>
+                    {typeCount !== null && (
+                        <p className="field-hint answer-type-counter">
+                            Энэ ангилалд "{answerType.trim()}" төрлийн {typeCount} асуулт байна{typeCount < 3 ? ' — decoy сонголт цөөн гарч магадгүй' : ''}.
+                        </p>
+                    )}
                     <p className="field-hint">Ижил төрлийн буруу хариултууд л сонголт болж холилдоно — ялгаатай сэдэвтэй асуултуудыг холихгүйн тулд төрлөө зөв бичээрэй.</p>
                 </div>
 

@@ -15,7 +15,6 @@ export default function Shop({ user, onBack }) {
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
     const [buyingId, setBuyingId] = useState(null);
-    const [activeTab, setActiveTab] = useState('items'); // 'items' | 'quests'
     const [quests, setQuests] = useState([]);
     const [questsLoading, setQuestsLoading] = useState(true);
     const [claimingId, setClaimingId] = useState(null);
@@ -95,53 +94,38 @@ export default function Shop({ user, onBack }) {
                 <span className="shop-balance">🪙 {formatCoin(balance)} coin</span>
             </div>
 
-            <div className="shop-tabs">
-                <button
-                    type="button"
-                    className={`shop-tab${activeTab === 'items' ? ' active' : ''}`}
-                    onClick={() => setActiveTab('items')}
-                >
-                    Эдлэлүүд
-                </button>
-                <button
-                    type="button"
-                    className={`shop-tab${activeTab === 'quests' ? ' active' : ''}`}
-                    onClick={() => setActiveTab('quests')}
-                >
-                    🎯 Өдрийн даалгавар
-                </button>
-            </div>
-
-            {activeTab === 'quests' ? (
-                questsLoading ? (
-                    <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>
-                ) : (
-                    <div className="quest-grid">
-                        {quests.map(q => {
-                            const done = q.progress >= q.target;
-                            return (
-                                <Card key={q.quest_id} className="quest-item">
-                                    <h3>{q.label}</h3>
-                                    <div className="quest-progress-row">
-                                        <div className="quest-progress-track">
-                                            <div className="quest-progress-fill" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} />
-                                        </div>
-                                        <span className="quest-progress-label">{q.progress}/{q.target}</span>
+            <h3 className="shop-section-title">🎯 Өдрийн даалгавар</h3>
+            {questsLoading ? (
+                <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>
+            ) : (
+                <div className="quest-grid">
+                    {quests.map(q => {
+                        const done = q.progress >= q.target;
+                        return (
+                            <Card key={q.quest_id} className="quest-item">
+                                <h3>{q.label}</h3>
+                                <div className="quest-progress-row">
+                                    <div className="quest-progress-track">
+                                        <div className="quest-progress-fill" style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }} />
                                     </div>
-                                    <p className="quest-reward">🪙 {formatCoin(q.coin_reward)}</p>
-                                    <Button
-                                        variant={q.claimed ? 'ghost' : 'success'}
-                                        onClick={() => handleClaimQuest(q)}
-                                        disabled={q.claimed || !done || claimingId === q.quest_id}
-                                    >
-                                        {q.claimed ? '✓ Авсан' : done ? 'Шагнал авах' : 'Биелээгүй'}
-                                    </Button>
-                                </Card>
-                            );
-                        })}
-                    </div>
-                )
-            ) : items.length === 0 ? (
+                                    <span className="quest-progress-label">{q.progress}/{q.target}</span>
+                                </div>
+                                <p className="quest-reward">🪙 {formatCoin(q.coin_reward)}</p>
+                                <Button
+                                    variant={q.claimed ? 'ghost' : 'success'}
+                                    onClick={() => handleClaimQuest(q)}
+                                    disabled={q.claimed || !done || claimingId === q.quest_id}
+                                >
+                                    {q.claimed ? '✓ Авсан' : done ? 'Шагнал авах' : 'Биелээгүй'}
+                                </Button>
+                            </Card>
+                        );
+                    })}
+                </div>
+            )}
+
+            <h3 className="shop-section-title">Эдлэлүүд</h3>
+            {items.length === 0 ? (
                 <p className="shop-empty">Дэлгүүрт эдлэл алга байна.</p>
             ) : (
                 <div className="shop-grid">

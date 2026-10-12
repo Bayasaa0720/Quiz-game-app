@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import Home from './Home.jsx';
+import MyTowers from './MyTowers.jsx';
 import TowerView from './TowerView.jsx';
 import Battle from './Battle.jsx';
 import Review from './Review.jsx';
@@ -228,6 +229,7 @@ function App() {
 
     // "Агуулга удирдах" дотроос нээгддэг дэд дэлгэцүүд эндээ буцна.
     const goToManageContent = () => setView('MANAGE_CONTENT');
+    const goToMyTowers = () => setView('MY_TOWERS');
 
     const handleSelectTower = (categoryId, categoryName) => {
         setSelectedCategory({ id: categoryId, name: categoryName });
@@ -319,6 +321,7 @@ function App() {
                 isGuest={isGuest}
                 guestProgress={guestProgress}
                 displayName={displayName}
+                streak={streak}
                 onSelectTower={handleSelectTower}
                 onAcceptChallenge={handleAcceptChallenge}
                 onOpenLeaderboard={() => setView('LEADERBOARD')}
@@ -335,6 +338,15 @@ function App() {
                 onProfileUpdated={handleProfileUpdated}
                 sfxMuted={sfxMuted}
                 onToggleMute={handleToggleMute}
+            />
+        );
+    } else if (view === 'MY_TOWERS') {
+        currentViewContent = (
+            <MyTowers
+                user={user}
+                onBack={goToTowerSelect}
+                onSelectTower={handleSelectTower}
+                onCreateTower={goToManageContent}
             />
         );
     } else if (view === 'MANAGE_CONTENT') {
@@ -394,11 +406,13 @@ function App() {
                 isGuest={isGuest}
                 onGuestFloorCleared={handleGuestFloorCleared}
                 categoryId={selectedCategory.id}
+                categoryName={selectedCategory.name}
                 floor={selectedFloor}
                 onFloorCleared={handleFloorCleared}
                 onGoToFloor={handleGoToFloor}
                 onLeaveTower={goToTowerSelect}
                 onHpChange={setBattleState}
+                onStartReview={handleStartReview}
             />
         );
     } else if (view === 'REVIEW' && selectedCategory) {
@@ -527,7 +541,7 @@ function App() {
                                 onLeaderboard={() => setView('LEADERBOARD')}
                                 onFriends={() => setView('FRIENDS')}
                                 onLearning={() => setView('LEARNING')}
-                                onManageContent={goToManageContent}
+                                onMyTowers={goToMyTowers}
                                 onShop={() => setView('SHOP')}
                                 onInventory={() => setView('INVENTORY')}
                                 onAdmin={() => setView('ADMIN_DASHBOARD')}

@@ -51,7 +51,12 @@ const STATIC_POOLS = {
 // QuestionManager.jsx-ийн datalist-үүд ЗӨВХӨН эндээс уншина — үгүй бол
 // UI дээр санал болгосон төрөл (жиш: "flag", "map") decoy-гүй үлдэж,
 // multiple-choice чанар нь чимээгүй доройтдог.
-export const SUPPORTED_ANSWER_TYPES = ['year', 'count', ...Object.keys(STATIC_POOLS)];
+//
+// name/meaning/formula/custom: static pool-гүй, зөвхөн category-дотроо ижил
+// төрлийн бусад асуултуудын сангаас decoy татна (generateRuleBasedDecoys
+// эдгээр төрлийн хувьд [] буцааж, generateOptions.js-ийн pool-based
+// логик дангаараа ажиллана — одоо байгаа fallback зан төлөвийг ашигладаг).
+export const SUPPORTED_ANSWER_TYPES = ['year', 'count', ...Object.keys(STATIC_POOLS), 'name', 'meaning', 'formula', 'custom'];
 
 function pickFromPool(pool, correctAnswer, count) {
     const candidates = pool.filter(v => v.toLowerCase() !== correctAnswer.trim().toLowerCase());

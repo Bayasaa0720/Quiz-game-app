@@ -67,6 +67,11 @@ export default function Leaderboard({ user, onBack }) {
             ? (a.display_name || '').localeCompare(b.display_name || '')
             : Number(a.rank) - Number(b.rank));
 
+    const showPodium = sortMode === 'rank' && !searchText.trim() && visibleRows.length > 0;
+    const podiumRows = showPodium ? visibleRows.slice(0, 3) : [];
+    // Сонгодог podium байрлал: 2-р байр зүүн, 1-р байр төв (хамгийн өндөр), 3-р байр баруун.
+    const podiumOrder = [podiumRows[1], podiumRows[0], podiumRows[2]].filter(Boolean);
+
     return (
         <div className="leaderboard-page">
             <Button variant="ghost" onClick={onBack} className="leaderboard-back">← Буцах</Button>
@@ -105,6 +110,27 @@ export default function Leaderboard({ user, onBack }) {
             <p className="leaderboard-sub">
                 {categoryId ? 'Тухайн цамхагт дийлсэн давхрын тоогоор' : 'Нийт дийлсэн давхрын тоогоор'}
             </p>
+
+            {showPodium && podiumOrder.length > 0 && (
+                <div className="leaderboard-podium">
+                    {podiumOrder.map(row => (
+                        <div key={row.user_id} className={`podium-stand podium-rank-${row.rank}`}>
+                            <div className="podium-avatar" aria-hidden="true">
+                                {row.avatar_url ? (
+                                    <img src={row.avatar_url} alt="" />
+                                ) : (
+                                    <span>{MEDALS[row.rank - 1] || '👤'}</span>
+                                )}
+                            </div>
+                            <span className="podium-name">
+                                {row.display_name}{row.user_id === user?.id && ' (Та)'}
+                            </span>
+                            <span className="podium-score">{row.total_floors_cleared} давхар</span>
+                            <div className="podium-block">{MEDALS[row.rank - 1] || row.rank}</div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {myRow && (
                 <div className="leaderboard-my-stats">

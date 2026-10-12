@@ -60,6 +60,20 @@
     gap: 10px;
 }
 
+.home-weekly-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.home-streak-pill {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent-soft);
+    white-space: nowrap;
+}
+
 .weekly-goal-count {
     margin: 2px 0 4px;
     font-size: 1.3rem;

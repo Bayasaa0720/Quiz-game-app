@@ -20,7 +20,7 @@ const DAMAGE_TO_PLAYER = 1;
 // Matches (frames / fps) of the attack/hurt sheets in PlayerCharacter/EnemyCharacter, plus a small buffer.
 const ANIM_RETURN_TO_IDLE_MS = { attack: 450, hurt: 360 };
 
-export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId, floor, onFloorCleared, onGoToFloor, onLeaveTower, onHpChange }) {
+export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId, categoryName, floor, onFloorCleared, onGoToFloor, onLeaveTower, onHpChange, onStartReview }) {
     const [questions, setQuestions] = useState([]);
     const [nextFloor, setNextFloor] = useState(null);
     const [answerPool, setAnswerPool] = useState([]);
@@ -385,6 +385,15 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
                                 </p>
                             </div>
                         ))}
+                        {onStartReview && (
+                            <Button
+                                variant="ghost"
+                                className="battle-review-mode-btn"
+                                onClick={() => onStartReview(categoryId, categoryName, floor.floor_index)}
+                            >
+                                📚 Review mode
+                            </Button>
+                        )}
                     </div>
                 )}
 

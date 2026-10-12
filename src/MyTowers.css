@@ -1,0 +1,31 @@
+.my-towers-page {
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.my-towers-back {
+    margin-bottom: 12px;
+}
+
+.my-towers-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.my-towers-header h2 {
+    margin: 0;
+    color: var(--accent);
+}
+
+.my-towers-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text-muted);
+}

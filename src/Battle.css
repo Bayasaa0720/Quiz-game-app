@@ -199,6 +199,11 @@
     color: var(--success);
 }
 
+.battle-review-mode-btn {
+    align-self: center;
+    margin-top: 4px;
+}
+
 @media (max-width: 480px) {
     .battle-options {
         grid-template-columns: 1fr;

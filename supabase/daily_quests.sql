@@ -1,5 +1,5 @@
--- Өдрийн даалгавар (Tower Climb App.html deck-ийн Дэлгүүр -> "Өдрийн
--- даалгавар" sub-tab). Achievements.sql-тай ижил хэв маяг: даалгаврын
+-- Өдрийн даалгавар (Дэлгүүр дэлгэц дээр Armory-тай нэг дэлгэц дээр
+-- харагддаг, sub-tab биш). Achievements.sql-тай ижил хэв маяг: даалгаврын
 -- төлөв бүрэн сервер талд (battle_attempts_log/duels-аас) тооцоологдоно,
 -- client зөвхөн claim_daily_quest() RPC-ээр л coin авна.
 --

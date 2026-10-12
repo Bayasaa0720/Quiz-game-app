@@ -20,7 +20,7 @@ function towerTag(cat, user, cleared) {
     return null;
 }
 
-export default function Home({ user, isGuest, guestProgress, displayName, onSelectTower, onAcceptChallenge, onOpenLeaderboard, onCreateTower }) {
+export default function Home({ user, isGuest, guestProgress, displayName, streak = 0, onSelectTower, onAcceptChallenge, onOpenLeaderboard, onCreateTower }) {
     const [categories, setCategories] = useState([]);
     const [floorCounts, setFloorCounts] = useState({});
     const [progressMap, setProgressMap] = useState({});
@@ -146,10 +146,6 @@ export default function Home({ user, isGuest, guestProgress, displayName, onSele
     if (loadError) return <ErrorState message="Мэдээллийг ачаалахад алдаа гарлаа." onRetry={fetchTowers} />;
 
     const maxWeekly = Math.max(1, ...weeklyWins.map(d => d.count));
-    let streak = 0;
-    for (let i = weeklyWins.length - 1; i >= 0; i--) {
-        if (weeklyWins[i].count > 0) streak++; else break;
-    }
     const totalWeekly = weeklyWins.reduce((s, d) => s + d.count, 0);
 
     const worldTowers = categories.filter(c => c.is_global);
@@ -229,7 +225,10 @@ export default function Home({ user, isGuest, guestProgress, displayName, onSele
                 {!isGuest && (
                     <div className="home-top-right">
                         <Card className="home-weekly-card">
-                            <span className="eyebrow-label">7 хоногийн зорилго</span>
+                            <div className="home-weekly-head">
+                                <span className="eyebrow-label">7 хоногийн зорилго</span>
+                                {streak > 0 && <span className="home-streak-pill">🔥 {streak} хоног</span>}
+                            </div>
                             <p className="weekly-goal-count">{totalWeekly} / {WEEKLY_GOAL} давхар</p>
                             <div className="weekly-chart">
                                 {weeklyWins.map(d => (
@@ -240,7 +239,6 @@ export default function Home({ user, isGuest, guestProgress, displayName, onSele
                                 {totalWeekly >= WEEKLY_GOAL
                                     ? '🎉 Энэ 7 хоногийн зорилго биелсэн!'
                                     : `Өнөөдөр ${WEEKLY_GOAL - totalWeekly} давхар дийлбэл зорилго биелнэ`}
-                                {streak > 0 ? ` · ${streak} хоног дараалан` : ''}
                             </p>
                         </Card>
 

@@ -75,6 +75,10 @@
     color: var(--text-dim);
 }
 
+.main-sidebar-group-label:first-child {
+    margin-top: 0;
+}
+
 .main-sidebar-armor {
     margin-top: 12px;
     padding: 12px;

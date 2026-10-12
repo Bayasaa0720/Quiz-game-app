@@ -17,7 +17,7 @@ export default function MainSidebar({
     onLeaderboard,
     onFriends,
     onLearning,
-    onManageContent,
+    onMyTowers,
     onShop,
     onInventory,
     onAdmin,
@@ -37,9 +37,10 @@ export default function MainSidebar({
             </button>
 
             <div className="main-sidebar-items">
+                <span className="main-sidebar-group-label">Тоглох</span>
                 <button
                     type="button"
-                    className={`main-sidebar-item${isActive(...HOME_NAV_VIEWS) ? ' active' : ''}`}
+                    className={`main-sidebar-item main-sidebar-subitem${isActive(...HOME_NAV_VIEWS) ? ' active' : ''}`}
                     aria-current={isActive(...HOME_NAV_VIEWS) ? 'page' : undefined}
                     onClick={onHome}
                 >
@@ -47,40 +48,42 @@ export default function MainSidebar({
                 </button>
                 <button
                     type="button"
-                    className={`main-sidebar-item${isActive('LEADERBOARD') ? ' active' : ''}`}
+                    className={`main-sidebar-item main-sidebar-subitem${isActive('LEADERBOARD') ? ' active' : ''}`}
                     aria-current={isActive('LEADERBOARD') ? 'page' : undefined}
                     onClick={onLeaderboard}
                 >
                     🏆 Тэргүүлэгчид {lock}
                 </button>
 
+                <span className="main-sidebar-group-label">Нийгэм</span>
                 <button
                     type="button"
-                    className={`main-sidebar-item${isActive('FRIENDS') ? ' active' : ''}`}
+                    className={`main-sidebar-item main-sidebar-subitem${isActive('FRIENDS') ? ' active' : ''}`}
                     aria-current={isActive('FRIENDS') ? 'page' : undefined}
                     onClick={onFriends}
                 >
                     👥 Найзууд ба Duel {lock}
                 </button>
-
                 <button
                     type="button"
-                    className={`main-sidebar-item${isActive('LEARNING') ? ' active' : ''}`}
+                    className={`main-sidebar-item main-sidebar-subitem${isActive('LEARNING') ? ' active' : ''}`}
                     aria-current={isActive('LEARNING') ? 'page' : undefined}
                     onClick={onLearning}
                 >
-                    🎓 Сургалт {lock}
-                </button>
-                <button
-                    type="button"
-                    className={`main-sidebar-item${isActive('MANAGE_CONTENT', 'CREATE_QUESTION', 'MANAGE_QUESTIONS', 'BULK_IMPORT') ? ' active' : ''}`}
-                    aria-current={isActive('MANAGE_CONTENT', 'CREATE_QUESTION', 'MANAGE_QUESTIONS', 'BULK_IMPORT') ? 'page' : undefined}
-                    onClick={onManageContent}
-                >
-                    ➕ Цамхаг үүсгэх {lock}
+                    🎓 Ангиуд {lock}
                 </button>
 
-                <span className="main-sidebar-group-label">Дэлгүүр</span>
+                <span className="main-sidebar-group-label">Үүсгэх</span>
+                <button
+                    type="button"
+                    className={`main-sidebar-item main-sidebar-subitem${isActive('MY_TOWERS', 'MANAGE_CONTENT', 'CREATE_QUESTION', 'MANAGE_QUESTIONS', 'BULK_IMPORT') ? ' active' : ''}`}
+                    aria-current={isActive('MY_TOWERS', 'MANAGE_CONTENT', 'CREATE_QUESTION', 'MANAGE_QUESTIONS', 'BULK_IMPORT') ? 'page' : undefined}
+                    onClick={onMyTowers}
+                >
+                    🗼 Миний цамхагууд {lock}
+                </button>
+
+                <span className="main-sidebar-group-label">Худалдаа</span>
                 <button
                     type="button"
                     className={`main-sidebar-item main-sidebar-subitem${isActive('SHOP') ? ' active' : ''}`}

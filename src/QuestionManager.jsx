@@ -28,11 +28,38 @@ export default function QuestionManager({ user, categoryId, onDone }) {
         difficulty: 'normal',
     });
 
+    const [typeCount, setTypeCount] = useState(null);
+
     const mountedRef = useRef(true);
     useEffect(() => {
         mountedRef.current = true;
         return () => { mountedRef.current = false; };
     }, []);
+
+    // QuizCreator.jsx-тай адил live counter — энэ ангилалд ижил
+    // answer_type-тай хэдэн асуулт байгааг харуулна (засаж буй мөрөө
+    // тооноос хасна).
+    useEffect(() => {
+        const type = editForm.answerType.trim();
+        if (!editingQuestionId || !type) {
+            setTypeCount(null);
+            return;
+        }
+        let cancelled = false;
+        const timer = setTimeout(async () => {
+            let query = supabase
+                .from('quiz_items')
+                .select('id', { count: 'exact', head: true })
+                .eq('category_id', categoryId)
+                .eq('answer_type', type);
+            if (typeof editingQuestionId === 'string') {
+                query = query.neq('id', editingQuestionId);
+            }
+            const { count, error } = await query;
+            if (!cancelled && !error) setTypeCount(count ?? 0);
+        }, 400);
+        return () => { cancelled = true; clearTimeout(timer); };
+    }, [categoryId, editingQuestionId, editForm.answerType]);
 
     useEffect(() => {
         fetchData();
@@ -242,6 +269,11 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                                 <datalist id="answer-type-options">
                                     {SUPPORTED_ANSWER_TYPES.map(t => <option key={t} value={t} />)}
                                 </datalist>
+                                {typeCount !== null && (
+                                    <p className="field-hint answer-type-counter">
+                                        Энэ ангилалд "{editForm.answerType.trim()}" төрлийн {typeCount} өөр асуулт байна{typeCount < 3 ? ' — decoy сонголт цөөн гарч магадгүй' : ''}.
+                                    </p>
+                                )}
 
                                 <label>Хэцүү зэрэг:</label>
                                 <select
