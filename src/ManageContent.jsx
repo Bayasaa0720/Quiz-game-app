@@ -39,7 +39,7 @@ export default function ManageContent({ user, onBack, onCreateQuestion, onManage
         if (categoryId) {
             onManageQuestions(categoryId);
         } else {
-            setHint('Эхлээд засах ангиллаа сонгоно уу.');
+            setHint('Select a category to edit first.');
         }
     };
 
@@ -47,30 +47,30 @@ export default function ManageContent({ user, onBack, onCreateQuestion, onManage
         if (categoryId) {
             onBulkImport(categoryId);
         } else {
-            setHint('Эхлээд асуулт нэмэх ангиллаа сонгоно уу.');
+            setHint('Select a category to add questions to first.');
         }
     };
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>;
-    if (loadError) return <ErrorState message="Ангиллуудыг ачаалахад алдаа гарлаа." onRetry={fetchCategories} />;
+    if (loading) return <p style={{ textAlign: 'center' }}>Loading...</p>;
+    if (loadError) return <ErrorState message="Failed to load categories." onRetry={fetchCategories} />;
 
     return (
         <div className="manage-content-page">
-            <Button variant="ghost" onClick={onBack} className="manage-content-back">← Цамхаг сонгох руу</Button>
-            <h2>📝 Агуулга удирдах</h2>
+            <Button variant="ghost" onClick={onBack} className="manage-content-back">← Back to tower list</Button>
+            <h2>📝 Manage content</h2>
 
             <Card className="manage-panel">
                 <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                    <option value="">-- Ангилал сонгох --</option>
+                    <option value="">-- Select category --</option>
                     {categories.map(cat => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                 </select>
                 {hint && <p className="tower-hint">{hint}</p>}
                 <div className="manage-actions">
-                    <Button variant="success" onClick={onCreateQuestion}>Шинэ асуулт нэмэх</Button>
-                    <Button variant="ghost" onClick={handleBulkImport}>Олноор оруулах (CSV/Excel)</Button>
-                    <Button variant="ghost" onClick={handleManage}>Асуулт удирдах (Засах/Устгах)</Button>
+                    <Button variant="success" onClick={onCreateQuestion}>Add new question</Button>
+                    <Button variant="ghost" onClick={handleBulkImport}>Bulk import (CSV/Excel)</Button>
+                    <Button variant="ghost" onClick={handleManage}>Manage questions (Edit/Delete)</Button>
                 </div>
             </Card>
         </div>

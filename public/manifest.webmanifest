@@ -1,7 +1,7 @@
 {
   "name": "Tower Climb — Flashcard Quiz Master",
   "short_name": "Tower Climb",
-  "description": "Асуулт хариултаар цамхаг өгсдөг RPG сургалтын тоглоом",
+  "description": "An RPG study game where you climb towers by answering questions",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -41,7 +41,7 @@ export default function Leaderboard({ user, onBack }) {
             setRows(data || []);
             if (user && data?.some(r => r.user_id === user.id && Number(r.rank) === 1)) {
                 awardAchievement(supabase, user.id, 'leaderboard_top1').then(isNew => {
-                    if (isNew) showToast({ icon: '🏆', title: 'Шинэ achievement!', message: 'Тэргүүлэгч' });
+                    if (isNew) showToast({ icon: '🏆', title: 'New achievement!', message: 'Top of the Board' });
                 });
             }
         } catch (err) {
@@ -56,7 +56,7 @@ export default function Leaderboard({ user, onBack }) {
         fetchLeaderboard();
     }, [fetchLeaderboard]);
 
-    if (loadError) return <ErrorState message="Тэргүүлэгчдийг ачаалахад алдаа гарлаа." onRetry={fetchLeaderboard} />;
+    if (loadError) return <ErrorState message="Failed to load the leaderboard." onRetry={fetchLeaderboard} />;
 
     const myRow = rows.find(r => r.user_id === user?.id);
 
@@ -74,15 +74,15 @@ export default function Leaderboard({ user, onBack }) {
 
     return (
         <div className="leaderboard-page">
-            <Button variant="ghost" onClick={onBack} className="leaderboard-back">← Буцах</Button>
-            <h2>🏆 Тэргүүлэгчид</h2>
+            <Button variant="ghost" onClick={onBack} className="leaderboard-back">← Back</Button>
+            <h2>🏆 Leaderboard</h2>
 
             <select
                 className="leaderboard-category-select"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
             >
-                <option value="">Бүх цамхаг (нийт)</option>
+                <option value="">All towers (combined)</option>
                 {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
@@ -92,8 +92,8 @@ export default function Leaderboard({ user, onBack }) {
                 <input
                     type="text"
                     className="leaderboard-search"
-                    placeholder="🔍 Нэрээр хайх..."
-                    aria-label="Нэрээр хайх"
+                    placeholder="🔍 Search by name..."
+                    aria-label="Search by name"
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                 />
@@ -102,13 +102,13 @@ export default function Leaderboard({ user, onBack }) {
                     value={sortMode}
                     onChange={(e) => setSortMode(e.target.value)}
                 >
-                    <option value="rank">Эрэмбээр</option>
-                    <option value="name">Нэрээр (A-Я)</option>
+                    <option value="rank">By rank</option>
+                    <option value="name">By name (A-Z)</option>
                 </select>
             </div>
 
             <p className="leaderboard-sub">
-                {categoryId ? 'Тухайн цамхагт дийлсэн давхрын тоогоор' : 'Нийт дийлсэн давхрын тоогоор'}
+                {categoryId ? 'By floors cleared in this tower' : 'By total floors cleared'}
             </p>
 
             {showPodium && podiumOrder.length > 0 && (
@@ -123,9 +123,9 @@ export default function Leaderboard({ user, onBack }) {
                                 )}
                             </div>
                             <span className="podium-name">
-                                {row.display_name}{row.user_id === user?.id && ' (Та)'}
+                                {row.display_name}{row.user_id === user?.id && ' (You)'}
                             </span>
-                            <span className="podium-score">{row.total_floors_cleared} давхар</span>
+                            <span className="podium-score">{row.total_floors_cleared} floors</span>
                             <div className="podium-block">{MEDALS[row.rank - 1] || row.rank}</div>
                         </div>
                     ))}
@@ -134,17 +134,17 @@ export default function Leaderboard({ user, onBack }) {
 
             {myRow && (
                 <div className="leaderboard-my-stats">
-                    <span className="eyebrow-label">Миний үзүүлэлт</span>
-                    <p>Эрэмбэ #{myRow.rank} · {myRow.total_floors_cleared} давхар</p>
+                    <span className="eyebrow-label">My stats</span>
+                    <p>Rank #{myRow.rank} · {myRow.total_floors_cleared} floors</p>
                 </div>
             )}
 
             {loading ? (
-                <p style={{ textAlign: 'center' }}>Тэргүүлэгчдийг ачааллаж байна...</p>
+                <p style={{ textAlign: 'center' }}>Loading leaderboard...</p>
             ) : rows.length === 0 ? (
-                <p className="leaderboard-empty">Одоогоор хэн ч давхар дийлээгүй байна.</p>
+                <p className="leaderboard-empty">No one has cleared a floor yet.</p>
             ) : visibleRows.length === 0 ? (
-                <p className="leaderboard-empty">Хайлтад тохирох тоглогч алга.</p>
+                <p className="leaderboard-empty">No players match your search.</p>
             ) : (
                 <ol className="leaderboard-list">
                     {visibleRows.map(row => (
@@ -157,9 +157,9 @@ export default function Leaderboard({ user, onBack }) {
                             </span>
                             <span className="leaderboard-name">
                                 {row.display_name}
-                                {row.user_id === user?.id && <span className="leaderboard-you-tag"> (Та)</span>}
+                                {row.user_id === user?.id && <span className="leaderboard-you-tag"> (You)</span>}
                             </span>
-                            <span className="leaderboard-score">{row.total_floors_cleared} давхар</span>
+                            <span className="leaderboard-score">{row.total_floors_cleared} floors</span>
                         </li>
                     ))}
                 </ol>

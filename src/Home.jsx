@@ -14,9 +14,9 @@ const WEEKLY_GOAL = 7;
 
 // "Тэмдэглэгээ": цоо шинэ (0 дийлсэн) -> Шинэ, эзэмшигч -> Эзэн.
 function towerTag(cat, user, cleared) {
-    if (cat.is_global) return 'Үндсэн';
-    if (cleared === 0) return 'Шинэ';
-    if (user && cat.user_id === user.id) return 'Эзэн';
+    if (cat.is_global) return 'Main';
+    if (cleared === 0) return 'New';
+    if (user && cat.user_id === user.id) return 'Owner';
     return null;
 }
 
@@ -142,8 +142,8 @@ export default function Home({ user, isGuest, guestProgress, displayName, streak
         return inProgress || ready[0] || null;
     }, [categories, floorCounts, getCleared]);
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>;
-    if (loadError) return <ErrorState message="Мэдээллийг ачаалахад алдаа гарлаа." onRetry={fetchTowers} />;
+    if (loading) return <p style={{ textAlign: 'center' }}>Loading...</p>;
+    if (loadError) return <ErrorState message="Failed to load data." onRetry={fetchTowers} />;
 
     const maxWeekly = Math.max(1, ...weeklyWins.map(d => d.count));
     const totalWeekly = weeklyWins.reduce((s, d) => s + d.count, 0);
@@ -174,10 +174,10 @@ export default function Home({ user, isGuest, guestProgress, displayName, streak
                             <ProgressBar value={cleared} max={total} variant="accent" />
                             <span className="tower-card-pct">{Math.round((cleared / total) * 100)}%</span>
                         </div>
-                        <span className="tower-card-cta">{isDone ? 'Дахин тоглох →' : `Давхар ${cleared + 1} руу →`}</span>
+                        <span className="tower-card-cta">{isDone ? 'Play again →' : `To floor ${cleared + 1} →`}</span>
                     </>
                 ) : (
-                    <p className="tower-pending-note">Бэлдэгдэж байна…</p>
+                    <p className="tower-pending-note">Preparing…</p>
                 )}
             </Card>
         );
@@ -191,11 +191,11 @@ export default function Home({ user, isGuest, guestProgress, displayName, streak
     return (
         <div className="home-page">
             <div className="home-header">
-                <h1>Сайн байна уу, {isGuest ? 'Зочин' : (displayName || user?.email)}!</h1>
+                <h1>Welcome, {isGuest ? 'Guest' : (displayName || user?.email)}!</h1>
                 <p className="home-header-sub">
                     {totalWeekly > 0
-                        ? `Энэ 7 хоногт ${totalWeekly} давхар дийллээ${streak > 0 ? ` · ${streak} хоног дараалан идэвхтэй` : ''}.`
-                        : 'Цамхгаа сонгож дэвшил үзье!'}
+                        ? `You've cleared ${totalWeekly} floor${totalWeekly === 1 ? '' : 's'} this week${streak > 0 ? ` · ${streak}-day streak` : ''}.`
+                        : 'Pick a tower and start climbing!'}
                 </p>
             </div>
 
@@ -203,21 +203,21 @@ export default function Home({ user, isGuest, guestProgress, displayName, streak
                 <div className="home-top-left">
                     {continueCategory ? (
                         <Card className="home-continue-card">
-                            <span className="eyebrow-label">{continueIsDone ? 'Дахин тоглох' : 'Үргэлжлүүлэх'}</span>
+                            <span className="eyebrow-label">{continueIsDone ? 'Play again' : 'Continue'}</span>
                             <h2>{continueCategory.name}</h2>
                             <div className="tower-continue-row">
                                 {continueTotal > 0 ? (
                                     <ProgressBar value={continueCleared} max={continueTotal} variant="accent" label={<span>{continueCleared}/{continueTotal}</span>} />
-                                ) : <span className="tower-pending-note">Бэлдэгдэж байна…</span>}
+                                ) : <span className="tower-pending-note">Preparing…</span>}
                                 <Button onClick={() => onSelectTower(continueCategory.id, continueCategory.name)}>
-                                    {continueIsDone ? 'Дахин тоглох' : `Давхар ${continueNextFloor} руу`}
+                                    {continueIsDone ? 'Play again' : `To floor ${continueNextFloor}`}
                                 </Button>
                             </div>
                         </Card>
                     ) : (
                         <Card className="home-continue-card">
-                            <span className="eyebrow-label">Эхлэх</span>
-                            <p className="tower-pending-note">Одоогоор тоглох цамхаг алга. Доороос сонгоорой.</p>
+                            <span className="eyebrow-label">Get started</span>
+                            <p className="tower-pending-note">No towers available yet. Pick one below.</p>
                         </Card>
                     )}
                 </div>
@@ -226,10 +226,10 @@ export default function Home({ user, isGuest, guestProgress, displayName, streak
                     <div className="home-top-right">
                         <Card className="home-weekly-card">
                             <div className="home-weekly-head">
-                                <span className="eyebrow-label">7 хоногийн зорилго</span>
-                                {streak > 0 && <span className="home-streak-pill">🔥 {streak} хоног</span>}
+                                <span className="eyebrow-label">Weekly goal</span>
+                                {streak > 0 && <span className="home-streak-pill">🔥 {streak}-day streak</span>}
                             </div>
-                            <p className="weekly-goal-count">{totalWeekly} / {WEEKLY_GOAL} давхар</p>
+                            <p className="weekly-goal-count">{totalWeekly} / {WEEKLY_GOAL} floors</p>
                             <div className="weekly-chart">
                                 {weeklyWins.map(d => (
                                     <div key={d.date} className="weekly-bar" style={{ height: `${Math.max(6, (d.count / maxWeekly) * 100)}%` }} title={`${d.date}: ${d.count}`} />
@@ -237,18 +237,18 @@ export default function Home({ user, isGuest, guestProgress, displayName, streak
                             </div>
                             <p className="weekly-summary">
                                 {totalWeekly >= WEEKLY_GOAL
-                                    ? '🎉 Энэ 7 хоногийн зорилго биелсэн!'
-                                    : `Өнөөдөр ${WEEKLY_GOAL - totalWeekly} давхар дийлбэл зорилго биелнэ`}
+                                    ? '🎉 This week\'s goal is complete!'
+                                    : `Clear ${WEEKLY_GOAL - totalWeekly} more floor${WEEKLY_GOAL - totalWeekly === 1 ? '' : 's'} to hit your goal`}
                             </p>
                         </Card>
 
                         <Card className="home-leaderboard-card">
                             <div className="home-leaderboard-head">
-                                <span className="eyebrow-label">Тэргүүлэгчид</span>
-                                <button type="button" className="home-leaderboard-all" onClick={onOpenLeaderboard}>Бүгд →</button>
+                                <span className="eyebrow-label">Leaderboard</span>
+                                <button type="button" className="home-leaderboard-all" onClick={onOpenLeaderboard}>All →</button>
                             </div>
                             {topPlayers.length === 0 ? (
-                                <p className="tower-pending-note">Одоогоор хэн ч давхар дийлээгүй байна.</p>
+                                <p className="tower-pending-note">No one has cleared a floor yet.</p>
                             ) : (
                                 <ol className="home-leaderboard-list">
                                     {topPlayers.map(p => (
@@ -263,13 +263,13 @@ export default function Home({ user, isGuest, guestProgress, displayName, streak
 
                         {pendingChallenges.length > 0 && (
                             <div className="duel-invite-panel">
-                                <span className="eyebrow-label">Дуэлийн урилга</span>
+                                <span className="eyebrow-label">Duel invites</span>
                                 {pendingChallenges.map(c => (
                                     <div key={c.match_id} className="duel-invite-row">
                                         <span>{c.challenger_name} — {c.category_name}</span>
                                         <div className="duel-invite-actions">
-                                            <Button variant="success" onClick={() => handleAcceptChallenge(c)}>Тоглох</Button>
-                                            <Button variant="ghost" onClick={() => handleDeclineChallenge(c)}>Татгалзах</Button>
+                                            <Button variant="success" onClick={() => handleAcceptChallenge(c)}>Play</Button>
+                                            <Button variant="ghost" onClick={() => handleDeclineChallenge(c)}>Decline</Button>
                                         </div>
                                     </div>
                                 ))}
@@ -282,20 +282,20 @@ export default function Home({ user, isGuest, guestProgress, displayName, streak
             <div className="home-section-head">
                 <div>
                     <h2>World tower</h2>
-                    <p className="home-section-sub">Бүх хэрэглэгчид нээлттэй · Админ удирдана</p>
+                    <p className="home-section-sub">Open to everyone · Managed by Admin</p>
                 </div>
                 {categories.length > 3 && (
                     <input
                         type="text"
                         className="tower-search"
-                        placeholder="🔍 Цамхаг хайх..."
+                        placeholder="🔍 Search towers..."
                         value={towerSearch}
                         onChange={(e) => setTowerSearch(e.target.value)}
                     />
                 )}
             </div>
             <div className="tower-grid">
-                {worldTowers.length === 0 && <p className="tower-empty">Одоогоор World tower алга.</p>}
+                {worldTowers.length === 0 && <p className="tower-empty">No World towers yet.</p>}
                 {filterBySearch(worldTowers).map(renderTowerCard)}
             </div>
 
@@ -303,16 +303,16 @@ export default function Home({ user, isGuest, guestProgress, displayName, streak
                 <>
                     <div className="home-section-head">
                         <div>
-                            <h2>Миний цамхагууд</h2>
-                            <p className="home-section-sub">Private · зөвхөн танд харагдана</p>
+                            <h2>My Towers</h2>
+                            <p className="home-section-sub">Private · only visible to you</p>
                         </div>
                     </div>
                     <div className="tower-grid">
                         {filterBySearch(myTowers).map(renderTowerCard)}
                         <Card className="tower-card home-create-card" onClick={onCreateTower}>
                             <span className="home-create-icon">➕</span>
-                            <span>Шинэ цамхаг</span>
-                            <span className="tower-pending-note">Өөрийн асуулттаар цамхаг бүтээх</span>
+                            <span>New tower</span>
+                            <span className="tower-pending-note">Build a tower from your own questions</span>
                         </Card>
                     </div>
                 </>

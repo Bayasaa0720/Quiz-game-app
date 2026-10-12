@@ -6,7 +6,7 @@ import ErrorState from './components/ErrorState.jsx';
 import { useModal } from './components/modalContext.js';
 import './FriendsDuel.css';
 
-const RESULT_LABEL = { win: '🏆 Ялалт', lose: '💀 Ялагдал', tie: '🤝 Тэнцээ' };
+const RESULT_LABEL = { win: '🏆 Win', lose: '💀 Loss', tie: '🤝 Tie' };
 
 // Tower Climb App.html deck-ийн "Найзууд ба Duel" нэгтгэсэн дэлгэц — хуучин
 // Friends.jsx + DuelHistory.jsx-ийн орлуулга.
@@ -108,7 +108,7 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
             setSearchResults(data || []);
         } catch (err) {
             console.error('Search failed:', err);
-            await modal.alert('Хайхад алдаа гарлаа.');
+            await modal.alert('Search failed.');
         } finally {
             setSearching(false);
         }
@@ -121,7 +121,7 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
         });
         if (error) {
             console.error('Failed to send request:', error);
-            await modal.alert('Хүсэлт илгээхэд алдаа гарлаа (аль хэдийн илгээсэн байж магадгүй).');
+            await modal.alert('Failed to send request (may already have been sent).');
         } else {
             setSearchResults(r => r.filter(u => u.user_id !== targetUserId));
             await fetchFriendships();
@@ -140,7 +140,7 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
 
     const handleChallenge = async (friendUserId) => {
         if (!challengeCategoryId) {
-            await modal.alert('Эхлээд сэдэв сонгоно уу.');
+            await modal.alert('Select a topic first.');
             return;
         }
         setChallengingId(friendUserId);
@@ -150,15 +150,15 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
         });
         setChallengingId(null);
         if (error) {
-            await modal.alert(error.message || 'Урихад алдаа гарлаа.');
+            await modal.alert(error.message || 'Failed to send challenge.');
             return;
         }
         const category = categories.find(c => c.id === challengeCategoryId);
         onChallengeCreated?.(matchId, challengeCategoryId, category?.name || '');
     };
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Найзуудыг ачааллаж байна...</p>;
-    if (loadError) return <ErrorState message="Найзуудыг ачаалахад алдаа гарлаа." onRetry={fetchFriendships} />;
+    if (loading) return <p style={{ textAlign: 'center' }}>Loading friends...</p>;
+    if (loadError) return <ErrorState message="Failed to load friends." onRetry={fetchFriendships} />;
 
     const incoming = friendships.filter(f => f.status === 'pending' && f.addressee_id === user.id);
     const outgoing = friendships.filter(f => f.status === 'pending' && f.requester_id === user.id);
@@ -176,26 +176,26 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
 
     return (
         <Card className="friends-page">
-            <Button variant="ghost" onClick={onBack} className="friends-back">← Буцах</Button>
-            <h2>👥 Найзууд ба Duel</h2>
+            <Button variant="ghost" onClick={onBack} className="friends-back">← Back</Button>
+            <h2>👥 Friends & Duel</h2>
 
             <form className="friends-search" onSubmit={handleSearch}>
                 <input
                     type="text"
-                    placeholder="Имэйл эсвэл nickname-ээр хайх..."
+                    placeholder="Search by email or nickname..."
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                 />
-                <Button type="submit" disabled={searching}>{searching ? '...' : 'Хайх'}</Button>
+                <Button type="submit" disabled={searching}>{searching ? '...' : 'Search'}</Button>
             </form>
 
             {searchResults.length > 0 && (
                 <div className="friends-section">
-                    <h3>Хайлтын үр дүн</h3>
+                    <h3>Search results</h3>
                     {searchResults.map(r => (
                         <div key={r.user_id} className="friends-row">
                             <span>{r.display_name}</span>
-                            <Button variant="success" onClick={() => sendRequest(r.user_id)}>Хүсэлт илгээх</Button>
+                            <Button variant="success" onClick={() => sendRequest(r.user_id)}>Send request</Button>
                         </div>
                     ))}
                 </div>
@@ -203,13 +203,13 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
 
             {incoming.length > 0 && (
                 <div className="friends-section">
-                    <h3>Ирсэн хүсэлтүүд</h3>
+                    <h3>Incoming requests</h3>
                     {incoming.map(f => (
                         <div key={f.id} className="friends-row">
                             <span>{stats[f.requester_id]?.display_name || '...'}</span>
                             <div style={{ display: 'flex', gap: '6px' }}>
-                                <Button variant="success" onClick={() => acceptRequest(f.id)}>Зөвшөөрөх</Button>
-                                <Button variant="ghost" onClick={() => removeFriendship(f.id)}>Татгалзах</Button>
+                                <Button variant="success" onClick={() => acceptRequest(f.id)}>Accept</Button>
+                                <Button variant="ghost" onClick={() => removeFriendship(f.id)}>Decline</Button>
                             </div>
                         </div>
                     ))}
@@ -218,18 +218,18 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
 
             {outgoing.length > 0 && (
                 <div className="friends-section">
-                    <h3>Илгээсэн хүсэлтүүд</h3>
+                    <h3>Sent requests</h3>
                     {outgoing.map(f => (
                         <div key={f.id} className="friends-row">
                             <span>{stats[f.addressee_id]?.display_name || '...'}</span>
-                            <Button variant="ghost" onClick={() => removeFriendship(f.id)}>Цуцлах</Button>
+                            <Button variant="ghost" onClick={() => removeFriendship(f.id)}>Cancel</Button>
                         </div>
                     ))}
                 </div>
             )}
 
             <div className="friends-section">
-                <h3>Миний найзууд ({accepted.length})</h3>
+                <h3>My friends ({accepted.length})</h3>
                 {accepted.length > 0 && categories.length > 0 && (
                     <select
                         className="friends-challenge-category"
@@ -240,7 +240,7 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
                     </select>
                 )}
                 {accepted.length === 0 ? (
-                    <p className="friends-empty">Одоогоор найз алга. Дээрээс имэйлээр хайж нэмнэ үү.</p>
+                    <p className="friends-empty">No friends yet. Search by email above to add some.</p>
                 ) : (
                     accepted.map(f => {
                         const rec = duelRecordById[f.userId];
@@ -248,10 +248,10 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
                             <div key={f.friendshipId} className="friends-row">
                                 <div className="friends-row-main">
                                     <span>{f.display_name}</span>
-                                    <span className="friends-score">{f.total_floors_cleared || 0} давхар</span>
+                                    <span className="friends-score">{f.total_floors_cleared || 0} floors</span>
                                     {rec && (
                                         <span className="friends-duel-record">
-                                            ⚔️ {rec.wins}Я / {rec.losses}Я / {rec.ties}Т
+                                            ⚔️ {rec.wins}W / {rec.losses}L / {rec.ties}T
                                         </span>
                                     )}
                                 </div>
@@ -261,9 +261,9 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
                                         onClick={() => handleChallenge(f.user_id)}
                                         disabled={challengingId === f.user_id || !challengeCategoryId}
                                     >
-                                        ⚔️ Урих
+                                        ⚔️ Challenge
                                     </Button>
-                                    <Button variant="ghost" onClick={() => removeFriendship(f.friendshipId)}>Хасах</Button>
+                                    <Button variant="ghost" onClick={() => removeFriendship(f.friendshipId)}>Remove</Button>
                                 </div>
                             </div>
                         );
@@ -272,16 +272,16 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
             </div>
 
             <div className="friends-section">
-                <h3>Дуэлийн түүх</h3>
+                <h3>Duel history</h3>
                 {historyLoading ? (
-                    <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>
+                    <p style={{ textAlign: 'center' }}>Loading...</p>
                 ) : historyError ? (
-                    <ErrorState message="Дуэлийн түүхийг ачаалахад алдаа гарлаа." onRetry={fetchHistory} />
+                    <ErrorState message="Failed to load duel history." onRetry={fetchHistory} />
                 ) : history.length === 0 ? (
-                    <p className="friends-empty">Та хараахан дуэл хийгээгүй байна.</p>
+                    <p className="friends-empty">You haven't dueled yet.</p>
                 ) : (
                     <>
-                        <p className="duel-history-summary">{totalWins} ялалт · {totalLosses} ялагдал · {totalTies} тэнцээ</p>
+                        <p className="duel-history-summary">{totalWins} wins · {totalLosses} losses · {totalTies} ties</p>
                         <div className="duel-history-list">
                             {history.map(h => (
                                 <Card key={h.match_id} className={`duel-history-row duel-history-${h.result}`}>
@@ -289,7 +289,7 @@ export default function FriendsDuel({ user, onBack, onChallengeCreated }) {
                                     <span className="duel-history-category">{h.category_name}</span>
                                     <span className="duel-history-opponent">vs {h.opponent_name || '—'}</span>
                                     <span className="duel-history-score">{h.my_score} : {h.opponent_score}</span>
-                                    <span className="duel-history-date">{new Date(h.played_at).toLocaleDateString('mn-MN')}</span>
+                                    <span className="duel-history-date">{new Date(h.played_at).toLocaleDateString('en-US')}</span>
                                 </Card>
                             ))}
                         </div>

@@ -6,11 +6,11 @@
 // as before this existed.
 
 const COUNTRIES = [
-    'Орос', 'Украйн', 'Польш', 'Герман', 'Франц', 'Дани', 'Швед', 'Норвеги',
-    'Финлянд', 'Их Британи', 'Итали', 'Испани', 'Португал', 'Бразил',
-    'Америк', 'Канад', 'Австрали', 'Хятад', 'Япон', 'Өмнөд Солонгос',
-    'Казахстан', 'Литва', 'Латви', 'Эстони', 'Болгар', 'Румын', 'Чех',
-    'Словак', 'Нидерланд', 'Бельги',
+    'Russia', 'Ukraine', 'Poland', 'Germany', 'France', 'Denmark', 'Sweden', 'Norway',
+    'Finland', 'United Kingdom', 'Italy', 'Spain', 'Portugal', 'Brazil',
+    'United States', 'Canada', 'Australia', 'China', 'Japan', 'South Korea',
+    'Kazakhstan', 'Lithuania', 'Latvia', 'Estonia', 'Bulgaria', 'Romania', 'Czechia',
+    'Slovakia', 'Netherlands', 'Belgium',
 ];
 
 const TEAMS = [
@@ -32,9 +32,9 @@ const PLAYERS = [
 
 const SITES = ['A site', 'B site', 'Mid', 'Connector', 'T spawn', 'CT spawn'];
 
-const ANIMALS = ['Барс', 'Арслан', 'Чоно', 'Заан', 'Могой', 'Үнэг', 'Бар', 'Гахай', 'Бух', 'Царцаа'];
+const ANIMALS = ['Leopard', 'Lion', 'Wolf', 'Elephant', 'Snake', 'Fox', 'Tiger', 'Pig', 'Bull', 'Grasshopper'];
 
-const CIVILIZATIONS = ['Майя', 'Ацтек', 'Египет', 'Грек', 'Ром', 'Перс', 'Инк', 'Хятад'];
+const CIVILIZATIONS = ['Maya', 'Aztec', 'Egypt', 'Greece', 'Rome', 'Persia', 'Inca', 'China'];
 
 const STATIC_POOLS = {
     country: COUNTRIES,

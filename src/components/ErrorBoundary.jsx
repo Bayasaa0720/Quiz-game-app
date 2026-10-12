@@ -24,9 +24,9 @@ export class ErrorBoundary extends Component {
         if (this.state.hasError) {
             return (
                 <div className="error-boundary">
-                    <h2>😕 Ямар нэг зүйл буруу боллоо</h2>
-                    <p>Апп-д гэнэтийн алдаа гарлаа. Нүүр хуудас руу буцаж дахин оролдоно уу.</p>
-                    <Button onClick={this.handleReload}>Нүүр хуудас руу буцах</Button>
+                    <h2>😕 Something went wrong</h2>
+                    <p>An unexpected error occurred. Please go back to Home and try again.</p>
+                    <Button onClick={this.handleReload}>Back to Home</Button>
                 </div>
             );
         }

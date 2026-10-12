@@ -10,7 +10,7 @@ export function PlayerSidebar({ name, hp, maxHp, armor, armorMax, note, anim, ti
                 <div className="sidebar-character-frame">
                     <PlayerCharacter animKey={tick ?? 0} anim={anim ?? 'idle'} size={size} />
                 </div>
-                <p className="sidebar-name">{name || 'Тоглогч'}</p>
+                <p className="sidebar-name">{name || 'Player'}</p>
                 <ProgressBar
                     value={hp ?? 100}
                     max={maxHp ?? 100}
@@ -38,7 +38,7 @@ export function EnemySidebar({ name, hp, maxHp, note, anim, tick, variant, size 
                 <div className="sidebar-character-frame">
                     <EnemyCharacter animKey={tick ?? 0} anim={anim ?? 'idle'} variant={variant ?? 'orc'} size={size} />
                 </div>
-                <p className="sidebar-name">{name || 'Дайсан'}</p>
+                <p className="sidebar-name">{name || 'Enemy'}</p>
                 <ProgressBar
                     value={hp ?? 100}
                     max={maxHp ?? 100}

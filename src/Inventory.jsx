@@ -43,17 +43,17 @@ export default function Inventory({ user, onBack }) {
         setBusyId(null);
     };
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>;
-    if (loadError) return <ErrorState message="Инвентарыг ачаалахад алдаа гарлаа." onRetry={fetchInventory} />;
+    if (loading) return <p style={{ textAlign: 'center' }}>Loading...</p>;
+    if (loadError) return <ErrorState message="Failed to load inventory." onRetry={fetchInventory} />;
 
     return (
         <div className="inventory-page">
-            <Button variant="ghost" onClick={onBack} className="inventory-back">← Цамхаг сонгох руу</Button>
-            <h2>🎒 Инвентар</h2>
-            <p className="inventory-sub">Цамхагт орохоосоо өмнө нэг армор идэвхжүүлж болно.</p>
+            <Button variant="ghost" onClick={onBack} className="inventory-back">← Back to tower list</Button>
+            <h2>🎒 Inventory</h2>
+            <p className="inventory-sub">You can equip one piece of armor before entering a tower.</p>
 
             {items.length === 0 ? (
-                <p className="inventory-empty">Танд одоогоор эдлэл алга. Дэлгүүрээс худалдаж аваарай.</p>
+                <p className="inventory-empty">You don't have any items yet. Buy some from the Shop.</p>
             ) : (
                 <div className="inventory-grid">
                     {items.map(({ item_id, shop_items: item }) => (
@@ -67,7 +67,7 @@ export default function Inventory({ user, onBack }) {
                                 onClick={() => handleToggleEquip(item_id)}
                                 disabled={busyId === item_id}
                             >
-                                {equippedId === item_id ? '✓ Идэвхтэй' : 'Идэвхжүүлэх'}
+                                {equippedId === item_id ? '✓ Equipped' : 'Equip'}
                             </Button>
                         </Card>
                     ))}

@@ -115,7 +115,7 @@ export default function QuizCreator({ user, onDone }) {
             }
 
             if (!catId) {
-                await modal.alert('Ангилал сонгох эсвэл шинээр үүсгэнэ үү.');
+                await modal.alert('Select a category or create a new one.');
                 setLoading(false);
                 return;
             }
@@ -133,11 +133,11 @@ export default function QuizCreator({ user, onDone }) {
             });
             if (insertQErr) throw insertQErr;
 
-            await modal.alert('Амжилттай хадгалагдлаа!');
+            await modal.alert('Saved successfully!');
             onDone();
         } catch (error) {
             console.error("Database Error:", error);
-            await modal.alert('Хадгалахад алдаа гарлаа: ' + error.message);
+            await modal.alert('Failed to save: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -145,17 +145,17 @@ export default function QuizCreator({ user, onDone }) {
 
     return (
         <Card className="creator-page">
-            <Button variant="ghost" onClick={onDone} className="creator-back">← Lobby руу буцах</Button>
-            <h2>Шинэ асуулт</h2>
+            <Button variant="ghost" onClick={onDone} className="creator-back">← Back to Lobby</Button>
+            <h2>New question</h2>
             <form onSubmit={handleSave}>
 
                 <div className="form-field">
-                    <label>Ангилал:</label>
+                    <label>Category:</label>
                     <select
                         value={selectedCategoryId}
                         onChange={(e) => setSelectedCategoryId(e.target.value)}
                     >
-                        <option value="">-- Шинээр үүсгэх --</option>
+                        <option value="">-- Create new --</option>
                         {categories.map(cat => (
                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
@@ -165,7 +165,7 @@ export default function QuizCreator({ user, onDone }) {
                         <input
                             type="text"
                             className="new-category-input"
-                            placeholder="Шинэ ангиллын нэр"
+                            placeholder="New category name"
                             value={newCategoryName}
                             onChange={(e) => setNewCategoryName(e.target.value)}
                         />
@@ -174,34 +174,34 @@ export default function QuizCreator({ user, onDone }) {
 
                 <div className="form-field-box">
                     <div className="field-row">
-                        <label>Асуулт:</label>
-                        <label><input type="checkbox" checked={isQueImg} onChange={() => { setIsQueImg(!isQueImg); setQuestionContent(''); }} /> <span>Зурган URL ашиглах</span></label>
+                        <label>Question:</label>
+                        <label><input type="checkbox" checked={isQueImg} onChange={() => { setIsQueImg(!isQueImg); setQuestionContent(''); }} /> <span>Use image URL</span></label>
                     </div>
                     <textarea
                         value={questionContent}
                         onChange={(e) => setQuestionContent(e.target.value)}
                         required
-                        placeholder={isQueImg ? "Зургийн линк оруулна уу..." : "Асуултаа бичнэ үү..."}
+                        placeholder={isQueImg ? "Enter the image link..." : "Write your question..."}
                     />
                 </div>
 
                 <div className="form-field-box">
                     <div className="field-row">
-                        <label>Зөв хариулт:</label>
-                        <label><input type="checkbox" checked={isAnsImg} onChange={() => { setIsAnsImg(!isAnsImg); setAnswerContent(''); setAnswerType(''); }} /> <span>Зурган URL ашиглах</span></label>
+                        <label>Correct answer:</label>
+                        <label><input type="checkbox" checked={isAnsImg} onChange={() => { setIsAnsImg(!isAnsImg); setAnswerContent(''); setAnswerType(''); }} /> <span>Use image URL</span></label>
                     </div>
                     <input
                         type="text"
                         value={answerContent}
                         onChange={(e) => setAnswerContent(e.target.value)}
                         required
-                        placeholder={isAnsImg ? "Зургийн линк оруулна уу..." : "Хариултаа бичнэ үү..."}
+                        placeholder={isAnsImg ? "Enter the image link..." : "Write the answer..."}
                     />
                     <input
                         type="text"
                         list="answer-type-options"
                         className="new-category-input"
-                        placeholder="Хариултын төрөл (жиш: country, player, site, count...)"
+                        placeholder="Answer type (e.g. country, player, site, count...)"
                         value={answerType}
                         onChange={(e) => setAnswerType(e.target.value)}
                     />
@@ -210,26 +210,26 @@ export default function QuizCreator({ user, onDone }) {
                     </datalist>
                     {typeCount !== null && (
                         <p className="field-hint answer-type-counter">
-                            Энэ ангилалд "{answerType.trim()}" төрлийн {typeCount} асуулт байна{typeCount < 3 ? ' — decoy сонголт цөөн гарч магадгүй' : ''}.
+                            This category has {typeCount} question{typeCount === 1 ? '' : 's'} of type "{answerType.trim()}"{typeCount < 3 ? ' — decoy options may be thin' : ''}.
                         </p>
                     )}
-                    <p className="field-hint">Ижил төрлийн буруу хариултууд л сонголт болж холилдоно — ялгаатай сэдэвтэй асуултуудыг холихгүйн тулд төрлөө зөв бичээрэй.</p>
+                    <p className="field-hint">Only wrong answers of the same type get mixed in as options — enter the type carefully so unrelated questions don't get mixed together.</p>
                 </div>
 
                 <div className="form-field">
-                    <label>Хэцүү зэрэг:</label>
+                    <label>Difficulty:</label>
                     <select
                         value={difficulty}
                         onChange={(e) => setDifficulty(e.target.value)}
                     >
-                        <option value="easy">Хялбар</option>
-                        <option value="normal">Дунд</option>
-                        <option value="hard">Хэцүү</option>
+                        <option value="easy">Easy</option>
+                        <option value="normal">Medium</option>
+                        <option value="hard">Hard</option>
                     </select>
                 </div>
 
                 <Button type="submit" variant="success" disabled={loading} fullWidth>
-                    {loading ? 'Хадгалж байна...' : 'Асуулт хадгалах'}
+                    {loading ? 'Saving...' : 'Save question'}
                 </Button>
             </form>
         </Card>

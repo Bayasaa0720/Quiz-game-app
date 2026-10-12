@@ -37,7 +37,7 @@ export default function Shop({ user, onBack }) {
         const { data: newBalance, error } = await supabase.rpc('claim_daily_quest', { p_quest_id: quest.quest_id });
         setClaimingId(null);
         if (error) {
-            await modal.alert(error.message || 'Даалгавар авахад алдаа гарлаа.');
+            await modal.alert(error.message || 'Failed to claim the quest.');
             return;
         }
         setBalance(Number(newBalance) || 0);
@@ -75,28 +75,28 @@ export default function Shop({ user, onBack }) {
         const { data: newBalance, error } = await supabase.rpc('shop_purchase_item', { p_item_id: item.id });
         setBuyingId(null);
         if (error) {
-            await modal.alert(error.message || 'Худалдаж авахад алдаа гарлаа.');
+            await modal.alert(error.message || 'Purchase failed.');
             return;
         }
         setBalance(Number(newBalance) || 0);
         setOwnedIds(s => new Set([...s, item.id]));
-        showToast({ icon: item.icon || '🛡️', title: `${item.name} худалдаж авлаа`, message: 'Идэвхжүүлэхийн тулд 🎒 Инвентар руу орно уу' });
+        showToast({ icon: item.icon || '🛡️', title: `Bought ${item.name}`, message: 'Go to 🎒 Inventory to equip it' });
     };
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>;
-    if (loadError) return <ErrorState message="Дэлгүүрийг ачаалахад алдаа гарлаа." onRetry={fetchShop} />;
+    if (loading) return <p style={{ textAlign: 'center' }}>Loading...</p>;
+    if (loadError) return <ErrorState message="Failed to load the shop." onRetry={fetchShop} />;
 
     return (
         <div className="shop-page">
-            <Button variant="ghost" onClick={onBack} className="shop-back">← Цамхаг сонгох руу</Button>
+            <Button variant="ghost" onClick={onBack} className="shop-back">← Back to tower list</Button>
             <div className="shop-header">
-                <h2>🛒 Дэлгүүр</h2>
+                <h2>🛒 Shop</h2>
                 <span className="shop-balance">🪙 {formatCoin(balance)} coin</span>
             </div>
 
-            <h3 className="shop-section-title">🎯 Өдрийн даалгавар</h3>
+            <h3 className="shop-section-title">🎯 Daily quests</h3>
             {questsLoading ? (
-                <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>
+                <p style={{ textAlign: 'center' }}>Loading...</p>
             ) : (
                 <div className="quest-grid">
                     {quests.map(q => {
@@ -116,7 +116,7 @@ export default function Shop({ user, onBack }) {
                                     onClick={() => handleClaimQuest(q)}
                                     disabled={q.claimed || !done || claimingId === q.quest_id}
                                 >
-                                    {q.claimed ? '✓ Авсан' : done ? 'Шагнал авах' : 'Биелээгүй'}
+                                    {q.claimed ? '✓ Claimed' : done ? 'Claim reward' : 'Not done yet'}
                                 </Button>
                             </Card>
                         );
@@ -124,9 +124,9 @@ export default function Shop({ user, onBack }) {
                 </div>
             )}
 
-            <h3 className="shop-section-title">Эдлэлүүд</h3>
+            <h3 className="shop-section-title">Items</h3>
             {items.length === 0 ? (
-                <p className="shop-empty">Дэлгүүрт эдлэл алга байна.</p>
+                <p className="shop-empty">No items in the shop.</p>
             ) : (
                 <div className="shop-grid">
                     {items.map(item => {
@@ -144,7 +144,7 @@ export default function Shop({ user, onBack }) {
                                     onClick={() => handleBuy(item)}
                                     disabled={owned || !canAfford || buyingId === item.id}
                                 >
-                                    {owned ? '✓ Эзэмшсэн' : canAfford ? 'Худалдаж авах' : 'Coin хүрэхгүй'}
+                                    {owned ? '✓ Owned' : canAfford ? 'Buy' : 'Not enough coins'}
                                 </Button>
                             </Card>
                         );

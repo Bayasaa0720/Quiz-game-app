@@ -6,7 +6,7 @@ import { useModal } from './components/modalContext.js';
 import { SUPPORTED_ANSWER_TYPES } from './lib/decoyGenerators.js';
 import './QuestionManager.css';
 
-const DIFFICULTY_LABELS = { easy: 'Хялбар', normal: 'Дунд', hard: 'Хэцүү' };
+const DIFFICULTY_LABELS = { easy: 'Easy', normal: 'Medium', hard: 'Hard' };
 
 export default function QuestionManager({ user, categoryId, onDone }) {
     const [questions, setQuestions] = useState([]);
@@ -95,7 +95,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
     };
 
     const handleRenameCategory = async () => {
-        const newName = await modal.prompt('Шинэ ангиллын нэрийг оруулна уу:', categoryName, { title: 'Ангилал нэрлэх' });
+        const newName = await modal.prompt('Enter the new category name:', categoryName, { title: 'Rename category' });
         if (newName && newName !== categoryName) {
             const { error } = await supabase
                 .from('categories')
@@ -103,7 +103,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                 .eq('id', categoryId)
                 .eq('user_id', user.id);
             if (error) {
-                await modal.alert('Энэ нэр аль хэдийн ашиглагдсан байна.');
+                await modal.alert('This name is already in use.');
             } else {
                 setCategoryName(newName);
             }
@@ -112,8 +112,8 @@ export default function QuestionManager({ user, categoryId, onDone }) {
 
     const handleRequestPublic = async () => {
         const confirmed = await modal.confirm(
-            `«${categoryName}» цамхгийг нийтэд нээхийг хүсэх үү? Admin зөвшөөрсний дараа бүх хэрэглэгчид харагдана.`,
-            { title: 'Нийтэд нээхийг хүсэх' }
+            `Request "${categoryName}" to become a public tower? Once approved by an admin, all users will see it.`,
+            { title: 'Request public tower' }
         );
         if (!confirmed) return;
         const { error } = await supabase
@@ -123,15 +123,15 @@ export default function QuestionManager({ user, categoryId, onDone }) {
             .eq('user_id', user.id);
         if (error) {
             console.error('Failed to request public:', error);
-            await modal.alert('Хүсэлт илгээхэд алдаа гарлаа.');
+            await modal.alert('Failed to send the request.');
         } else {
             setCategoryMeta(m => ({ ...m, is_public_requested: true }));
-            await modal.alert('Хүсэлт илгээгдлээ. Admin шалгаад зөвшөөрнө.');
+            await modal.alert('Request sent. An admin will review it.');
         }
     };
 
     const handleDeleteCategory = async () => {
-        const confirmed = await modal.confirm(`«${categoryName}» ангилал болон түүний бүх асуултыг устгах уу?`, { title: 'Ангилал устгах' });
+        const confirmed = await modal.confirm(`Delete "${categoryName}" and all of its questions?`, { title: 'Delete category' });
         if (confirmed) {
             try {
                 const { error: delQErr } = await supabase.from('quiz_items').delete().eq('category_id', categoryId);
@@ -141,7 +141,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                 onDone();
             } catch (err) {
                 console.error("Delete failed:", err);
-                await modal.alert('Устгахад алдаа гарлаа.');
+                await modal.alert('Failed to delete.');
             }
         }
     };
@@ -161,7 +161,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
 
     const saveEdit = async (id) => {
         if (!editForm.text.trim() || !editForm.ans.trim()) {
-            await modal.alert('Асуулт болон хариулт хоосон байж болохгүй.');
+            await modal.alert('Question and answer cannot be empty.');
             return;
         }
         const { error } = await supabase
@@ -177,7 +177,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
             .eq('id', id)
             .eq('user_id', user.id);
         if (error) {
-            await modal.alert('Хадгалахад алдаа гарлаа.');
+            await modal.alert('Failed to save.');
         } else {
             setEditingQuestionId(null);
             fetchData();
@@ -185,14 +185,14 @@ export default function QuestionManager({ user, categoryId, onDone }) {
     };
 
     const handleDeleteQuestion = async (id) => {
-        const confirmed = await modal.confirm('Энэ асуултыг устгах уу?', { title: 'Асуулт устгах' });
+        const confirmed = await modal.confirm('Delete this question?', { title: 'Delete question' });
         if (confirmed) {
             await supabase.from('quiz_items').delete().eq('id', id).eq('user_id', user.id);
             fetchData();
         }
     };
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>;
+    if (loading) return <p style={{ textAlign: 'center' }}>Loading...</p>;
 
     const filteredQuestions = questions.filter(q => {
         const matchesDifficulty = difficultyFilter === 'all' || (q.difficulty || 'normal') === difficultyFilter;
@@ -206,17 +206,17 @@ export default function QuestionManager({ user, categoryId, onDone }) {
             <div className="manager-header">
                 <h2>{categoryName}</h2>
                 <div className="manager-header-actions">
-                    <Button onClick={handleRenameCategory}>Нэр солих</Button>
+                    <Button onClick={handleRenameCategory}>Rename</Button>
                     {!categoryMeta.is_global && (
                         <Button
                             variant="ghost"
                             onClick={handleRequestPublic}
                             disabled={categoryMeta.is_public_requested}
                         >
-                            {categoryMeta.is_public_requested ? 'Хүсэлт илгээгдсэн' : 'Нийтэд нээхийг хүсэх'}
+                            {categoryMeta.is_public_requested ? 'Request sent' : 'Request public'}
                         </Button>
                     )}
-                    <Button variant="danger" onClick={handleDeleteCategory}>Ангилал устгах</Button>
+                    <Button variant="danger" onClick={handleDeleteCategory}>Delete category</Button>
                 </div>
             </div>
 
@@ -224,20 +224,20 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                 <input
                     className="manager-search"
                     type="text"
-                    placeholder="Асуулт/хариултаар хайх..."
+                    placeholder="Search by question/answer..."
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                 />
                 <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)}>
-                    <option value="all">Бүх түвшин</option>
-                    <option value="easy">Хялбар</option>
-                    <option value="normal">Дунд</option>
-                    <option value="hard">Хэцүү</option>
+                    <option value="all">All difficulties</option>
+                    <option value="easy">Easy</option>
+                    <option value="normal">Medium</option>
+                    <option value="hard">Hard</option>
                 </select>
             </div>
 
             {filteredQuestions.length === 0 && (
-                <p className="manager-empty">Тохирох асуулт олдсонгүй.</p>
+                <p className="manager-empty">No matching questions found.</p>
             )}
 
             <div>
@@ -245,14 +245,14 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                     <div key={q.id} className="question-item">
                         {editingQuestionId === q.id ? (
                             <div>
-                                <label><input type="checkbox" checked={editForm.isQueImg} onChange={(e) => setEditForm({ ...editForm, isQueImg: e.target.checked })} /> Асуулт зурган URL</label>
+                                <label><input type="checkbox" checked={editForm.isQueImg} onChange={(e) => setEditForm({ ...editForm, isQueImg: e.target.checked })} /> Question image URL</label>
                                 <textarea
                                     className="question-edit-field"
                                     value={editForm.text}
                                     onChange={(e) => setEditForm({ ...editForm, text: e.target.value })}
                                 />
 
-                                <label><input type="checkbox" checked={editForm.isAnsImg} onChange={(e) => setEditForm({ ...editForm, isAnsImg: e.target.checked })} /> Хариулт зурган URL</label>
+                                <label><input type="checkbox" checked={editForm.isAnsImg} onChange={(e) => setEditForm({ ...editForm, isAnsImg: e.target.checked })} /> Answer image URL</label>
                                 <input
                                     className="question-edit-field"
                                     value={editForm.ans}
@@ -262,7 +262,7 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                                     type="text"
                                     list="answer-type-options"
                                     className="question-edit-field"
-                                    placeholder="Хариултын төрөл (жиш: country, player, site, count...)"
+                                    placeholder="Answer type (e.g. country, player, site, count...)"
                                     value={editForm.answerType}
                                     onChange={(e) => setEditForm({ ...editForm, answerType: e.target.value })}
                                 />
@@ -271,48 +271,48 @@ export default function QuestionManager({ user, categoryId, onDone }) {
                                 </datalist>
                                 {typeCount !== null && (
                                     <p className="field-hint answer-type-counter">
-                                        Энэ ангилалд "{editForm.answerType.trim()}" төрлийн {typeCount} өөр асуулт байна{typeCount < 3 ? ' — decoy сонголт цөөн гарч магадгүй' : ''}.
+                                        This category has {typeCount} other question{typeCount === 1 ? '' : 's'} of type "{editForm.answerType.trim()}"{typeCount < 3 ? ' — decoy options may be thin' : ''}.
                                     </p>
                                 )}
 
-                                <label>Хэцүү зэрэг:</label>
+                                <label>Difficulty:</label>
                                 <select
                                     className="question-edit-field"
                                     value={editForm.difficulty}
                                     onChange={(e) => setEditForm({ ...editForm, difficulty: e.target.value })}
                                 >
-                                    <option value="easy">Хялбар</option>
-                                    <option value="normal">Дунд</option>
-                                    <option value="hard">Хэцүү</option>
+                                    <option value="easy">Easy</option>
+                                    <option value="normal">Medium</option>
+                                    <option value="hard">Hard</option>
                                 </select>
 
                                 <div className="question-edit-actions">
-                                    <Button variant="success" onClick={() => saveEdit(q.id)}>Хадгалах</Button>
-                                    <Button variant="ghost" onClick={() => setEditingQuestionId(null)}>Цуцлах</Button>
+                                    <Button variant="success" onClick={() => saveEdit(q.id)}>Save</Button>
+                                    <Button variant="ghost" onClick={() => setEditingQuestionId(null)}>Cancel</Button>
                                 </div>
                             </div>
                         ) : (
                             <div className="question-item-view">
                                 <div>
-                                    <p><strong>А:</strong> {q.question_image_url ? "[Зурган асуулт]" : q.quiz_question}</p>
-                                    <p><strong>Х:</strong> {q.answer_image_url ? "[Зурган хариулт]" : q.correct_answer}</p>
+                                    <p><strong>Q:</strong> {q.question_image_url ? "[Image question]" : q.quiz_question}</p>
+                                    <p><strong>A:</strong> {q.answer_image_url ? "[Image answer]" : q.correct_answer}</p>
                                     <span className={`difficulty-badge difficulty-${q.difficulty || 'normal'}`}>
-                                        {DIFFICULTY_LABELS[q.difficulty] || 'Дунд'}
+                                        {DIFFICULTY_LABELS[q.difficulty] || 'Medium'}
                                     </span>
                                     {q.answer_type && (
                                         <span className="difficulty-badge">{q.answer_type}</span>
                                     )}
                                 </div>
                                 <div className="question-item-actions">
-                                    <Button variant="ghost" onClick={() => startEdit(q)}>Засах</Button>
-                                    <Button variant="danger" onClick={() => handleDeleteQuestion(q.id)}>Устгах</Button>
+                                    <Button variant="ghost" onClick={() => startEdit(q)}>Edit</Button>
+                                    <Button variant="danger" onClick={() => handleDeleteQuestion(q.id)}>Delete</Button>
                                 </div>
                             </div>
                         )}
                     </div>
                 ))}
             </div>
-            <Button variant="ghost" onClick={onDone} className="manager-footer">← Lobby руу буцах</Button>
+            <Button variant="ghost" onClick={onDone} className="manager-footer">← Back to Lobby</Button>
         </Card>
     );
 }

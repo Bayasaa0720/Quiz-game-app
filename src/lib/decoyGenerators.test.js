@@ -7,14 +7,14 @@ describe('generateRuleBasedDecoys', () => {
     });
 
     it('returns [] when answerType or correctAnswer is missing', () => {
-        expect(generateRuleBasedDecoys(null, 'Египет', 3)).toEqual([]);
+        expect(generateRuleBasedDecoys(null, 'Egypt', 3)).toEqual([]);
         expect(generateRuleBasedDecoys('country', '', 3)).toEqual([]);
     });
 
     it('picks decoys from the static pool, excluding the correct answer', () => {
-        const decoys = generateRuleBasedDecoys('country', 'Орос', 5);
+        const decoys = generateRuleBasedDecoys('country', 'Russia', 5);
         expect(decoys.length).toBeGreaterThan(0);
-        expect(decoys).not.toContain('Орос');
+        expect(decoys).not.toContain('Russia');
         expect(new Set(decoys).size).toBe(decoys.length); // no duplicates
     });
 

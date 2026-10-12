@@ -101,7 +101,7 @@ begin
   from (select id from quiz_items where category_id = p_category_id order by random() limit 5) q;
 
   if v_question_ids is null or array_length(v_question_ids, 1) < 3 then
-    raise exception 'Энэ сэдэвт хангалттай асуулт алга (доод тал нь 3 хэрэгтэй)';
+    raise exception 'Not enough questions in this topic (at least 3 required)';
   end if;
 
   insert into duels (category_id, player1_id, status, question_ids)
@@ -171,7 +171,7 @@ begin
   for update;
 
   if v_is_p1 is null or (not v_is_p1 and auth.uid() <> v_p2) then
-    raise exception 'Тоглогч биш эсвэл идэвхгүй тоглолт';
+    raise exception 'Not a player in this match, or the match is not active';
   end if;
 
   v_question_id := v_question_ids[v_cur_idx + 1];
@@ -253,13 +253,13 @@ begin
   for update;
 
   if v_is_p1 is null then
-    raise exception 'Тоглогч биш эсвэл идэвхгүй тоглолт';
+    raise exception 'Not a player in this match, or the match is not active';
   end if;
   if not v_my_answered or v_opp_answered then
-    raise exception 'Timeout нөхцөл хараахан биелээгүй байна';
+    raise exception 'Timeout conditions not met yet';
   end if;
   if now() - v_round_started < interval '60 seconds' then
-    raise exception 'Хараахан 60 секунд болоогүй байна';
+    raise exception '60 seconds have not passed yet';
   end if;
 
   update duels set status = 'finished', winner_id = auth.uid(), updated_at = now()
@@ -291,7 +291,7 @@ begin
       and ((requester_id = auth.uid() and addressee_id = p_friend_id)
         or (requester_id = p_friend_id and addressee_id = auth.uid()))
   ) then
-    raise exception 'Та энэ хэрэглэгчтэй найз биш байна';
+    raise exception 'You are not friends with this user';
   end if;
 
   delete from duels where player1_id = auth.uid() and status = 'waiting';
@@ -300,7 +300,7 @@ begin
   from (select id from quiz_items where category_id = p_category_id order by random() limit 5) q;
 
   if v_question_ids is null or array_length(v_question_ids, 1) < 3 then
-    raise exception 'Энэ сэдэвт хангалттай асуулт алга (доод тал нь 3 хэрэгтэй)';
+    raise exception 'Not enough questions in this topic (at least 3 required)';
   end if;
 
   insert into duels (category_id, player1_id, player2_id, status, question_ids, is_direct_challenge)
@@ -346,7 +346,7 @@ begin
   where id = p_match_id and player2_id = auth.uid() and status = 'waiting' and is_direct_challenge = true;
 
   if not found then
-    raise exception 'Урилга олдсонгүй эсвэл аль хэдийн хугацаа өнгөрсөн';
+    raise exception 'Invite not found or already expired';
   end if;
 end;
 $$;

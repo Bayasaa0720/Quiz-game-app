@@ -26,12 +26,12 @@ describe('rowsFromParsed', () => {
         ]);
         expect(rows[0].errors).toEqual([]);
         expect(rows[0].difficulty).toBe('easy');
-        expect(rows[1].errors).toContain('Асуулт хоосон байна');
+        expect(rows[1].errors).toContain('Question is empty');
     });
 
     it('flags an unrecognized difficulty value', () => {
         const rows = rowsFromParsed([{ 'Асуулт': 'Q', 'Хариулт': 'A', 'Түвшин': 'super hard' }]);
-        expect(rows[0].errors.some(e => e.includes('танигдсангүй'))).toBe(true);
+        expect(rows[0].errors.some(e => e.includes('not recognized'))).toBe(true);
     });
 
     it('accepts English headers too', () => {

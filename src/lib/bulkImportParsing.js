@@ -37,9 +37,9 @@ export function rowsFromParsed(records) {
         const difficulty = normalizeDifficulty(difficultyRaw);
 
         const errors = [];
-        if (!question) errors.push('Асуулт хоосон байна');
-        if (!answer) errors.push('Хариулт хоосон байна');
-        if (difficulty === null) errors.push(`Түвшин "${difficultyRaw}" танигдсангүй (easy/normal/hard)`);
+        if (!question) errors.push('Question is empty');
+        if (!answer) errors.push('Answer is empty');
+        if (difficulty === null) errors.push(`Difficulty "${difficultyRaw}" not recognized (easy/normal/hard)`);
 
         return {
             rowNum: i + 2, // header = мөр 1

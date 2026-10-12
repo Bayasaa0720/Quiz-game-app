@@ -86,7 +86,7 @@ declare
 begin
   select id, name into v_classroom_id, v_name from classrooms where invite_code = p_invite_code;
   if v_classroom_id is null then
-    raise exception 'Буруу код байна';
+    raise exception 'Invalid code';
   end if;
 
   insert into classroom_members (classroom_id, student_user_id)
@@ -109,7 +109,7 @@ set search_path = public
 as $$
 begin
   if not exists (select 1 from classrooms c where c.id = p_classroom_id and c.teacher_user_id = auth.uid()) then
-    raise exception 'Зөвхөн энэ ангийн багш эрхтэй';
+    raise exception 'Only this class''s teacher has permission';
   end if;
   delete from classroom_members where classroom_id = p_classroom_id and student_user_id = p_student_user_id;
 end;
@@ -158,7 +158,7 @@ stable
 as $$
 begin
   if not exists (select 1 from classrooms c where c.id = p_classroom_id and c.teacher_user_id = auth.uid()) then
-    raise exception 'Зөвхөн энэ ангийн багш харах эрхтэй';
+    raise exception 'Only this class''s teacher can view this';
   end if;
 
   return query
@@ -198,13 +198,13 @@ stable
 as $$
 begin
   if not exists (select 1 from classrooms c where c.id = p_classroom_id and c.teacher_user_id = auth.uid()) then
-    raise exception 'Зөвхөн энэ ангийн багш харах эрхтэй';
+    raise exception 'Only this class''s teacher can view this';
   end if;
   if not exists (
     select 1 from classroom_members cm
     where cm.classroom_id = p_classroom_id and cm.student_user_id = p_student_user_id
   ) then
-    raise exception 'Тухайн сурагч энэ ангид алга';
+    raise exception 'That student is not in this class';
   end if;
 
   return query
@@ -235,13 +235,13 @@ stable
 as $$
 begin
   if not exists (select 1 from classrooms c where c.id = p_classroom_id and c.teacher_user_id = auth.uid()) then
-    raise exception 'Зөвхөн энэ ангийн багш харах эрхтэй';
+    raise exception 'Only this class''s teacher can view this';
   end if;
   if not exists (
     select 1 from classroom_members cm
     where cm.classroom_id = p_classroom_id and cm.student_user_id = p_student_user_id
   ) then
-    raise exception 'Тухайн сурагч энэ ангид алга';
+    raise exception 'That student is not in this class';
   end if;
 
   return query

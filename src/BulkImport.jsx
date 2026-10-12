@@ -8,9 +8,9 @@ import { useModal } from './components/modalContext.js';
 import { rowsFromParsed } from './lib/bulkImportParsing.js';
 import './BulkImport.css';
 
-const TEMPLATE_CSV = 'Асуулт,Хариулт,Төрөл (заавал биш),Түвшин (заавал биш)\n' +
-    'Монгол улсын нийслэл хот аль вэ?,Улаанбаатар,city,easy\n' +
-    'CS2-т хэдэн bomb site байдаг вэ?,2,count,normal\n';
+const TEMPLATE_CSV = 'Question,Answer,Type (optional),Difficulty (optional)\n' +
+    'What is the capital of Mongolia?,Ulaanbaatar,city,easy\n' +
+    'How many bomb sites are there in CS2?,2,count,normal\n';
 
 const IMPORT_CHUNK_SIZE = 200;
 const PREVIEW_ROW_CAP = 500;
@@ -64,7 +64,7 @@ export default function BulkImport({ user, categoryId, onDone }) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'asuult_zagvar.csv';
+        a.download = 'question_template.csv';
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -96,15 +96,15 @@ export default function BulkImport({ user, categoryId, onDone }) {
             for (let i = 0; i < payload.length; i += IMPORT_CHUNK_SIZE) {
                 const chunk = payload.slice(i, i + IMPORT_CHUNK_SIZE);
                 const { error } = await supabase.from('quiz_items').insert(chunk);
-                if (error) throw new Error(`${inserted}-ээс хойш зогслоо: ${error.message}`);
+                if (error) throw new Error(`Stopped after ${inserted}: ${error.message}`);
                 inserted += chunk.length;
                 setImportProgress(inserted);
             }
-            await modal.alert(`${inserted} асуулт амжилттай нэмэгдлээ. Тоглогдох давхарт орохын тулд Admin "Давхар шинэчлэх" хийх шаардлагатайг сануулъя.`);
+            await modal.alert(`${inserted} question(s) added successfully. Remember an Admin needs to "Regenerate floors" for them to appear in playable floors.`);
             onDone();
         } catch (err) {
             console.error('Bulk import failed:', err);
-            await modal.alert('Импорт хийхэд алдаа гарлаа: ' + err.message);
+            await modal.alert('Import failed: ' + err.message);
         } finally {
             setImporting(false);
         }
@@ -112,17 +112,17 @@ export default function BulkImport({ user, categoryId, onDone }) {
 
     return (
         <Card className="bulk-import-page">
-            <Button variant="ghost" onClick={onDone} className="bulk-import-back">← Lobby руу буцах</Button>
-            <h2>Олноор асуулт оруулах</h2>
-            <p className="bulk-import-target">Ангилал: <strong>{categoryName}</strong></p>
+            <Button variant="ghost" onClick={onDone} className="bulk-import-back">← Back to Lobby</Button>
+            <h2>Bulk import questions</h2>
+            <p className="bulk-import-target">Category: <strong>{categoryName}</strong></p>
 
             <div className="bulk-import-step">
-                <p>1. Загвар татаж, дүүргээд дахин оруулна уу (эсвэл өөрийн .csv/.xlsx файл шууд ашиглана).</p>
-                <Button variant="ghost" onClick={downloadTemplate}>⬇ Загвар татах (.csv)</Button>
+                <p>1. Download the template, fill it out, and upload it back (or use your own .csv/.xlsx file directly).</p>
+                <Button variant="ghost" onClick={downloadTemplate}>⬇ Download template (.csv)</Button>
             </div>
 
             <div className="bulk-import-step">
-                <p>2. Файлаа сонгоно уу:</p>
+                <p>2. Choose your file:</p>
                 <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} />
                 {fileName && <p className="bulk-import-filename">{fileName}</p>}
             </div>
@@ -130,14 +130,14 @@ export default function BulkImport({ user, categoryId, onDone }) {
             {rows.length > 0 && (
                 <div className="bulk-import-step">
                     <p>
-                        3. Урьдчилан харах: <strong className="ok">{validRows.length} зөв</strong>
-                        {errorRows.length > 0 && <> · <strong className="err">{errorRows.length} алдаатай</strong></>}
+                        3. Preview: <strong className="ok">{validRows.length} valid</strong>
+                        {errorRows.length > 0 && <> · <strong className="err">{errorRows.length} with errors</strong></>}
                     </p>
                     <div className="bulk-import-preview">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>#</th><th>Асуулт</th><th>Хариулт</th><th>Төрөл</th><th>Түвшин</th><th>Төлөв</th>
+                                    <th>#</th><th>Question</th><th>Answer</th><th>Type</th><th>Difficulty</th><th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -155,7 +155,7 @@ export default function BulkImport({ user, categoryId, onDone }) {
                         </table>
                         {rows.length > PREVIEW_ROW_CAP && (
                             <p className="bulk-import-preview-note">
-                                Эхний {PREVIEW_ROW_CAP} мөрийг л харуулж байна (нийт {rows.length}). Импорт нэмэх товч бүх зөв мөрийг хамарна.
+                                Showing only the first {PREVIEW_ROW_CAP} rows (of {rows.length} total). The import button covers all valid rows.
                             </p>
                         )}
                     </div>
@@ -166,7 +166,7 @@ export default function BulkImport({ user, categoryId, onDone }) {
                         onClick={handleImport}
                         fullWidth
                     >
-                        {importing ? `Оруулж байна... (${importProgress}/${validRows.length})` : `${validRows.length} асуулт нэмэх`}
+                        {importing ? `Importing... (${importProgress}/${validRows.length})` : `Add ${validRows.length} question(s)`}
                     </Button>
                 </div>
             )}

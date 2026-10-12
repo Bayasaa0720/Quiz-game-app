@@ -82,7 +82,7 @@ begin
       select balance from user_points where user_id = auth.uid()
     ) >= 100;
   else
-    raise exception 'Тодорхойгүй achievement: %', p_achievement_id;
+    raise exception 'Unknown achievement: %', p_achievement_id;
   end if;
 
   if not v_eligible then

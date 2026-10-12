@@ -39,7 +39,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
             // Мөр олдохгүй байна — тоглолт цуцлагдсан/арилсан (ж: өрсөлдөгч
             // хайлтаа цуцалсан). Юу ч харуулахгүй "live lock" болохоос
             // сэргийлж, хэрэглэгчид тодорхой алдаа үзүүлнэ.
-            setErrorMsg('Тоглолт олдсонгүй — өрсөлдөгч цуцалсан байж магадгүй.');
+            setErrorMsg('Match not found — the opponent may have canceled.');
         }
     }, []);
 
@@ -67,7 +67,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
         const { data: newMatchId, error: findErr } = await supabase.rpc('duel_find_match', { p_category_id: categoryId });
         if (mySearchId !== searchIdRef.current) return;
         if (findErr) {
-            setErrorMsg(findErr.message || 'Тоглолт эхлүүлэхэд алдаа гарлаа.');
+            setErrorMsg(findErr.message || 'Failed to start a match.');
             setLoading(false);
             return;
         }
@@ -77,7 +77,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
         if (mySearchId !== searchIdRef.current) return;
         const initialMatch = matchRows?.[0];
         if (!initialMatch) {
-            setErrorMsg('Тоглолтыг ачаалахад алдаа гарлаа.');
+            setErrorMsg('Failed to load the match.');
             setLoading(false);
             return;
         }
@@ -98,7 +98,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
                     const { error } = await supabase.rpc('duel_accept_challenge', { p_match_id: initialMatchId });
                     if (cancelled) return;
                     if (error) {
-                        setErrorMsg(error.message || 'Урилгыг хүлээн авахад алдаа гарлаа.');
+                        setErrorMsg(error.message || 'Failed to accept the invite.');
                         setLoading(false);
                         return;
                     }
@@ -108,7 +108,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
                 if (cancelled) return;
                 const initialMatch = matchRows?.[0];
                 if (getErr || !initialMatch) {
-                    setErrorMsg('Тоглолтыг ачаалахад алдаа гарлаа.');
+                    setErrorMsg('Failed to load the match.');
                     setLoading(false);
                     return;
                 }
@@ -162,10 +162,10 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
         if (match?.status === 'finished' && match.winner_id === user.id && !achievementAwarded.current) {
             achievementAwarded.current = true;
             awardAchievement(supabase, user.id, 'duel_first_win').then(isNew => {
-                if (isNew) showToast({ icon: '⚔️', title: 'Шинэ achievement!', message: 'Дуэлийн ялагч' });
+                if (isNew) showToast({ icon: '⚔️', title: 'New achievement!', message: 'Duel Winner' });
             });
             awardAchievement(supabase, user.id, 'duel_veteran').then(isNew => {
-                if (isNew) showToast({ icon: '🗡️', title: 'Шинэ achievement!', message: 'Дуэлийн ахмад' });
+                if (isNew) showToast({ icon: '🗡️', title: 'New achievement!', message: 'Duel Veteran' });
             });
         }
     }, [match, user.id, showToast]);
@@ -234,7 +234,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
         }
     };
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Тоглолт бэлдэж байна...</p>;
+    if (loading) return <p style={{ textAlign: 'center' }}>Preparing match...</p>;
     if (errorMsg) return <ErrorState message={errorMsg} onRetry={onBack} />;
     if (!match) return null;
 
@@ -242,9 +242,9 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
         return (
             <div className="duel-page duel-searching">
                 <div className="duel-spinner" aria-hidden="true" />
-                <h2>{match.is_direct_challenge ? 'Найзаа хүлээж байна...' : 'Өрсөлдөгч хайж байна...'}</h2>
-                <p>Сэдэв: {categoryName}</p>
-                <Button variant="ghost" onClick={handleCancelSearch}>Цуцлах</Button>
+                <h2>{match.is_direct_challenge ? 'Waiting for your friend...' : 'Finding an opponent...'}</h2>
+                <p>Topic: {categoryName}</p>
+                <Button variant="ghost" onClick={handleCancelSearch}>Cancel</Button>
             </div>
         );
     }
@@ -253,40 +253,40 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
         const result = match.winner_id === null ? 'tie' : (match.winner_id === user.id ? 'win' : 'lose');
         return (
             <div className="duel-page duel-result">
-                {result === 'win' && <h2>🏆 Та яллаа!</h2>}
-                {result === 'lose' && <h2>💀 Та хожигдлоо</h2>}
-                {result === 'tie' && <h2>🤝 Тэнцлээ</h2>}
+                {result === 'win' && <h2>🏆 You won!</h2>}
+                {result === 'lose' && <h2>💀 You lost</h2>}
+                {result === 'tie' && <h2>🤝 Tie</h2>}
                 <p className="duel-final-score">{myScore} : {oppScore}</p>
-                <p>Өрсөлдөгч: {oppName || '—'}</p>
+                <p>Opponent: {oppName || '—'}</p>
                 <div className="duel-result-actions">
-                    <Button onClick={searchPublicMatch}>🔁 Дахин тоглох</Button>
-                    <Button variant="ghost" onClick={onBack}>← Буцах</Button>
+                    <Button onClick={searchPublicMatch}>🔁 Play again</Button>
+                    <Button variant="ghost" onClick={onBack}>← Back</Button>
                 </div>
             </div>
         );
     }
 
     const currentQ = questions.find(q => q.id === match.question_ids[match.current_index]);
-    if (!currentQ) return <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>;
+    if (!currentQ) return <p style={{ textAlign: 'center' }}>Loading...</p>;
 
     return (
         <div className="duel-page">
             <div className="duel-scoreboard">
                 <div className="duel-score-side">
-                    <span className="duel-score-name">Та</span>
+                    <span className="duel-score-name">You</span>
                     <span className="duel-score-value">{myScore}</span>
                 </div>
                 <span className="duel-score-vs">VS</span>
                 <div className="duel-score-side">
-                    <span className="duel-score-name">{oppName || 'Өрсөлдөгч'}</span>
+                    <span className="duel-score-name">{oppName || 'Opponent'}</span>
                     <span className="duel-score-value">{oppScore}</span>
                 </div>
             </div>
-            <p className="duel-progress">Асуулт {match.current_index + 1} / {match.question_ids.length}</p>
+            <p className="duel-progress">Question {match.current_index + 1} / {match.question_ids.length}</p>
 
             <div className="duel-question">
                 {currentQ.question_image_url ? (
-                    <img src={currentQ.question_image_url} alt="Асуулт" />
+                    <img src={currentQ.question_image_url} alt="Question" />
                 ) : (
                     <h2>{currentQ.quiz_question}</h2>
                 )}
@@ -305,7 +305,7 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
                             onClick={() => handleSelect(opt)}
                             disabled={myAnswered || submitting}
                         >
-                            {opt.img ? <img src={opt.img} alt="Хариулт" /> : opt.text}
+                            {opt.img ? <img src={opt.img} alt="Answer" /> : opt.text}
                         </button>
                     );
                 })}
@@ -314,8 +314,8 @@ export default function Duel({ user, categoryId, categoryName, matchId: initialM
             {myAnswered && (
                 <p className="duel-waiting">
                     {oppAnswered
-                        ? 'Дараагийн асуулт руу шилжиж байна...'
-                        : `${oppName || 'Өрсөлдөгч'}-ийг хүлээж байна... (${secondsLeft ?? 60}с дараа автомат ялна)`}
+                        ? 'Moving to the next question...'
+                        : `Waiting for ${oppName || 'opponent'}... (auto-win in ${secondsLeft ?? 60}s)`}
                 </p>
             )}
         </div>

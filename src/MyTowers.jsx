@@ -62,21 +62,21 @@ export default function MyTowers({ user, onBack, onSelectTower, onCreateTower })
         fetchTowers();
     }, [fetchTowers]);
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>;
-    if (loadError) return <ErrorState message="Цамхгуудыг ачаалахад алдаа гарлаа." onRetry={fetchTowers} />;
+    if (loading) return <p style={{ textAlign: 'center' }}>Loading...</p>;
+    if (loadError) return <ErrorState message="Failed to load towers." onRetry={fetchTowers} />;
 
     return (
         <div className="my-towers-page">
-            <Button variant="ghost" onClick={onBack} className="my-towers-back">← Цамхаг сонгох руу</Button>
+            <Button variant="ghost" onClick={onBack} className="my-towers-back">← Back to tower list</Button>
             <div className="my-towers-header">
-                <h2>🗼 Миний цамхагууд</h2>
-                <Button onClick={onCreateTower}>➕ Шинэ цамхаг</Button>
+                <h2>🗼 My Towers</h2>
+                <Button onClick={onCreateTower}>➕ New tower</Button>
             </div>
 
             {categories.length === 0 ? (
                 <Card className="my-towers-empty">
-                    <p>Та одоогоор цамхаг үүсгээгүй байна.</p>
-                    <Button onClick={onCreateTower}>Эхний цамхгаа үүсгэх</Button>
+                    <p>You haven't created any towers yet.</p>
+                    <Button onClick={onCreateTower}>Create your first tower</Button>
                 </Card>
             ) : (
                 <div className="tower-grid">
@@ -100,10 +100,10 @@ export default function MyTowers({ user, onBack, onSelectTower, onCreateTower })
                                             <ProgressBar value={cleared} max={total} variant="accent" />
                                             <span className="tower-card-pct">{Math.round((cleared / total) * 100)}%</span>
                                         </div>
-                                        <span className="tower-card-cta">{isDone ? 'Дахин тоглох →' : `Давхар ${cleared + 1} руу →`}</span>
+                                        <span className="tower-card-cta">{isDone ? 'Play again →' : `To floor ${cleared + 1} →`}</span>
                                     </>
                                 ) : (
-                                    <p className="tower-pending-note">Бэлдэгдэж байна…</p>
+                                    <p className="tower-pending-note">Preparing…</p>
                                 )}
                             </Card>
                         );

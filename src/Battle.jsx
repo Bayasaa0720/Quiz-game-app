@@ -259,28 +259,28 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
                 setNextFloor(next || null);
                 setCoinsEarned(Number(pointsAwarded) || 0);
                 if (Number(pointsAwarded) > 0) {
-                    showToast({ icon: '🪙', title: `+${formatCoin(pointsAwarded)} coin`, message: flawless ? 'Цэвэр ялалтын бонустой!' : undefined });
+                    showToast({ icon: '🪙', title: `+${formatCoin(pointsAwarded)} coin`, message: flawless ? 'With a flawless-victory bonus!' : undefined });
                 }
 
                 // Achievement-ууд — upsert(ignoreDuplicates) тул давхар дуудахад аюулгүй.
                 awardAchievement(supabase, user.id, 'first_floor').then(isNew => {
-                    if (isNew) showToast({ icon: '🏹', title: 'Шинэ achievement!', message: 'Анхны алхам' });
+                    if (isNew) showToast({ icon: '🏹', title: 'New achievement!', message: 'First Step' });
                 });
                 if (flawless) {
                     awardAchievement(supabase, user.id, 'flawless_floor').then(isNew => {
-                        if (isNew) showToast({ icon: '💯', title: 'Шинэ achievement!', message: 'Цэвэр ялалт' });
+                        if (isNew) showToast({ icon: '💯', title: 'New achievement!', message: 'Flawless Victory' });
                     });
                 }
                 if (!next) {
                     awardAchievement(supabase, user.id, 'tower_complete').then(isNew => {
-                        if (isNew) showToast({ icon: '🗼', title: 'Шинэ achievement!', message: 'Цамхаг эзэн' });
+                        if (isNew) showToast({ icon: '🗼', title: 'New achievement!', message: 'Tower Owner' });
                     });
                 }
                 awardAchievement(supabase, user.id, 'streak_7').then(isNew => {
-                    if (isNew) showToast({ icon: '🔥', title: 'Шинэ achievement!', message: '7 хоногийн улиран' });
+                    if (isNew) showToast({ icon: '🔥', title: 'New achievement!', message: '7-Day Streak' });
                 });
                 awardAchievement(supabase, user.id, 'coin_collector').then(isNew => {
-                    if (isNew) showToast({ icon: '🪙', title: 'Шинэ achievement!', message: 'Зоос цуглуулагч' });
+                    if (isNew) showToast({ icon: '🪙', title: 'New achievement!', message: 'Coin Collector' });
                 });
             } catch (err) {
                 console.error('Error saving floor win:', err);
@@ -339,10 +339,10 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
         return () => window.removeEventListener('keydown', onKeyDown);
     });
 
-    if (status === 'loading') return <p style={{ textAlign: 'center' }}>Тулаан бэлдэж байна...</p>;
+    if (status === 'loading') return <p style={{ textAlign: 'center' }}>Preparing battle...</p>;
 
     if (status === 'error') {
-        return <ErrorState message="Тулааныг ачаалахад алдаа гарлаа." onRetry={loadFloor} />;
+        return <ErrorState message="Failed to load the battle." onRetry={loadFloor} />;
     }
 
     if (status === 'won') {
@@ -353,35 +353,35 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
                     <PlayerCharacter anim="victory" size={100} />
                     <EnemyCharacter anim="defeat" size={100} variant={variant} />
                 </div>
-                <h2>🏆 Дайснийг ялав!</h2>
-                <p>Давхар {floor.floor_index + 1} дийлдлээ.</p>
-                {flawless && <p className="battle-result-flawless">✨ Цэвэр ялалт! Алдаагүй шүү.</p>}
+                <h2>🏆 Enemy defeated!</h2>
+                <p>Floor {floor.floor_index + 1} cleared.</p>
+                {flawless && <p className="battle-result-flawless">✨ Flawless victory! No mistakes.</p>}
 
                 <div className="battle-result-stats">
                     <div className="battle-result-stat">
                         <span className="battle-result-stat-value">{correctCount}</span>
-                        <span className="battle-result-stat-label">Зөв</span>
+                        <span className="battle-result-stat-label">Correct</span>
                     </div>
                     <div className="battle-result-stat">
                         <span className="battle-result-stat-value">{wrongCount}</span>
-                        <span className="battle-result-stat-label">Буруу</span>
+                        <span className="battle-result-stat-label">Wrong</span>
                     </div>
                     <div className="battle-result-stat">
                         <span className="battle-result-stat-value">🪙 {coinsEarned}</span>
-                        <span className="battle-result-stat-label">Олсон зоос</span>
+                        <span className="battle-result-stat-label">Coins earned</span>
                     </div>
                 </div>
 
                 {missedQuestions.length > 0 && (
                     <div className="battle-review">
-                        <span className="eyebrow-label">Давтах асуултууд</span>
+                        <span className="eyebrow-label">Questions to review</span>
                         {missedQuestions.map(m => (
                             <div key={m.id} className="battle-review-item">
                                 <p className="battle-review-question">
-                                    {m.questionImage ? <img src={m.questionImage} alt="Асуулт" /> : m.questionText}
+                                    {m.questionImage ? <img src={m.questionImage} alt="Question" /> : m.questionText}
                                 </p>
                                 <p className="battle-review-answer">
-                                    ✅ {m.correctImage ? <img src={m.correctImage} alt="Зөв хариулт" /> : m.correctText}
+                                    ✅ {m.correctImage ? <img src={m.correctImage} alt="Correct answer" /> : m.correctText}
                                 </p>
                             </div>
                         ))}
@@ -400,11 +400,11 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
                 <div className="battle-result-actions">
                     {nextFloor && (
                         <Button onClick={() => onGoToFloor(nextFloor)} disabled={saving}>
-                            ⚔️ Давхар {nextFloor.floor_index + 1} руу
+                            ⚔️ To floor {nextFloor.floor_index + 1}
                         </Button>
                     )}
                     <Button variant={nextFloor ? 'ghost' : 'primary'} onClick={onFloorCleared} disabled={saving}>
-                        Цамхаг руу буцах
+                        Back to tower
                     </Button>
                 </div>
             </div>
@@ -418,11 +418,11 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
                     <PlayerCharacter anim="defeat" size={100} />
                     <EnemyCharacter anim="victory" size={100} variant={variant} />
                 </div>
-                <h2>💀 Ялагдлаа...</h2>
-                <p>Дахин бэлдээд оролдоорой!</p>
+                <h2>💀 Defeated...</h2>
+                <p>Regroup and try again!</p>
                 <div className="battle-result-actions">
-                    <Button onClick={loadFloor}>🔁 Дахин оролдох</Button>
-                    <Button variant="ghost" onClick={onLeaveTower}>← Цамхаг сонгох руу буцах</Button>
+                    <Button onClick={loadFloor}>🔁 Try again</Button>
+                    <Button variant="ghost" onClick={onLeaveTower}>← Back to tower list</Button>
                 </div>
             </div>
         );
@@ -435,11 +435,11 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
 
     return (
         <div className="battle-page">
-            <p className="battle-progress">Давхар {floor.floor_index + 1} — Дайсны HP: {Math.max(enemyHP, 0)} / {floor.enemy_hp}</p>
+            <p className="battle-progress">Floor {floor.floor_index + 1} — Enemy HP: {Math.max(enemyHP, 0)} / {floor.enemy_hp}</p>
 
             <div className="battle-question">
                 {currentQ.question_image_url ? (
-                    <img src={currentQ.question_image_url} alt="Асуулт" />
+                    <img src={currentQ.question_image_url} alt="Question" />
                 ) : (
                     <h2>{currentQ.quiz_question}</h2>
                 )}
@@ -463,7 +463,7 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
                             onClick={() => handleSelect(opt)}
                             disabled={isAnswered}
                         >
-                            {opt.img ? <img src={opt.img} alt="Хариулт" /> : opt.text}
+                            {opt.img ? <img src={opt.img} alt="Answer" /> : opt.text}
                         </button>
                     );
                 })}
@@ -472,13 +472,13 @@ export default function Battle({ user, isGuest, onGuestFloorCleared, categoryId,
             {isAnswered && (
                 <div className="battle-next">
                     <Button onClick={handleNext}>
-                        {isFinalAction ? 'Үзэх →' : 'Дараагийн асуулт →'}
+                        {isFinalAction ? 'View →' : 'Next question →'}
                     </Button>
                 </div>
             )}
 
             {isKeyboardShortcutsEnabled() && (
-                <p className="battle-kb-hint">1-4 дарж хариулах · Enter дараагийн асуулт</p>
+                <p className="battle-kb-hint">Press 1-4 to answer · Enter for next question</p>
             )}
         </div>
     );

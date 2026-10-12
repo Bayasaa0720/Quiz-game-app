@@ -1,6 +1,6 @@
 // Цамхаг/давхрын төлөв тооцоолох цэвэр функцууд — UI-аас тусад нь unit test хийхийн тулд.
 
-export const DIFFICULTY_LABELS = { easy: 'Хялбар', normal: 'Дунд', hard: 'Хэцүү' };
+export const DIFFICULTY_LABELS = { easy: 'Easy', normal: 'Medium', hard: 'Hard' };
 
 export function getFloorState(floorIndex, highestCleared) {
     if (floorIndex <= highestCleared) return 'cleared';

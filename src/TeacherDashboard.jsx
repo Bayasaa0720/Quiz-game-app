@@ -46,12 +46,12 @@ function StudentDetail({ classroomId, student, onRemove }) {
         return () => { cancelled = true; };
     }, [classroomId, student.student_user_id]);
 
-    if (loading) return <p className="teacher-detail-loading">Ачааллаж байна...</p>;
+    if (loading) return <p className="teacher-detail-loading">Loading...</p>;
 
     return (
         <div className="teacher-student-detail">
             <div className="teacher-detail-row">
-                <span>7 хоногийн идэвх:</span>
+                <span>7-day activity:</span>
                 <span className="teacher-sparkline">
                     {Array.from({ length: 7 }).map((_, i) => {
                         const d = new Date();
@@ -64,7 +64,7 @@ function StudentDetail({ classroomId, student, onRemove }) {
                                 key={key}
                                 className="teacher-spark-bar"
                                 style={{ height: `${Math.min(count, 5) * 6 + 4}px` }}
-                                title={`${key}: ${count} давхар`}
+                                title={`${key}: ${count} floors`}
                             />
                         );
                     })}
@@ -72,11 +72,11 @@ function StudentDetail({ classroomId, student, onRemove }) {
             </div>
 
             {breakdown.length === 0 ? (
-                <p className="teacher-detail-empty">Тулааны түүх алга — сурагч хараахан тоглоогүй байна.</p>
+                <p className="teacher-detail-empty">No battle history — this student hasn't played yet.</p>
             ) : (
                 <table className="teacher-breakdown-table">
                     <thead>
-                        <tr><th>Сэдэв</th><th>Зөв</th><th>Буруу</th><th>Нарийвчлал</th></tr>
+                        <tr><th>Topic</th><th>Correct</th><th>Wrong</th><th>Accuracy</th></tr>
                     </thead>
                     <tbody>
                         {breakdown.map(b => (
@@ -91,7 +91,7 @@ function StudentDetail({ classroomId, student, onRemove }) {
                 </table>
             )}
 
-            <Button variant="danger" onClick={onRemove} className="teacher-remove-btn">Ангиас хасах</Button>
+            <Button variant="danger" onClick={onRemove} className="teacher-remove-btn">Remove from class</Button>
         </div>
     );
 }
@@ -165,7 +165,7 @@ export default function TeacherDashboard({ user, onBack }) {
             if (error.code !== '23505') break; // unique_violation биш бол дахин оролдохгүй
         }
         console.error('Failed to create classroom:', lastError);
-        await modal.alert('Анги үүсгэхэд алдаа гарлаа.');
+        await modal.alert('Failed to create the class.');
     };
 
     const openClassroom = async (classroom) => {
@@ -175,7 +175,7 @@ export default function TeacherDashboard({ user, onBack }) {
     };
 
     const handleRemoveStudent = async (studentUserId) => {
-        const confirmed = await modal.confirm('Энэ сурагчийг ангиас хасах уу?', { title: 'Хасах' });
+        const confirmed = await modal.confirm('Remove this student from the class?', { title: 'Remove' });
         if (!confirmed) return;
         const { error } = await supabase.rpc('teacher_remove_student', {
             p_classroom_id: selectedClassroom.id,
@@ -191,31 +191,31 @@ export default function TeacherDashboard({ user, onBack }) {
         downloadCsv(
             `${selectedClassroom.name}_progress.csv`,
             roster.map(r => ({
-                'Сурагч': r.display_name,
-                'Нийт давхар': r.total_floors_cleared,
-                'Сүүлд идэвхтэй': r.last_active ? new Date(r.last_active).toLocaleDateString('mn-MN') : '—',
+                'Student': r.display_name,
+                'Total floors': r.total_floors_cleared,
+                'Last active': r.last_active ? new Date(r.last_active).toLocaleDateString('en-US') : '—',
             })),
-            ['Сурагч', 'Нийт давхар', 'Сүүлд идэвхтэй']
+            ['Student', 'Total floors', 'Last active']
         );
     };
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>;
-    if (loadError) return <ErrorState message="Ангиудыг ачаалахад алдаа гарлаа." onRetry={fetchClassrooms} />;
+    if (loading) return <p style={{ textAlign: 'center' }}>Loading...</p>;
+    if (loadError) return <ErrorState message="Failed to load classes." onRetry={fetchClassrooms} />;
 
     if (selectedClassroom) {
         return (
             <Card className="teacher-dashboard">
-                <Button variant="ghost" onClick={() => setSelectedClassroom(null)} className="teacher-back">← Бүх анги руу</Button>
+                <Button variant="ghost" onClick={() => setSelectedClassroom(null)} className="teacher-back">← All classes</Button>
                 <h2>{selectedClassroom.name}</h2>
-                <p className="teacher-invite-code">Нэгдэх код: <code>{selectedClassroom.invite_code}</code></p>
+                <p className="teacher-invite-code">Join code: <code>{selectedClassroom.invite_code}</code></p>
 
                 {roster.length === 0 ? (
-                    <p className="teacher-empty">Одоогоор энэ ангид сурагч алга. Дээрх кодыг сурагчдад хуваалцаарай.</p>
+                    <p className="teacher-empty">No students in this class yet. Share the code above with them.</p>
                 ) : (
                     <>
                         <div className="teacher-roster-header">
-                            <span>Ангийн ерөнхий тойм: {roster.length} сурагч</span>
-                            <Button variant="ghost" onClick={exportCsv}>⬇ CSV татах</Button>
+                            <span>Class overview: {roster.length} student{roster.length === 1 ? '' : 's'}</span>
+                            <Button variant="ghost" onClick={exportCsv}>⬇ Download CSV</Button>
                         </div>
                         <div className="teacher-roster">
                             {roster.map(s => (
@@ -226,8 +226,8 @@ export default function TeacherDashboard({ user, onBack }) {
                                     >
                                         <span className="teacher-student-name">{s.display_name}</span>
                                         <span className="teacher-student-stats">
-                                            {s.total_floors_cleared} давхар
-                                            {s.last_active && <> · {new Date(s.last_active).toLocaleDateString('mn-MN')}</>}
+                                            {s.total_floors_cleared} floors
+                                            {s.last_active && <> · {new Date(s.last_active).toLocaleDateString('en-US')}</>}
                                         </span>
                                     </div>
                                     {expandedStudentId === s.student_user_id && (
@@ -248,27 +248,27 @@ export default function TeacherDashboard({ user, onBack }) {
 
     return (
         <Card className="teacher-dashboard">
-            <Button variant="ghost" onClick={onBack} className="teacher-back">← Цамхаг сонгох руу</Button>
-            <h2>🏫 Миний ангиуд</h2>
+            <Button variant="ghost" onClick={onBack} className="teacher-back">← Back to tower list</Button>
+            <h2>🏫 My classes</h2>
 
             <div className="teacher-create-row">
                 <input
                     type="text"
-                    placeholder="Шинэ ангийн нэр..."
+                    placeholder="New class name..."
                     value={newClassroomName}
                     onChange={(e) => setNewClassroomName(e.target.value)}
                 />
-                <Button variant="success" onClick={handleCreateClassroom}>Анги үүсгэх</Button>
+                <Button variant="success" onClick={handleCreateClassroom}>Create class</Button>
             </div>
 
             {classrooms.length === 0 ? (
-                <p className="teacher-empty">Одоогоор анги үүсгээгүй байна.</p>
+                <p className="teacher-empty">You haven't created any classes yet.</p>
             ) : (
                 <div className="teacher-classroom-list">
                     {classrooms.map(c => (
                         <Card key={c.id} className="teacher-classroom-row" onClick={() => openClassroom(c)}>
                             <h3>{c.name}</h3>
-                            <span className="teacher-invite-code">Код: <code>{c.invite_code}</code></span>
+                            <span className="teacher-invite-code">Code: <code>{c.invite_code}</code></span>
                         </Card>
                     ))}
                 </div>

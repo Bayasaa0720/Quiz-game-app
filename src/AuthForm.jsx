@@ -19,7 +19,7 @@ export default function AuthForm({ onAuthSuccess }) {
 
     const handleGoogle = async () => {
         const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-        if (error) await modal.alert(error.message, { title: 'Google-ээр нэвтрэх амжилтгүй' });
+        if (error) await modal.alert(error.message, { title: 'Google sign-in failed' });
     };
 
     const handleLogin = async (e) => {
@@ -28,7 +28,7 @@ export default function AuthForm({ onAuthSuccess }) {
         try {
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) {
-                await modal.alert(error.message, { title: 'Нэвтрэх амжилтгүй' });
+                await modal.alert(error.message, { title: 'Login failed' });
                 return;
             }
             onAuthSuccess(data.user);
@@ -50,11 +50,11 @@ export default function AuthForm({ onAuthSuccess }) {
                 options: { data: { role, display_name: name.trim() || null } },
             });
             if (error) {
-                await modal.alert(error.message, { title: 'Бүртгэл амжилтгүй' });
+                await modal.alert(error.message, { title: 'Registration failed' });
                 return;
             }
             if (!data.session) {
-                await modal.alert('Акаунт үүслээ! Нэвтрэхээсээ өмнө имэйлээ шалгаж баталгаажуулна уу.', { title: 'Амжилттай' });
+                await modal.alert('Account created! Please check your email to verify it before logging in.', { title: 'Success' });
                 setMode('login');
             } else {
                 onAuthSuccess(data.user);
@@ -66,72 +66,72 @@ export default function AuthForm({ onAuthSuccess }) {
 
     return (
         <div className="auth-card">
-            <h2>{mode === 'register' ? 'Бүртгэл үүсгэх' : 'Нэвтрэх'}</h2>
+            <h2>{mode === 'register' ? 'Create account' : 'Log in'}</h2>
             <p className="auth-card-sub">
-                {mode === 'register' ? 'Сурагч эсвэл багш эсхээ сонгоод бүртгүүлээрэй.' : 'Имэйл, нууц үгээрээ нэвтэрнэ үү.'}
+                {mode === 'register' ? 'Choose student or teacher and sign up.' : 'Log in with your email and password.'}
             </p>
 
             <div className="auth-tabs">
-                <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>Нэвтрэх</button>
-                <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>Бүртгүүлэх</button>
+                <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>Log in</button>
+                <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>Register</button>
             </div>
 
             {mode === 'register' ? (
                 <form onSubmit={handleRegister} className="auth-form">
                     <div>
-                        <label className="auth-field-label">Та хэн бэ?</label>
+                        <label className="auth-field-label">Who are you?</label>
                         <div className="auth-role-cards">
                             <button type="button" className={`auth-role-card${role === 'student' ? ' active' : ''}`} onClick={() => setRole('student')}>
                                 <span className="auth-role-icon">🎮</span>
-                                <span className="auth-role-title">Сурагч</span>
-                                <span className="auth-role-desc">Цамхаг ахиулж, найзтайгаа өрсөлдөнө</span>
+                                <span className="auth-role-title">Student</span>
+                                <span className="auth-role-desc">Climb towers and compete with friends</span>
                             </button>
                             <button type="button" className={`auth-role-card${role === 'teacher' ? ' active' : ''}`} onClick={() => setRole('teacher')}>
                                 <span className="auth-role-icon">🏫</span>
-                                <span className="auth-role-title">Багш</span>
-                                <span className="auth-role-desc">Анги үүсгэж, даалгавар өгнө</span>
+                                <span className="auth-role-title">Teacher</span>
+                                <span className="auth-role-desc">Create classes and assign work</span>
                             </button>
                         </div>
                     </div>
 
-                    <label className="auth-field-label">Нэр</label>
-                    <input type="text" placeholder="Таны нэр" value={name} onChange={e => setName(e.target.value)} />
+                    <label className="auth-field-label">Name</label>
+                    <input type="text" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} />
 
-                    <label className="auth-field-label">Имэйл</label>
+                    <label className="auth-field-label">Email</label>
                     <input type="email" placeholder="name@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
 
-                    <label className="auth-field-label">Нууц үг</label>
-                    <input type="password" placeholder="Доор хааж 6 тэмдэгт" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+                    <label className="auth-field-label">Password</label>
+                    <input type="password" placeholder="At least 6 characters" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
 
                     <Button type="submit" disabled={loading} fullWidth>
-                        {loading ? 'Үүсгэж байна...' : 'Бүртгүүлэх →'}
+                        {loading ? 'Creating...' : 'Register →'}
                     </Button>
                 </form>
             ) : (
                 <form onSubmit={handleLogin} className="auth-form">
-                    <label className="auth-field-label">Имэйл</label>
+                    <label className="auth-field-label">Email</label>
                     <input type="email" placeholder="name@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
 
-                    <label className="auth-field-label">Нууц үг</label>
-                    <input type="password" placeholder="Нууц үг" value={password} onChange={e => setPassword(e.target.value)} required />
+                    <label className="auth-field-label">Password</label>
+                    <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
 
                     <Button type="submit" disabled={loading} fullWidth>
-                        {loading ? 'Нэвтэрч байна...' : 'Нэвтрэх →'}
+                        {loading ? 'Logging in...' : 'Log in →'}
                     </Button>
                 </form>
             )}
 
-            <div className="auth-divider"><span>эсвэл</span></div>
+            <div className="auth-divider"><span>or</span></div>
 
             <button type="button" className="auth-google-btn" onClick={handleGoogle}>
-                <span aria-hidden="true">G</span> Google-ээр үргэлжлүүлэх
+                <span aria-hidden="true">G</span> Continue with Google
             </button>
 
             <p className="auth-switch">
                 {mode === 'register' ? (
-                    <>Бүртгэлтэй юу? <button type="button" className="auth-switch-btn" onClick={() => setMode('login')}>Нэвтрэх</button></>
+                    <>Already have an account? <button type="button" className="auth-switch-btn" onClick={() => setMode('login')}>Log in</button></>
                 ) : (
-                    <>Акаунт байхгүй юу? <button type="button" className="auth-switch-btn" onClick={() => setMode('register')}>Бүртгүүлнэ үү</button></>
+                    <>Don't have an account? <button type="button" className="auth-switch-btn" onClick={() => setMode('register')}>Register</button></>
                 )}
             </p>
         </div>

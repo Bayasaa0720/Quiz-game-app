@@ -20,7 +20,7 @@ set search_path = public
 as $$
 begin
   if not exists (select 1 from app_admins where user_id = auth.uid()) then
-    raise exception 'Зөвхөн admin эрхтэй хэрэглэгч харах боломжтой';
+    raise exception 'Only admin users can view this';
   end if;
 
   return query

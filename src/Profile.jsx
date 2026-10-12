@@ -12,7 +12,7 @@ import './Profile.css';
 
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 
-const ROLE_LABEL = { teacher: 'Багш', student: 'Хэрэглэгч' };
+const ROLE_LABEL = { teacher: 'Teacher', student: 'User' };
 
 function ToggleSwitch({ on, onChange, label }) {
     return (
@@ -83,10 +83,10 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
         });
         setSavingName(false);
         if (error) {
-            await modal.alert('Нэр хадгалахад алдаа гарлаа.');
+            await modal.alert('Failed to save the name.');
             return;
         }
-        showToast({ icon: '✓', title: 'Хадгалагдлаа' });
+        showToast({ icon: '✓', title: 'Saved' });
         onProfileUpdated?.({ displayName: displayName.trim() || null, avatarUrl });
     };
 
@@ -109,7 +109,7 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
         setSavingDuelPermission(false);
         if (error) {
             setDuelInvitePermission(prev);
-            await modal.alert('Тохиргоо хадгалахад алдаа гарлаа.');
+            await modal.alert('Failed to save the setting.');
         }
     };
 
@@ -120,11 +120,11 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
         e.target.value = '';
         if (!file) return;
         if (!file.type.startsWith('image/')) {
-            await modal.alert('Зөвхөн зурган файл (jpg, png гэх мэт) сонгоно уу.');
+            await modal.alert('Please choose an image file (jpg, png, etc).');
             return;
         }
         if (file.size > AVATAR_MAX_BYTES) {
-            await modal.alert('Зургийн хэмжээ 5MB-аас хэтрэхгүй байх ёстой.');
+            await modal.alert('Image size must not exceed 5MB.');
             return;
         }
 
@@ -146,28 +146,28 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
 
             setAvatarUrl(newUrl);
             onProfileUpdated?.({ displayName: displayName.trim() || null, avatarUrl: newUrl });
-            showToast({ icon: '✓', title: 'Зураг шинэчлэгдлээ' });
+            showToast({ icon: '✓', title: 'Photo updated' });
         } catch (err) {
             console.error('Error uploading avatar:', err);
-            await modal.alert('Зураг оруулахад алдаа гарлаа.');
+            await modal.alert('Failed to upload the photo.');
         } finally {
             setUploadingAvatar(false);
         }
     };
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>;
-    if (loadError) return <ErrorState message="Профайл ачаалахад алдаа гарлаа." onRetry={fetchProfile} />;
+    if (loading) return <p style={{ textAlign: 'center' }}>Loading...</p>;
+    if (loadError) return <ErrorState message="Failed to load profile." onRetry={fetchProfile} />;
 
     const earnedCount = ACHIEVEMENTS.filter(a => earnedIds.has(a.id)).length;
 
     return (
         <div className="profile-page">
-            <Button variant="ghost" onClick={onBack} className="profile-back">← Цамхаг сонгох руу</Button>
+            <Button variant="ghost" onClick={onBack} className="profile-back">← Back to tower list</Button>
 
             <div className="profile-identity">
-                <button type="button" className="profile-avatar-btn" onClick={handleAvatarClick} disabled={uploadingAvatar} title="Зураг солих">
+                <button type="button" className="profile-avatar-btn" onClick={handleAvatarClick} disabled={uploadingAvatar} title="Change photo">
                     {avatarUrl ? (
-                        <img src={avatarUrl} alt="Профайл зураг" className="profile-avatar-img" />
+                        <img src={avatarUrl} alt="Profile photo" className="profile-avatar-img" />
                     ) : (
                         <span className="profile-avatar-placeholder">{(displayName || user?.email || '?').charAt(0).toUpperCase()}</span>
                     )}
@@ -178,12 +178,12 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
                 <div className="profile-name-row">
                     <input
                         type="text"
-                        placeholder="Харагдах нэр..."
+                        placeholder="Display name..."
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         className="profile-name-input"
                     />
-                    <Button variant="ghost" onClick={handleSaveName} disabled={savingName}>Хадгалах</Button>
+                    <Button variant="ghost" onClick={handleSaveName} disabled={savingName}>Save</Button>
                 </div>
                 <p className="profile-email">{user?.email}</p>
                 <p className="profile-role-badge">{ROLE_LABEL[userRole] || userRole}</p>
@@ -192,7 +192,7 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
 
             {breakdown.length > 0 && (
                 <>
-                    <h3 className="profile-section-title">📊 Миний статистик</h3>
+                    <h3 className="profile-section-title">📊 My stats</h3>
                     <div className="profile-stats-list">
                         {breakdown.map(row => (
                             <Card key={row.category_id} className="profile-stats-row">
@@ -206,46 +206,46 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
             )}
 
             <div className="profile-settings">
-                <h3 className="profile-section-title profile-settings-title">⚙️ Тохиргоо</h3>
+                <h3 className="profile-section-title profile-settings-title">⚙️ Settings</h3>
 
                 <div className="setting-row">
                     <div className="setting-row-text">
-                        <span className="setting-row-label">Дуу</span>
-                        <span className="setting-row-hint">Зөв/буруу хариултын эффект</span>
+                        <span className="setting-row-label">Sound</span>
+                        <span className="setting-row-hint">Correct/wrong answer effects</span>
                     </div>
-                    <ToggleSwitch on={!sfxMuted} onChange={() => onToggleMute?.()} label="Дуу" />
+                    <ToggleSwitch on={!sfxMuted} onChange={() => onToggleMute?.()} label="Sound" />
                 </div>
 
                 <div className="setting-row">
                     <div className="setting-row-text">
-                        <span className="setting-row-label">Анимаци багасгах</span>
-                        <span className="setting-row-hint">Шилжилтийн хөдөлгөөнийг хасна</span>
+                        <span className="setting-row-label">Reduce animations</span>
+                        <span className="setting-row-hint">Removes transition motion</span>
                     </div>
-                    <ToggleSwitch on={reduceAnim} onChange={handleToggleReduceAnim} label="Анимаци багасгах" />
+                    <ToggleSwitch on={reduceAnim} onChange={handleToggleReduceAnim} label="Reduce animations" />
                 </div>
 
                 <div className="setting-row">
                     <div className="setting-row-text">
-                        <span className="setting-row-label">Гарын товчлол</span>
-                        <span className="setting-row-hint">Тулаанд 1-4 хариулт, Enter дараах</span>
+                        <span className="setting-row-label">Keyboard shortcuts</span>
+                        <span className="setting-row-hint">1-4 to answer in battle, Enter for next</span>
                     </div>
-                    <ToggleSwitch on={kbShortcuts} onChange={handleToggleKbShortcuts} label="Гарын товчлол" />
+                    <ToggleSwitch on={kbShortcuts} onChange={handleToggleKbShortcuts} label="Keyboard shortcuts" />
                 </div>
 
                 <div className="setting-row">
                     <div className="setting-row-text">
-                        <span className="setting-row-label">Хэл</span>
-                        <span className="setting-row-hint">Одоогоор зөвхөн монгол хэл дэмжигдэнэ</span>
+                        <span className="setting-row-label">Language</span>
+                        <span className="setting-row-hint">Currently only English is supported</span>
                     </div>
-                    <select className="setting-select" value="mn" disabled>
-                        <option value="mn">Монгол</option>
+                    <select className="setting-select" value="en" disabled>
+                        <option value="en">English</option>
                     </select>
                 </div>
 
                 <div className="setting-row">
                     <div className="setting-row-text">
-                        <span className="setting-row-label">Дуэлийн урилга</span>
-                        <span className="setting-row-hint">Хэн намайг нээлттэй хайлтаар олох боломжтой</span>
+                        <span className="setting-row-label">Duel invites</span>
+                        <span className="setting-row-hint">Who can find me through open matchmaking</span>
                     </div>
                     <div className="setting-radio-group">
                         <button
@@ -254,7 +254,7 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
                             disabled={savingDuelPermission}
                             onClick={() => handleChangeDuelPermission('friends')}
                         >
-                            Найзууд
+                            Friends
                         </button>
                         <button
                             type="button"
@@ -262,13 +262,13 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
                             disabled={savingDuelPermission}
                             onClick={() => handleChangeDuelPermission('everyone')}
                         >
-                            Бүгд
+                            Everyone
                         </button>
                     </div>
                 </div>
             </div>
 
-            <h3 className="profile-section-title">🏆 Тэмдэгтүүд ({earnedCount} / {ACHIEVEMENTS.length})</h3>
+            <h3 className="profile-section-title">🏆 Achievements ({earnedCount} / {ACHIEVEMENTS.length})</h3>
             <div className="achievements-grid">
                 {ACHIEVEMENTS.map(a => {
                     const earned = earnedIds.has(a.id);
@@ -278,13 +278,13 @@ export default function Profile({ user, userRole, onBack, onLogout, onProfileUpd
                             <h3>{a.name}</h3>
                             <p className="achievement-card-desc">{a.description}</p>
                             <span className="achievement-card-coin">🪙 {formatCoin(a.coin)}</span>
-                            {earned && <span className="achievement-card-earned-tag">✓ Нээгдсэн</span>}
+                            {earned && <span className="achievement-card-earned-tag">✓ Unlocked</span>}
                         </Card>
                     );
                 })}
             </div>
 
-            <Button variant="danger" onClick={onLogout} className="profile-logout">Гарах</Button>
+            <Button variant="danger" onClick={onLogout} className="profile-logout">Log out</Button>
         </div>
     );
 }

@@ -7,12 +7,12 @@ import './Onboarding.css';
 // Deck-ийн баруун талын decorative жагсаалт (Home/TowerSelect-ийн бодит
 // давхар/цамхагтай холбоогүй, зөвхөн Onboarding-ийн флаворын хувьд).
 const TIERS = [
-    { n: '06', label: 'Оргил', icon: '🔒' },
-    { n: '05', label: 'Мастер', icon: '🔒' },
-    { n: '04', label: 'Ахисан', icon: '🚩', current: true },
-    { n: '03', label: 'Шалгалт', icon: '✓' },
-    { n: '02', label: 'Дадлага', icon: '✓' },
-    { n: '01', label: 'Суурь', icon: '✓' },
+    { n: '06', label: 'Summit', icon: '🔒' },
+    { n: '05', label: 'Master', icon: '🔒' },
+    { n: '04', label: 'Advanced', icon: '🚩', current: true },
+    { n: '03', label: 'Trial', icon: '✓' },
+    { n: '02', label: 'Practice', icon: '✓' },
+    { n: '01', label: 'Basics', icon: '✓' },
 ];
 
 function TierPreview() {
@@ -37,7 +37,7 @@ function StepShell({ step, children }) {
                     {[1, 2, 3].map(n => <span key={n} className={n <= step ? 'active' : ''} />)}
                 </div>
                 {children}
-                <p className="onboarding-step-label">Алхам {step} / 3</p>
+                <p className="onboarding-step-label">Step {step} / 3</p>
             </div>
             <TierPreview />
         </div>
@@ -63,11 +63,11 @@ export default function Onboarding({ onAuthSuccess, onGuestContinue }) {
         return (
             <StepShell step={1}>
                 <span className="eyebrow-label">TOWER CLIMB</span>
-                <h1 className="onboarding-headline">Асуулт бүр нэг шат. Цамхаг тэр шатаар өснө.</h1>
-                <p className="onboarding-sub">Хичээлээ цамхаг болгон давтаж, давхар бүрийн хамгаалагчийг зөв хариултаар яли.</p>
+                <h1 className="onboarding-headline">Every question is a step. Every floor has a guardian.</h1>
+                <p className="onboarding-sub">Turn what you study into towers. Answer correctly to beat each floor's guardian and keep climbing.</p>
                 <div className="onboarding-actions">
-                    <Button onClick={() => setStep(2)}>Дараах →</Button>
-                    <button type="button" className="onboarding-skip" onClick={goToAuthStep}>Алгасах</button>
+                    <Button onClick={() => setStep(2)}>Next →</Button>
+                    <button type="button" className="onboarding-skip" onClick={goToAuthStep}>Skip</button>
                 </div>
             </StepShell>
         );
@@ -76,15 +76,15 @@ export default function Onboarding({ onAuthSuccess, onGuestContinue }) {
     if (step === 2) {
         return (
             <StepShell step={2}>
-                <span className="eyebrow-label">ДҮРЭМ</span>
-                <h1 className="onboarding-headline">3 удаа алдвал тэр давхарт унана.</h1>
+                <span className="eyebrow-label">RULES</span>
+                <h1 className="onboarding-headline">Miss 3 times and you fall from that floor.</h1>
                 <p className="onboarding-sub">
-                    Асуулт бүрт 10 секунд. Дэлгүүрээс армор авбал нэмэлт амьтай орно.
-                    Дээшлэх тусам coin цуглуулж, найзтайгаа 1v1 өрсөлдөнө.
+                    10 seconds per question. Buy armor from the Shop for extra lives.
+                    Climb higher to earn coins and challenge friends to 1v1 duels.
                 </p>
                 <div className="onboarding-actions">
-                    <Button onClick={goToAuthStep}>Дараах →</Button>
-                    <button type="button" className="onboarding-skip" onClick={goToAuthStep}>Алгасах</button>
+                    <Button onClick={goToAuthStep}>Next →</Button>
+                    <button type="button" className="onboarding-skip" onClick={goToAuthStep}>Skip</button>
                 </div>
             </StepShell>
         );
@@ -97,10 +97,10 @@ export default function Onboarding({ onAuthSuccess, onGuestContinue }) {
             <div className="onboarding-shell-left onboarding-auth-step">
                 <AuthForm onAuthSuccess={onAuthSuccess} />
                 <button type="button" className="onboarding-guest-link" onClick={onGuestContinue}>
-                    <span>👁️ Бүртгүүлэхгүйгээр туршиж үзэх</span>
-                    <span className="onboarding-guest-hint">Зөвхөн World tower тоглоно · явц хадгалагдахгүй</span>
+                    <span>👁️ Try it without registering</span>
+                    <span className="onboarding-guest-hint">World tower only · progress isn't saved</span>
                 </button>
-                <p className="onboarding-step-label">Алхам 3 / 3</p>
+                <p className="onboarding-step-label">Step 3 / 3</p>
             </div>
             <TierPreview />
         </div>

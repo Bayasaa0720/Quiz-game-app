@@ -195,18 +195,18 @@ declare
 begin
   select price, is_active into v_price, v_active from shop_items where id = p_item_id;
   if v_price is null then
-    raise exception 'Ийм эдлэл алга';
+    raise exception 'No such item';
   end if;
   if not v_active then
-    raise exception 'Энэ эдлэл дэлгүүрт байхгүй болсон байна';
+    raise exception 'This item is no longer available in the shop';
   end if;
   if exists (select 1 from user_inventory where user_id = auth.uid() and item_id = p_item_id) then
-    raise exception 'Та энэ эдлэлийг аль хэдийн худалдаж авсан байна';
+    raise exception 'You already own this item';
   end if;
 
   select balance into v_balance from user_points where user_id = auth.uid();
   if coalesce(v_balance, 0) < v_price then
-    raise exception 'Оноо хүрэлцэхгүй байна';
+    raise exception 'Not enough coins';
   end if;
 
   update user_points set balance = balance - v_price, updated_at = now() where user_id = auth.uid();
@@ -227,7 +227,7 @@ set search_path = public
 as $$
 begin
   if p_item_id is not null and not exists (select 1 from user_inventory where user_id = auth.uid() and item_id = p_item_id) then
-    raise exception 'Танд энэ эдлэл алга';
+    raise exception 'You don''t own this item';
   end if;
   update user_profiles set equipped_item_id = p_item_id where user_id = auth.uid();
 end;
@@ -263,7 +263,7 @@ stable
 as $$
 begin
   if not exists (select 1 from app_admins where user_id = auth.uid()) then
-    raise exception 'Зөвхөн админ эрхтэй';
+    raise exception 'Admin access only';
   end if;
   return query select * from shop_items order by price asc;
 end;
@@ -285,7 +285,7 @@ declare
   v_id uuid;
 begin
   if not exists (select 1 from app_admins where user_id = auth.uid()) then
-    raise exception 'Зөвхөн админ эрхтэй';
+    raise exception 'Admin access only';
   end if;
 
   if p_id is null then
@@ -315,7 +315,7 @@ set search_path = public
 as $$
 begin
   if not exists (select 1 from app_admins where user_id = auth.uid()) then
-    raise exception 'Зөвхөн админ эрхтэй';
+    raise exception 'Admin access only';
   end if;
   delete from shop_items where id = p_id;
 end;
@@ -327,8 +327,19 @@ grant execute on function admin_delete_shop_item(uuid) to authenticated;
 -- Admin dashboard-аас засаж/нэмж/устгаж болно). Хүснэгт хоосон үед л нэмнэ.
 insert into shop_items (name, description, icon, armor_points, price, is_active)
 select * from (values
-  ('Арьсан хуяг', 'Тулаан бүрд 1 удаагийн буруу хариултаас хамгаална.', '🛡️', 1, 40, true),
-  ('Төмөр хуяг', 'Тулаан бүрд 2 удаагийн буруу хариултаас хамгаална.', '🛡️', 2, 90, true),
-  ('Драконы хуяг', 'Тулаан бүрд 3 удаагийн буруу хариултаас хамгаална.', '🛡️', 3, 160, true)
+  ('Leather Armor', 'Absorbs 1 wrong answer per battle.', '🛡️', 1, 40, true),
+  ('Iron Armor', 'Absorbs 2 wrong answers per battle.', '🛡️', 2, 90, true),
+  ('Dragon Armor', 'Absorbs 3 wrong answers per battle.', '🛡️', 3, 160, true)
 ) as v(name, description, icon, armor_points, price, is_active)
 where not exists (select 1 from shop_items);
+
+-- 10) The insert above only fires on an empty table, so an environment that
+-- already ran this file once keeps its old (Mongolian) seed names forever.
+-- Rename the 3 original default items in place if they're still present,
+-- matched by their old Mongolian names so this is safe to re-run.
+update shop_items set name = 'Leather Armor', description = 'Absorbs 1 wrong answer per battle.'
+  where name = 'Арьсан хуяг';
+update shop_items set name = 'Iron Armor', description = 'Absorbs 2 wrong answers per battle.'
+  where name = 'Төмөр хуяг';
+update shop_items set name = 'Dragon Armor', description = 'Absorbs 3 wrong answers per battle.'
+  where name = 'Драконы хуяг';

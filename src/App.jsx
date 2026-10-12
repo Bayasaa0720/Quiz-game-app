@@ -303,7 +303,7 @@ function App() {
         return (
             <div className="app-shell">
                 <div className="app-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-                    <p>Ачааллаж байна...</p>
+                    <p>Loading...</p>
                 </div>
             </div>
         );
@@ -441,7 +441,7 @@ function App() {
         );
     } else if (view === 'BULK_IMPORT' && selectedCategory) {
         currentViewContent = (
-            <Suspense fallback={<p style={{ textAlign: 'center' }}>Ачааллаж байна...</p>}>
+            <Suspense fallback={<p style={{ textAlign: 'center' }}>Loading...</p>}>
                 <BulkImport
                     user={user}
                     categoryId={selectedCategory.id}
@@ -459,11 +459,11 @@ function App() {
     if (isGuest && !GUEST_ALLOWED_VIEWS.has(view)) {
         currentViewContent = (
             <div className="guest-gate">
-                <h2>🔒 Энэ хэсэг зөвхөн бүртгэлтэй хэрэглэгчид зориулагдсан</h2>
-                <p>Зочны горимд зөвхөн World tower тоглох боломжтой. Бүх боломжийг нээхийн тулд бүртгүүлнэ үү.</p>
+                <h2>🔒 This section is only for registered users</h2>
+                <p>In guest mode you can only play the World tower. Register to unlock everything.</p>
                 <div className="guest-gate-actions">
-                    <Button onClick={handleGuestRegister}>Бүртгүүлэх</Button>
-                    <Button variant="ghost" onClick={goToTowerSelect}>← Нүүр рүү буцах</Button>
+                    <Button onClick={handleGuestRegister}>Register</Button>
+                    <Button variant="ghost" onClick={goToTowerSelect}>← Back to Home</Button>
                 </div>
             </div>
         );
@@ -493,10 +493,10 @@ function App() {
                             // Зөвхөн mobile fallback (desktop дээр MainSidebar-аар
                             // нуугдана, CSS: .app-nav-tabs { display:none } @900px+).
                             <nav className="app-nav-tabs">
-                                <button type="button" className={HOME_NAV_VIEWS.has(view) ? 'active' : ''} onClick={goToTowerSelect}>🗼 Цамхагууд</button>
-                                <button type="button" className={view === 'SHOP' || view === 'INVENTORY' ? 'active' : ''} onClick={() => setView('SHOP')}>🛒 Дэлгүүр</button>
-                                <button type="button" className={view === 'FRIENDS' ? 'active' : ''} onClick={() => setView('FRIENDS')}>👥 Найзууд ба Duel</button>
-                                <button type="button" className={view === 'LEARNING' ? 'active' : ''} onClick={() => setView('LEARNING')}>🎓 Сургалт</button>
+                                <button type="button" className={HOME_NAV_VIEWS.has(view) ? 'active' : ''} onClick={goToTowerSelect}>🗼 Towers</button>
+                                <button type="button" className={view === 'SHOP' || view === 'INVENTORY' ? 'active' : ''} onClick={() => setView('SHOP')}>🛒 Shop</button>
+                                <button type="button" className={view === 'FRIENDS' ? 'active' : ''} onClick={() => setView('FRIENDS')}>👥 Friends & Duel</button>
+                                <button type="button" className={view === 'LEARNING' ? 'active' : ''} onClick={() => setView('LEARNING')}>🎓 Classes</button>
                                 {isAdmin && (
                                     <button type="button" className={view === 'ADMIN_DASHBOARD' ? 'active' : ''} onClick={() => setView('ADMIN_DASHBOARD')}>🛠 Admin</button>
                                 )}
@@ -505,20 +505,20 @@ function App() {
 
                         <div className="app-header-right">
                             {user && view !== 'ONBOARDING' && <span className="app-coin-pill">🪙 {formatCoin(coinBalance)}</span>}
-                            {user && view !== 'ONBOARDING' && streak > 0 && <span className="app-streak-pill">🔥 {streak} хоног</span>}
+                            {user && view !== 'ONBOARDING' && streak > 0 && <span className="app-streak-pill">🔥 {streak}-day streak</span>}
                             <button
                                 type="button"
                                 className="mute-toggle"
                                 onClick={handleToggleMute}
-                                aria-label={sfxMuted ? 'Дуу асаах' : 'Дуу хаах'}
-                                title={sfxMuted ? 'Дуу асаах' : 'Дуу хаах'}
+                                aria-label={sfxMuted ? 'Unmute' : 'Mute'}
+                                title={sfxMuted ? 'Unmute' : 'Mute'}
                             >
                                 {sfxMuted ? '🔇' : '🔊'}
                             </button>
                             {user && view !== 'ONBOARDING' && (
-                                <button type="button" className="app-avatar-btn" onClick={goToProfile} title="Профайл">
+                                <button type="button" className="app-avatar-btn" onClick={goToProfile} title="Profile">
                                     {avatarUrl ? (
-                                        <img src={avatarUrl} alt="Профайл" />
+                                        <img src={avatarUrl} alt="Profile" />
                                     ) : (
                                         <span>{(displayName || user.email || '?').charAt(0).toUpperCase()}</span>
                                     )}
@@ -534,7 +534,7 @@ function App() {
                                 isAdmin={isAdmin}
                                 isGuest={isGuest}
                                 equippedArmor={equippedArmor}
-                                displayName={isGuest ? 'Зочин' : displayName}
+                                displayName={isGuest ? 'Guest' : displayName}
                                 userEmail={user?.email}
                                 userRole={userRole}
                                 onHome={goToTowerSelect}
@@ -555,7 +555,7 @@ function App() {
                                 maxHp={inBattle ? battleState.playerMaxHP : undefined}
                                 armor={inBattle ? battleState.armorHP : undefined}
                                 armorMax={inBattle ? battleState.armorMax : undefined}
-                                note={inBattle ? undefined : 'Тулаан эхлээгүй байна'}
+                                note={inBattle ? undefined : 'Battle not started'}
                                 anim={inBattle ? battleState.playerAnim : 'idle'}
                                 tick={inBattle ? battleState.playerTick : 0}
                                 size={characterSize}
@@ -570,7 +570,7 @@ function App() {
                             <EnemySidebar
                                 hp={inBattle ? battleState.enemyHP : undefined}
                                 maxHp={inBattle ? battleState.enemyMaxHP : undefined}
-                                note={inBattle ? undefined : 'Тулаан эхлээгүй байна'}
+                                note={inBattle ? undefined : 'Battle not started'}
                                 anim={inBattle ? battleState.enemyAnim : 'idle'}
                                 tick={inBattle ? battleState.enemyTick : 0}
                                 variant={inBattle ? battleState.enemyVariant : 'orc'}

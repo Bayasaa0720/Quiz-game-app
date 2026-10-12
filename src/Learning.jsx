@@ -23,27 +23,27 @@ export default function Learning({ user, userRole, onBack }) {
         const { data, error } = await supabase.rpc('join_classroom', { p_invite_code: code });
         setJoining(false);
         if (error) {
-            setJoinHint('Буруу код байна. Багшаасаа шалгаарай.');
+            setJoinHint('Invalid code. Check with your teacher.');
             return;
         }
-        setJoinHint(`"${data?.[0]?.classroom_name || ''}" ангид амжилттай нэгдлээ!`);
+        setJoinHint(`Successfully joined "${data?.[0]?.classroom_name || ''}"!`);
         setJoinCode('');
     };
 
     return (
         <div className="learning-page">
-            <Button variant="ghost" onClick={onBack} className="learning-back">← Цамхаг сонгох руу</Button>
-            <h2>🎓 Сургалт</h2>
+            <Button variant="ghost" onClick={onBack} className="learning-back">← Back to tower list</Button>
+            <h2>🎓 Classes</h2>
             <Card className="learning-join-panel">
-                <h3>Ангид нэгдэх</h3>
+                <h3>Join a class</h3>
                 <div className="learning-join-row">
                     <input
                         type="text"
-                        placeholder="Багшийн код..."
+                        placeholder="Teacher's code..."
                         value={joinCode}
                         onChange={(e) => setJoinCode(e.target.value)}
                     />
-                    <Button variant="success" onClick={handleJoinClassroom} disabled={joining}>Нэгдэх</Button>
+                    <Button variant="success" onClick={handleJoinClassroom} disabled={joining}>Join</Button>
                 </div>
                 {joinHint && <p className="learning-hint">{joinHint}</p>}
             </Card>

@@ -56,8 +56,8 @@ export default function AdminDashboard({ onBack }) {
 
     const handleRegenerate = async (tower) => {
         const confirmed = await modal.confirm(
-            `«${tower.category_name}» (эзэмшигч: ${tower.owner_email}) цамхгийн бүх давхрыг дахин materialize хийх үү? Тухайн цамхгийн бүх тоглогчийн прогресс дахин эхэлнэ.`,
-            { title: 'Давхар шинэчлэх' }
+            `Regenerate all floors of "${tower.category_name}" (owner: ${tower.owner_email})? Every player's progress in this tower will reset.`,
+            { title: 'Regenerate floors' }
         );
         if (!confirmed) return;
 
@@ -66,10 +66,10 @@ export default function AdminDashboard({ onBack }) {
             const { error } = await supabase.rpc('regenerate_tower_floors', { p_category_id: tower.category_id });
             if (error) throw error;
             await fetchTowers();
-            await modal.alert('Давхрууд амжилттай шинэчлэгдлээ.');
+            await modal.alert('Floors regenerated successfully.');
         } catch (err) {
             console.error('Error regenerating tower floors:', err);
-            await modal.alert('Давхар шинэчлэхэд алдаа гарлаа.');
+            await modal.alert('Failed to regenerate floors.');
         } finally {
             setRegeneratingId(null);
         }
@@ -77,8 +77,8 @@ export default function AdminDashboard({ onBack }) {
 
     const handleApprovePublic = async (req) => {
         const confirmed = await modal.confirm(
-            `«${req.category_name}» (эзэмшигч: ${req.owner_email}) цамхгийг нийтэд нээх үү? Бүх хэрэглэгчид Tower Select дэлгэц дээр харагдана.`,
-            { title: 'Нийтэд нээхийг зөвшөөрөх' }
+            `Make "${req.category_name}" (owner: ${req.owner_email}) public? It will appear to all users on the Tower Select screen.`,
+            { title: 'Approve public request' }
         );
         if (!confirmed) return;
 
@@ -89,14 +89,14 @@ export default function AdminDashboard({ onBack }) {
             await fetchTowers();
         } catch (err) {
             console.error('Error approving public category:', err);
-            await modal.alert('Зөвшөөрөхөд алдаа гарлаа.');
+            await modal.alert('Failed to approve.');
         } finally {
             setDecidingId(null);
         }
     };
 
     const handleRejectPublic = async (req) => {
-        const confirmed = await modal.confirm(`«${req.category_name}» хүсэлтийг татгалзах уу?`, { title: 'Татгалзах' });
+        const confirmed = await modal.confirm(`Reject the request for "${req.category_name}"?`, { title: 'Reject' });
         if (!confirmed) return;
 
         setDecidingId(req.category_id);
@@ -106,7 +106,7 @@ export default function AdminDashboard({ onBack }) {
             await fetchTowers();
         } catch (err) {
             console.error('Error rejecting public category:', err);
-            await modal.alert('Татгалзахад алдаа гарлаа.');
+            await modal.alert('Failed to reject.');
         } finally {
             setDecidingId(null);
         }
@@ -130,30 +130,30 @@ export default function AdminDashboard({ onBack }) {
             await fetchTowers();
         } catch (err) {
             console.error('Error saving shop item:', err);
-            await modal.alert('Хадгалахад алдаа гарлаа.');
+            await modal.alert('Failed to save.');
         } finally {
             setSavingShopItem(false);
         }
     };
 
     const handleDeleteShopItem = async (item) => {
-        const confirmed = await modal.confirm(`«${item.name}» эдлэлийг устгах уу?`, { title: 'Устгах' });
+        const confirmed = await modal.confirm(`Delete "${item.name}"?`, { title: 'Delete' });
         if (!confirmed) return;
         const { error } = await supabase.rpc('admin_delete_shop_item', { p_id: item.id });
         if (!error) await fetchTowers();
     };
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Цамхгуудыг ачааллаж байна...</p>;
-    if (loadError) return <ErrorState message="Admin мэдээллийг ачаалахад алдаа гарлаа." onRetry={fetchTowers} />;
+    if (loading) return <p style={{ textAlign: 'center' }}>Loading towers...</p>;
+    if (loadError) return <ErrorState message="Failed to load admin data." onRetry={fetchTowers} />;
 
     return (
         <div className="admin-dashboard">
-            <Button variant="ghost" onClick={onBack} className="admin-dashboard-back">← Цамхаг сонгох руу</Button>
-            <h2>🛠 Admin: Бүх цамхаг</h2>
+            <Button variant="ghost" onClick={onBack} className="admin-dashboard-back">← Back to tower list</Button>
+            <h2>🛠 Admin: All towers</h2>
 
             {publicRequests.length > 0 && (
                 <>
-                    <h3 className="admin-section-title">Нийтэд нээх хүсэлтүүд ({publicRequests.length})</h3>
+                    <h3 className="admin-section-title">Public requests ({publicRequests.length})</h3>
                     <div className="admin-tower-list">
                         {publicRequests.map(req => (
                             <Card key={req.category_id} className="admin-tower-row">
@@ -162,7 +162,7 @@ export default function AdminDashboard({ onBack }) {
                                     <p className="admin-tower-owner">{req.owner_email}</p>
                                     {req.requested_at && (
                                         <p className="admin-tower-stats">
-                                            Хүссэн огноо: {new Date(req.requested_at).toLocaleString('mn-MN')}
+                                            Requested: {new Date(req.requested_at).toLocaleString('en-US')}
                                         </p>
                                     )}
                                 </div>
@@ -172,14 +172,14 @@ export default function AdminDashboard({ onBack }) {
                                         disabled={decidingId === req.category_id}
                                         onClick={() => handleApprovePublic(req)}
                                     >
-                                        Зөвшөөрөх
+                                        Approve
                                     </Button>
                                     <Button
                                         variant="ghost"
                                         disabled={decidingId === req.category_id}
                                         onClick={() => handleRejectPublic(req)}
                                     >
-                                        Татгалзах
+                                        Reject
                                     </Button>
                                 </div>
                             </Card>
@@ -188,9 +188,9 @@ export default function AdminDashboard({ onBack }) {
                 </>
             )}
 
-            <h3 className="admin-section-title">Бүх цамхаг</h3>
+            <h3 className="admin-section-title">All towers</h3>
             {towers.length === 0 ? (
-                <p className="admin-empty">Одоогоор ямар ч цамхаг үүсээгүй байна.</p>
+                <p className="admin-empty">No towers created yet.</p>
             ) : (
                 <div className="admin-tower-list">
                     {towers.map(tower => {
@@ -201,13 +201,13 @@ export default function AdminDashboard({ onBack }) {
                                     <h3>{tower.category_name}</h3>
                                     <p className="admin-tower-owner">{tower.owner_email}</p>
                                     <p className="admin-tower-stats">
-                                        Асуулт: {tower.question_count} · Давхар: {tower.floor_count}
+                                        Questions: {tower.question_count} · Floors: {tower.floor_count}
                                         {tower.last_generated_at && (
-                                            <> · Сүүлд шинэчилсэн: {new Date(tower.last_generated_at).toLocaleString('mn-MN')}</>
+                                            <> · Last regenerated: {new Date(tower.last_generated_at).toLocaleString('en-US')}</>
                                         )}
                                     </p>
                                     {needsMaterialize && (
-                                        <p className="admin-tower-hint">⚠️ Materialize хийгдээгүй байна</p>
+                                        <p className="admin-tower-hint">⚠️ Not yet materialized</p>
                                     )}
                                 </div>
                                 <Button
@@ -215,7 +215,7 @@ export default function AdminDashboard({ onBack }) {
                                     disabled={regeneratingId === tower.category_id}
                                     onClick={() => handleRegenerate(tower)}
                                 >
-                                    {regeneratingId === tower.category_id ? 'Шинэчилж байна…' : 'Давхар шинэчлэх'}
+                                    {regeneratingId === tower.category_id ? 'Regenerating…' : 'Regenerate floors'}
                                 </Button>
                             </Card>
                         );
@@ -223,12 +223,12 @@ export default function AdminDashboard({ onBack }) {
                 </div>
             )}
 
-            <h3 className="admin-section-title">Дэлгүүрийн эдлэл удирдах</h3>
+            <h3 className="admin-section-title">Manage shop items</h3>
             <Card className="admin-shop-form">
                 <div className="admin-shop-form-grid">
                     <input
                         type="text"
-                        placeholder="Нэр"
+                        placeholder="Name"
                         value={shopForm.name}
                         onChange={(e) => setShopForm(f => ({ ...f, name: e.target.value }))}
                     />
@@ -241,21 +241,21 @@ export default function AdminDashboard({ onBack }) {
                     <input
                         type="number"
                         min="0"
-                        placeholder="Армор"
+                        placeholder="Armor"
                         value={shopForm.armor_points}
                         onChange={(e) => setShopForm(f => ({ ...f, armor_points: e.target.value }))}
                     />
                     <input
                         type="number"
                         min="0"
-                        placeholder="Үнэ (coin)"
+                        placeholder="Price (coin)"
                         value={shopForm.price}
                         onChange={(e) => setShopForm(f => ({ ...f, price: e.target.value }))}
                     />
                 </div>
                 <input
                     type="text"
-                    placeholder="Тайлбар"
+                    placeholder="Description"
                     value={shopForm.description}
                     onChange={(e) => setShopForm(f => ({ ...f, description: e.target.value }))}
                     className="admin-shop-form-desc"
@@ -266,35 +266,35 @@ export default function AdminDashboard({ onBack }) {
                         checked={shopForm.is_active}
                         onChange={(e) => setShopForm(f => ({ ...f, is_active: e.target.checked }))}
                     />
-                    Идэвхтэй (дэлгүүрт харагдана)
+                    Active (visible in shop)
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <Button variant="success" onClick={handleSaveShopItem} disabled={savingShopItem}>
-                        {shopForm.id ? 'Хадгалах' : 'Нэмэх'}
+                        {shopForm.id ? 'Save' : 'Add'}
                     </Button>
                     {shopForm.id && (
-                        <Button variant="ghost" onClick={() => setShopForm(EMPTY_SHOP_FORM)}>Цуцлах</Button>
+                        <Button variant="ghost" onClick={() => setShopForm(EMPTY_SHOP_FORM)}>Cancel</Button>
                     )}
                 </div>
             </Card>
 
             {shopItems.length === 0 ? (
-                <p className="admin-empty">Дэлгүүрт эдлэл алга байна.</p>
+                <p className="admin-empty">No items in the shop.</p>
             ) : (
                 <div className="admin-tower-list">
                     {shopItems.map(item => (
                         <Card key={item.id} className="admin-tower-row">
                             <div className="admin-tower-info">
-                                <h3>{item.icon} {item.name}{!item.is_active && ' (идэвхгүй)'}</h3>
+                                <h3>{item.icon} {item.name}{!item.is_active && ' (inactive)'}</h3>
                                 <p className="admin-tower-stats">
-                                    Армор: {item.armor_points} · Үнэ: {item.price} coin
+                                    Armor: {item.armor_points} · Price: {item.price} coin
                                 </p>
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <Button variant="ghost" onClick={() => setShopForm({ ...item, armor_points: String(item.armor_points), price: String(item.price) })}>
-                                    Засах
+                                    Edit
                                 </Button>
-                                <Button variant="danger" onClick={() => handleDeleteShopItem(item)}>Устгах</Button>
+                                <Button variant="danger" onClick={() => handleDeleteShopItem(item)}>Delete</Button>
                             </div>
                         </Card>
                     ))}

@@ -47,16 +47,16 @@ begin
     where winner_id = auth.uid() and status = 'finished' and updated_at::date = current_date;
 
   return query
-  select 'daily_3_floors'::text, '3 давхар дийл'::text, 3, least(v_floors_won, 3), 15,
+  select 'daily_3_floors'::text, 'Clear 3 floors'::text, 3, least(v_floors_won, 3), 15,
     exists (select 1 from user_daily_quest_claims where user_id = auth.uid() and quest_id = 'daily_3_floors' and quest_date = current_date)
   union all
-  select 'daily_flawless'::text, 'Цэвэр ялалт ав'::text, 1, least(v_flawless, 1), 10,
+  select 'daily_flawless'::text, 'Get a flawless victory'::text, 1, least(v_flawless, 1), 10,
     exists (select 1 from user_daily_quest_claims where user_id = auth.uid() and quest_id = 'daily_flawless' and quest_date = current_date)
   union all
-  select 'daily_duel_play'::text, 'Дуэл тогло'::text, 1, least(v_duels_played, 1), 10,
+  select 'daily_duel_play'::text, 'Play a duel'::text, 1, least(v_duels_played, 1), 10,
     exists (select 1 from user_daily_quest_claims where user_id = auth.uid() and quest_id = 'daily_duel_play' and quest_date = current_date)
   union all
-  select 'daily_duel_win'::text, 'Дуэлд ялах'::text, 1, least(v_duels_won, 1), 20,
+  select 'daily_duel_win'::text, 'Win a duel'::text, 1, least(v_duels_won, 1), 20,
     exists (select 1 from user_daily_quest_claims where user_id = auth.uid() and quest_id = 'daily_duel_win' and quest_date = current_date);
 end;
 $$;
@@ -79,13 +79,13 @@ declare
 begin
   select * into v_row from get_daily_quests() where quest_id = p_quest_id;
   if v_row is null then
-    raise exception 'Тодорхойгүй даалгавар';
+    raise exception 'Unknown quest';
   end if;
   if v_row.claimed then
-    raise exception 'Энэ даалгаврыг өнөөдөр аль хэдийн авсан байна';
+    raise exception 'This quest has already been claimed today';
   end if;
   if v_row.progress < v_row.target then
-    raise exception 'Даалгавар хараахан биелээгүй байна';
+    raise exception 'Quest not completed yet';
   end if;
 
   insert into user_daily_quest_claims (user_id, quest_id, quest_date)

@@ -20,7 +20,7 @@ set search_path = public
 as $$
 begin
   if not exists (select 1 from app_admins where user_id = auth.uid()) then
-    raise exception 'Зөвхөн admin эрхтэй';
+    raise exception 'Admin access only';
   end if;
 
   return query
@@ -44,7 +44,7 @@ set search_path = public
 as $$
 begin
   if not exists (select 1 from app_admins where user_id = auth.uid()) then
-    raise exception 'Зөвхөн admin эрхтэй';
+    raise exception 'Admin access only';
   end if;
 
   update categories
@@ -65,7 +65,7 @@ set search_path = public
 as $$
 begin
   if not exists (select 1 from app_admins where user_id = auth.uid()) then
-    raise exception 'Зөвхөн admin эрхтэй';
+    raise exception 'Admin access only';
   end if;
 
   update categories

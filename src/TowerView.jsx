@@ -56,8 +56,8 @@ export default function TowerView({ user, isGuest, guestHighestCleared, category
 
     const handleRegenerate = async () => {
         const confirmed = await modal.confirm(
-            'Энэ цамхгийн бүх давхрыг одоогийн асуултуудаас дахин materialize хийх үү? Тухайн цамхгийн бүх тоглогчийн прогресс дахин эхэлнэ.',
-            { title: 'Давхар шинэчлэх' }
+            'Rebuild all floors of this tower from the current questions? Every player\'s progress in this tower will reset.',
+            { title: 'Regenerate floors' }
         );
         if (!confirmed) return;
 
@@ -66,17 +66,17 @@ export default function TowerView({ user, isGuest, guestHighestCleared, category
             const { error } = await supabase.rpc('regenerate_tower_floors', { p_category_id: categoryId });
             if (error) throw error;
             await fetchTower();
-            await modal.alert('Давхрууд амжилттай шинэчлэгдлээ.');
+            await modal.alert('Floors regenerated successfully.');
         } catch (err) {
             console.error('Error regenerating tower floors:', err);
-            await modal.alert('Давхар шинэчлэхэд алдаа гарлаа.');
+            await modal.alert('Failed to regenerate floors.');
         } finally {
             setRegenerating(false);
         }
     };
 
-    if (loading) return <p style={{ textAlign: 'center' }}>Цамхгийг ачааллаж байна...</p>;
-    if (loadError) return <ErrorState message="Цамхгийг ачаалахад алдаа гарлаа." onRetry={fetchTower} />;
+    if (loading) return <p style={{ textAlign: 'center' }}>Loading tower...</p>;
+    if (loadError) return <ErrorState message="Failed to load tower." onRetry={fetchTower} />;
 
     const cleared = highestCleared + 1;
     const total = floors.length;
@@ -84,7 +84,7 @@ export default function TowerView({ user, isGuest, guestHighestCleared, category
 
     return (
         <div className="tower-view">
-            <Button variant="ghost" onClick={onBack} className="tower-view-back">← Цамхаг сонгох руу</Button>
+            <Button variant="ghost" onClick={onBack} className="tower-view-back">← Back to tower list</Button>
             <h2>{categoryName}</h2>
 
             <div className="tower-view-walker">
@@ -93,7 +93,7 @@ export default function TowerView({ user, isGuest, guestHighestCleared, category
 
             {!isGuest && (
                 <Button variant="ghost" onClick={() => onStartDuel(categoryId, categoryName)} className="tower-view-duel-btn">
-                    ⚔️ 1v1 өрсөлдөх
+                    ⚔️ 1v1 duel
                 </Button>
             )}
 
@@ -103,7 +103,7 @@ export default function TowerView({ user, isGuest, guestHighestCleared, category
                     onClick={() => onStartReview(categoryId, categoryName, highestCleared)}
                     className="tower-view-review-btn"
                 >
-                    📚 Дийлсэн асуултаа сэргээх
+                    📚 Review cleared questions
                 </Button>
             )}
 
@@ -114,34 +114,46 @@ export default function TowerView({ user, isGuest, guestHighestCleared, category
                     disabled={regenerating}
                     className="tower-view-admin-action"
                 >
-                    🛠 {regenerating ? 'Шинэчилж байна…' : 'Давхар шинэчлэх (Admin)'}
+                    🛠 {regenerating ? 'Regenerating…' : 'Regenerate floors (Admin)'}
                 </Button>
             )}
 
             <div className="tower-view-body">
-                <div className="floor-list">
+                <div className="floor-path">
                     {floors.length === 0 && (
-                        <p className="tower-empty">Энэ цамхаг бэлдэгдээгүй байна.</p>
+                        <p className="tower-empty">This tower isn't ready yet.</p>
                     )}
-                    {floors.map(floor => {
+                    {floors.map((floor, i) => {
                         const state = getFloorState(floor.floor_index, highestCleared);
+                        const connectorClimbed = i < floors.length - 1 && state === 'cleared';
                         return (
-                            <Card
-                                key={floor.id}
-                                className={`floor-item floor-${state}`}
-                                onClick={() => state !== 'locked' && onSelectFloor(floor)}
-                            >
-                                <span className="floor-index">Давхар {floor.floor_index + 1}</span>
-                                <span className={`difficulty-badge difficulty-${floor.difficulty}`}>
-                                    {DIFFICULTY_LABELS[floor.difficulty] || floor.difficulty}
-                                </span>
-                                <span className="floor-enemy">👹 HP {floor.enemy_hp}</span>
-                                <span className="floor-state">
-                                    {state === 'cleared' && '✅ Дийлсэн'}
-                                    {state === 'current' && '⚔️ Тоглох боломжтой'}
-                                    {state === 'locked' && '🔒 Түгжээтэй'}
-                                </span>
-                            </Card>
+                            <div key={floor.id} className="floor-row">
+                                <div className="floor-node-col">
+                                    <span className={`floor-node floor-node-${state}`}>
+                                        {state === 'cleared' && '✓'}
+                                        {state === 'current' && (floor.floor_index + 1)}
+                                        {state === 'locked' && '🔒'}
+                                    </span>
+                                    {i < floors.length - 1 && (
+                                        <span className={`floor-connector${connectorClimbed ? ' floor-connector-climbed' : ''}`} />
+                                    )}
+                                </div>
+                                <Card
+                                    className={`floor-item floor-${state}`}
+                                    onClick={() => state !== 'locked' && onSelectFloor(floor)}
+                                >
+                                    <span className="floor-index">Floor {floor.floor_index + 1}</span>
+                                    <span className={`difficulty-badge difficulty-${floor.difficulty}`}>
+                                        {DIFFICULTY_LABELS[floor.difficulty] || floor.difficulty}
+                                    </span>
+                                    <span className="floor-enemy">👹 HP {floor.enemy_hp}</span>
+                                    <span className="floor-state">
+                                        {state === 'cleared' && '✅ Cleared'}
+                                        {state === 'current' && '⚔️ Playable'}
+                                        {state === 'locked' && '🔒 Locked'}
+                                    </span>
+                                </Card>
+                            </div>
                         );
                     })}
                 </div>
@@ -149,20 +161,20 @@ export default function TowerView({ user, isGuest, guestHighestCleared, category
                 {total > 0 && (
                     <div className="tower-view-rail">
                         <Card className="tower-view-progress-card">
-                            <span className="eyebrow-label">Явц</span>
+                            <span className="eyebrow-label">Progress</span>
                             <p className="tower-view-progress-pct">{pct}%</p>
-                            <p className="tower-pending-note">{cleared}/{total} давхар дийлсэн</p>
+                            <p className="tower-pending-note">{cleared}/{total} floors cleared</p>
                         </Card>
 
                         <Card className="tower-view-loadout-card">
-                            <span className="eyebrow-label">Орох бэлтгэл</span>
-                            <p className="tower-view-loadout-row">❤️ Амь: {PLAYER_START_HP}</p>
+                            <span className="eyebrow-label">Loadout</span>
+                            <p className="tower-view-loadout-row">❤️ Lives: {PLAYER_START_HP}</p>
                             <p className="tower-view-loadout-row">
-                                🛡️ {equippedArmor ? `${equippedArmor.name} (+${equippedArmor.armor_points})` : 'Хуяггүй'}
+                                🛡️ {equippedArmor ? `${equippedArmor.name} (+${equippedArmor.armor_points})` : 'No armor'}
                             </p>
                             {!isGuest && (
                                 <button type="button" className="tower-view-loadout-change" onClick={onOpenInventory}>
-                                    Хуяг солих →
+                                    Change armor →
                                 </button>
                             )}
                         </Card>

@@ -101,7 +101,7 @@ set search_path = public
 as $$
 begin
   if p_permission not in ('everyone', 'friends') then
-    raise exception 'Буруу утга: %', p_permission;
+    raise exception 'Invalid value: %', p_permission;
   end if;
   update user_profiles set duel_invite_permission = p_permission where user_id = auth.uid();
 end;

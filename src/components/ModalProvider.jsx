@@ -12,7 +12,7 @@ export function ModalProvider({ children }) {
             setInputValue('');
             setRequest({
                 type: 'alert',
-                title: opts.title || 'Мэдэгдэл',
+                title: opts.title || 'Notice',
                 message,
                 resolve: () => resolve(undefined),
             });
@@ -24,7 +24,7 @@ export function ModalProvider({ children }) {
             setInputValue('');
             setRequest({
                 type: 'confirm',
-                title: opts.title || 'Баталгаажуулах',
+                title: opts.title || 'Confirm',
                 message,
                 resolve,
             });
@@ -36,7 +36,7 @@ export function ModalProvider({ children }) {
             setInputValue(defaultValue);
             setRequest({
                 type: 'prompt',
-                title: opts.title || 'Оруулах',
+                title: opts.title || 'Enter value',
                 message,
                 resolve,
             });
@@ -115,14 +115,14 @@ export function ModalProvider({ children }) {
                             )}
                             {request.type === 'confirm' && (
                                 <>
-                                    <Button variant="ghost" onClick={() => close(false)}>Цуцлах</Button>
-                                    <Button variant="danger" onClick={() => close(true)}>Тийм</Button>
+                                    <Button variant="ghost" onClick={() => close(false)}>Cancel</Button>
+                                    <Button variant="danger" onClick={() => close(true)}>Yes</Button>
                                 </>
                             )}
                             {request.type === 'prompt' && (
                                 <>
-                                    <Button variant="ghost" onClick={() => close(null)}>Цуцлах</Button>
-                                    <Button onClick={() => close(inputValue)}>Хадгалах</Button>
+                                    <Button variant="ghost" onClick={() => close(null)}>Cancel</Button>
+                                    <Button onClick={() => close(inputValue)}>Save</Button>
                                 </>
                             )}
                         </div>

@@ -40,7 +40,7 @@ export function buildOptions(currentQ, pool) {
     // товч харуулж болзошгүй. Тийм үед ядаж true/false хэв маягийн нэг
     // decoy-г доод тал нь нэмж, 1-ийн-1 "quiz"-ийг зайлсхийнэ.
     if (wrongs.length === 0 && !isImage(currentQ)) {
-        wrongs.push({ text: 'Үгүй', img: null, isCorrect: false });
+        wrongs.push({ text: 'No', img: null, isCorrect: false });
     }
 
     return shuffle([correct, ...wrongs]);

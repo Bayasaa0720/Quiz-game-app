@@ -61,14 +61,14 @@ export default function InstallPrompt() {
     if (!visible) return null;
 
     return (
-        <div className="install-prompt" role="dialog" aria-label="Апп суулгах урилга">
+        <div className="install-prompt" role="dialog" aria-label="Install app prompt">
             <div className="install-prompt-text">
-                <strong>Tower Climb-ийг гар утсандаа суулгах уу?</strong>
-                <span>Нэг товшилтоор нээгдэж, Нүүр хуудсандаа дүрс болгон нэмэгдэнэ.</span>
+                <strong>Install Tower Climb on your phone?</strong>
+                <span>Opens in one tap and adds an icon to your home screen.</span>
             </div>
             <div className="install-prompt-actions">
-                <Button onClick={install}>Суулгах</Button>
-                <Button variant="ghost" onClick={dismiss}>Үгүй</Button>
+                <Button onClick={install}>Install</Button>
+                <Button variant="ghost" onClick={dismiss}>No thanks</Button>
             </div>
         </div>
     );

@@ -2,14 +2,14 @@
 // бодит coin олголт нь economy.sql-ийн award_points_for_achievement
 // trigger дотор (сервер тал) тодорхойлогддог; хоёуланг зэрэг өөрчлөх ёстой.
 export const ACHIEVEMENTS = [
-    { id: 'first_floor', icon: '🏹', name: 'Анхны алхам', description: 'Анхны давхараа дийлсэн', coin: 15 },
-    { id: 'flawless_floor', icon: '💯', name: 'Цэвэр ялалт', description: 'Ямар ч буруу хариулгүйгээр давхар дийлсэн', coin: 20 },
-    { id: 'duel_first_win', icon: '⚔️', name: 'Дуэлийн ялагч', description: '1v1 өрсөлдөөнд анх удаа ялсан', coin: 25 },
-    { id: 'tower_complete', icon: '🗼', name: 'Цамхаг эзэн', description: 'Нэг цамхгийг бүрэн дийлсэн', coin: 30 },
-    { id: 'leaderboard_top1', icon: '🏆', name: 'Тэргүүлэгч', description: 'Leaderboard-т 1-р байранд орсон', coin: 30 },
-    { id: 'streak_7', icon: '🔥', name: '7 хоногийн улиран', description: '7 хоног дараалан ялалттайгаар тоглосон', coin: 25 },
-    { id: 'duel_veteran', icon: '🗡️', name: 'Дуэлийн ахмад', description: '1v1 өрсөлдөөнд 10 удаа яллаа', coin: 35 },
-    { id: 'coin_collector', icon: '🪙', name: 'Зоос цуглуулагч', description: '100 coin хуримтлуулсан', coin: 20 },
+    { id: 'first_floor', icon: '🏹', name: 'First Step', description: 'Cleared your first floor', coin: 15 },
+    { id: 'flawless_floor', icon: '💯', name: 'Flawless Victory', description: 'Cleared a floor without a single wrong answer', coin: 20 },
+    { id: 'duel_first_win', icon: '⚔️', name: 'Duel Winner', description: 'Won your first 1v1 duel', coin: 25 },
+    { id: 'tower_complete', icon: '🗼', name: 'Tower Owner', description: 'Fully cleared a tower', coin: 30 },
+    { id: 'leaderboard_top1', icon: '🏆', name: 'Top of the Board', description: 'Reached #1 on the leaderboard', coin: 30 },
+    { id: 'streak_7', icon: '🔥', name: '7-Day Streak', description: 'Played and won 7 days in a row', coin: 25 },
+    { id: 'duel_veteran', icon: '🗡️', name: 'Duel Veteran', description: 'Won 10 1v1 duels', coin: 35 },
+    { id: 'coin_collector', icon: '🪙', name: 'Coin Collector', description: 'Accumulated 100 coins', coin: 20 },
 ];
 
 // Буцаах утга: анх удаа шинээр авсан бол true (toast мэдэгдэл харуулахад ашиглана),

@@ -63,7 +63,7 @@ begin
     into is_caller_admin;
 
   if not is_caller_admin then
-    raise exception 'Зөвхөн admin давхар materialize хийх эрхтэй';
+    raise exception 'Only admins can materialize floors';
   end if;
 
   delete from tower_floors where category_id = p_category_id;
