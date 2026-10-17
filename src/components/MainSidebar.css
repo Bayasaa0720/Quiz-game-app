@@ -25,6 +25,16 @@
     font-family: inherit;
     text-align: left;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.main-sidebar-icon {
+    font-size: 1.05rem;
+    width: 18px;
+    text-align: center;
+    flex: none;
 }
 
 .main-sidebar-items {
@@ -36,6 +46,9 @@
 }
 
 .main-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     text-align: left;
     padding: 10px 12px;
     border-radius: var(--radius-sm);

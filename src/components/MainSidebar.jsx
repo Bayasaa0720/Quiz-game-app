@@ -27,13 +27,13 @@ export default function MainSidebar({
     const isActive = (...views) => views.includes(activeView);
     // Зочин зөвхөн World tower тоглох боломжтой (Нүүр/Тэргүүлэгчид харагдана,
     // бусад товч дарахад App.jsx-ийн GuestGate-рүү орно) — түгжээтэй гэдгийг
-    // энд зөвхөн icon-оор мэдэгдэнэ.
-    const lock = isGuest ? <span className="main-sidebar-lock" aria-hidden="true">🔒</span> : null;
+    // энд зөвхөн icon-оор мэдэгдэнэ (deck-ийн ph-lock-simple badge-тай адил).
+    const lock = isGuest ? <i className="ph ph-lock-simple main-sidebar-lock" aria-hidden="true" /> : null;
 
     return (
         <nav className="main-sidebar" aria-label="Main navigation">
             <button type="button" className="main-sidebar-logo" onClick={onHome}>
-                🗼 Tower Climb
+                <i className="ph ph-castle-turret" aria-hidden="true" /> Tower Climb
             </button>
 
             <div className="main-sidebar-items">
@@ -44,7 +44,7 @@ export default function MainSidebar({
                     aria-current={isActive(...HOME_NAV_VIEWS) ? 'page' : undefined}
                     onClick={onHome}
                 >
-                    🏠 Home
+                    <i className="ph ph-house main-sidebar-icon" aria-hidden="true" /> Home
                 </button>
                 <button
                     type="button"
@@ -52,7 +52,7 @@ export default function MainSidebar({
                     aria-current={isActive('LEADERBOARD') ? 'page' : undefined}
                     onClick={onLeaderboard}
                 >
-                    🏆 Leaderboard {lock}
+                    <i className="ph ph-trophy main-sidebar-icon" aria-hidden="true" /> Leaderboard {lock}
                 </button>
 
                 <span className="main-sidebar-group-label">Social</span>
@@ -62,7 +62,7 @@ export default function MainSidebar({
                     aria-current={isActive('FRIENDS') ? 'page' : undefined}
                     onClick={onFriends}
                 >
-                    👥 Friends & Duel {lock}
+                    <i className="ph ph-sword main-sidebar-icon" aria-hidden="true" /> Friends & Duel {lock}
                 </button>
                 <button
                     type="button"
@@ -70,7 +70,7 @@ export default function MainSidebar({
                     aria-current={isActive('LEARNING') ? 'page' : undefined}
                     onClick={onLearning}
                 >
-                    🎓 Classes {lock}
+                    <i className="ph ph-graduation-cap main-sidebar-icon" aria-hidden="true" /> Classes {lock}
                 </button>
 
                 <span className="main-sidebar-group-label">Create</span>
@@ -80,7 +80,7 @@ export default function MainSidebar({
                     aria-current={isActive('MY_TOWERS', 'MANAGE_CONTENT', 'CREATE_QUESTION', 'MANAGE_QUESTIONS', 'BULK_IMPORT') ? 'page' : undefined}
                     onClick={onMyTowers}
                 >
-                    🗼 My Towers {lock}
+                    <i className="ph ph-stack main-sidebar-icon" aria-hidden="true" /> My Towers {lock}
                 </button>
 
                 <span className="main-sidebar-group-label">Store</span>
@@ -90,7 +90,7 @@ export default function MainSidebar({
                     aria-current={isActive('SHOP') ? 'page' : undefined}
                     onClick={onShop}
                 >
-                    🛒 Shop {lock}
+                    <i className="ph ph-storefront main-sidebar-icon" aria-hidden="true" /> Shop {lock}
                 </button>
                 <button
                     type="button"
@@ -98,7 +98,7 @@ export default function MainSidebar({
                     aria-current={isActive('INVENTORY') ? 'page' : undefined}
                     onClick={onInventory}
                 >
-                    🎒 Inventory {lock}
+                    <i className="ph ph-package main-sidebar-icon" aria-hidden="true" /> Inventory {lock}
                 </button>
 
                 {isAdmin && (
@@ -108,14 +108,14 @@ export default function MainSidebar({
                         aria-current={isActive('ADMIN_DASHBOARD') ? 'page' : undefined}
                         onClick={onAdmin}
                     >
-                        🛠 Admin
+                        <i className="ph ph-wrench main-sidebar-icon" aria-hidden="true" /> Admin
                     </button>
                 )}
             </div>
 
             {isGuest ? (
                 <div className="main-sidebar-guest-banner">
-                    <span className="eyebrow-label">Guest mode</span>
+                    <span className="eyebrow-label"><i className="ph ph-eye" aria-hidden="true" /> Guest mode</span>
                     <p>Progress isn't saved. Register to unlock everything.</p>
                     <button type="button" className="main-sidebar-guest-register" onClick={onGuestRegister}>Register</button>
                 </div>
@@ -137,7 +137,7 @@ export default function MainSidebar({
             <button type="button" className="main-sidebar-profile" onClick={onProfile}>
                 <span className="main-sidebar-profile-name">{displayName || userEmail || 'Player'}</span>
                 <span className="main-sidebar-profile-role">{userRole === 'teacher' ? 'Teacher' : 'Student'}</span>
-                <span className="main-sidebar-profile-gear" aria-hidden="true">⚙️</span>
+                <i className="ph ph-gear-six main-sidebar-profile-gear" aria-hidden="true" />
             </button>
         </nav>
     );
